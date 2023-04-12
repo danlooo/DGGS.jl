@@ -1,0 +1,54 @@
+<svg host="65bd71144e" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="1343px" height="507px" viewBox="-0.5 -0.5 1343 507" content="&lt;mxfile scale=&quot;3&quot; border=&quot;0&quot;&gt;&lt;diagram id=&quot;WaJd4FItV9IVxVc9MwX4&quot; name=&quot;Page-1&quot;&gt;1ZZBk5sgFMc/jcftKMRojhuztZfOdMZDz1RZpUWxhGxMP30fAlGqO7sHpzNrDoH/eyC83x81wFk75JL0zVdRUR6gsBoCfAoQitIkgj+t3IySxqERaskqmzQJBftDrejSLqyiZy9RCcEV632xFF1HS+VpREpx9dOeBffv2pOaLoSiJHypfmeVaoyaxJP8hbK6cTd2y26JS7XCuSGVuM4k/BTgTAqhTKsdMsp16VxVzLjPr0Tvy5K0U+8ZsDMDXgi/2J3Zdamb2yossdfNhg6kFl2Ajz2VrKWKykn95iTYwfHaMEWLnpR62BUMAFqjWg69CJrPbKAOqe6flRS/7mU8jBmcZ4ILfYNOdFQnmfxdqMOiUy4cIPw8XveJZpFDHKdHvaJlWWylXqhUdJhJtkw5FbAdeYMUG31I0sSMsZbFFuF14h/trdbM4TuRWM/V97knMNCwbNY5JR+MEw7XeGRHnGG8FY+9zyNe4YHWeKANeKQfjAda5YHTQ4r2EKklqRidTpUdvAmmnY8pWWJKVyilG0ByT12P0p4r+wjxcO1/X4QLPJiiPUJCHPbDWAgXh1at/095Xnz6yd18sBQzpYkuzADVUgsCtsor1ObUYdpidqjGvp1YxzUKBi+mR85qMNmpZVWlg0dihRLgacv945do5UkajtdG4GO888C74zo/n9EK+d0W5KO3yJf3XU9kcUz1by697RD0qkPYuZRwtCEn5+IH0evL9dcNCovbWdH2v3oH3vQbe2cTj6CD55EoXDFJuI1JoDt9V42x2bcpfvoL&lt;/diagram&gt;&lt;/mxfile&gt;">
+    <defs/>
+    <g>
+        <path d="M 132 12 L 372 12 L 492 252 L 372 492 L 132 492 L 12 252 Z" fill="none" stroke="#9558b2" stroke-width="27" stroke-miterlimit="10" pointer-events="all"/>
+        <path d="M 162 72 L 342 72 L 432 252 L 342 432 L 162 432 L 72 252 Z" fill="none" stroke="#cb3c33" stroke-width="27" stroke-miterlimit="10" pointer-events="all"/>
+        <path d="M 192 132 L 312 132 L 372 252 L 312 372 L 192 372 L 132 252 Z" fill="none" stroke="#389826" stroke-width="27" stroke-miterlimit="10" pointer-events="all"/>
+        <rect x="771" y="123" width="330" height="120" fill="none" stroke="none" pointer-events="all"/>
+        <g transform="translate(-0.5 -0.5)scale(3)">
+            <switch>
+                <foreignObject pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility" style="overflow: visible; text-align: left;">
+                    <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 1px; height: 1px; padding-top: 61px; margin-left: 312px;">
+                        <div data-drawio-colors="color: #000000; " style="box-sizing: border-box; font-size: 0px; text-align: center;">
+                            <div style="display: inline-block; font-size: 30px; font-family: Helvetica; color: rgb(0, 0, 0); line-height: 1.2; pointer-events: all; font-weight: bold; white-space: nowrap;">
+                                <font style="font-size: 50px;">
+                                    DGGS.jl
+                                </font>
+                            </div>
+                        </div>
+                    </div>
+                </foreignObject>
+                <text x="312" y="70" fill="#000000" font-family="Helvetica" font-size="30px" text-anchor="middle" font-weight="bold">
+                    DGGS.jl
+                </text>
+            </switch>
+        </g>
+        <rect x="786" y="243" width="300" height="120" fill="none" stroke="none" pointer-events="all"/>
+        <g transform="translate(-0.5 -0.5)scale(3)">
+            <switch>
+                <foreignObject pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility" style="overflow: visible; text-align: left;">
+                    <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 1px; height: 1px; padding-top: 101px; margin-left: 312px;">
+                        <div data-drawio-colors="color: rgb(0, 0, 0); " style="box-sizing: border-box; font-size: 0px; text-align: center;">
+                            <div style="display: inline-block; font-size: 24px; font-family: Helvetica; color: rgb(0, 0, 0); line-height: 1.2; pointer-events: all; font-weight: bold; white-space: nowrap;">
+                                <font style="font-size: 20px;" color="#5e5e5e">
+                                    Discrete Global Grid System
+                                </font>
+                            </div>
+                        </div>
+                    </div>
+                </foreignObject>
+                <text x="312" y="108" fill="rgb(0, 0, 0)" font-family="Helvetica" font-size="24px" text-anchor="middle" font-weight="bold">
+                    Discrete...
+                </text>
+            </switch>
+        </g>
+    </g>
+    <switch>
+        <g requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"/>
+        <a transform="translate(0,-5)" xlink:href="https://www.diagrams.net/doc/faq/svg-export-text-problems" target="_blank">
+            <text text-anchor="middle" font-size="10px" x="50%" y="100%">
+                Text is not SVG - cannot display
+            </text>
+        </a>
+    </switch>
+</svg>
