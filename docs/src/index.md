@@ -4,7 +4,7 @@ CurrentModule = DGGS
 
 # DGGS
 
-Documentation for [DGGS](https://github.com/dloos/DGGS.jl).
+Documentation for [DGGS](https://github.com/danlooo/DGGS.jl).
 
 ```@index
 ```

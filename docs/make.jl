@@ -6,11 +6,11 @@ DocMeta.setdocmeta!(DGGS, :DocTestSetup, :(using DGGS); recursive=true)
 makedocs(;
     modules=[DGGS],
     authors="Daniel Loos",
-    repo="https://github.com/dloos/DGGS.jl/blob/{commit}{path}#{line}",
+    repo="https://github.com/danlooo/DGGS.jl/blob/{commit}{path}#{line}",
     sitename="DGGS.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
-        canonical="https://dloos.github.io/DGGS.jl",
+        canonical="https://danlooo.github.io/DGGS.jl",
         edit_link="main",
         assets=String[],
     ),
@@ -20,6 +20,6 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/dloos/DGGS.jl",
+    repo="github.com/danlooo/DGGS.jl",
     devbranch="main",
 )
