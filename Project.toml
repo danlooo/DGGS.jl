@@ -3,6 +3,10 @@ uuid = "1b1208a4-f9dd-4606-8704-9f68bba98fd1"
 authors = ["Daniel Loos"]
 version = "1.0.0-DEV"
 
+[deps]
+DGGRID7_jll = "56fc471b-e449-5679-a438-44d065b4fb79"
+LibExpat = "522f3ed2-3f36-55e3-b6df-e94fee9b0c07"
+
 [compat]
 julia = "1.1"
 
