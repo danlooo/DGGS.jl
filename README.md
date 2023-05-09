@@ -18,4 +18,4 @@ Pkg.add("DGGS")
 
 ## Development
 
-This project is based on [dggrid-julia](https://github.com/danlooo/dggrid-julia) to provide julia bindings for the C++ library [DGGRID](https://github.com/sahrk/DGGRID).
+This project is based on [DGGRID](https://github.com/sahrk/DGGRID).
