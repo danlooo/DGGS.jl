@@ -1,6 +1,8 @@
 using DGGRID7_jll
+using GeoJSON
+using DataFrames
 
-function call_dggrid(meta::Dict)
+function dg_call(meta::Dict)
     meta_string = ""
     for (key, val) in meta
         meta_string *= "$(key) $(val)\n"
@@ -8,13 +10,44 @@ function call_dggrid(meta::Dict)
 
     tmp_dir = tempname()
     mkdir(tmp_dir)
-
-    meta_path = tmp_dir * "/meta.txt"
+    meta_path = tempname() # not inside tmp_dir to avoid name collision
     write(meta_path, meta_string)
 
     DGGRID7_jll.dggrid() do dggrid_path
+        cd(tmp_dir)
         run(`$dggrid_path $(meta_path)`)
     end
 
-    # TODO: Remove tmp dir
+    rm(meta_path)
+    return (tmp_dir)
+end
+
+function generate_cells(grid::Grid)
+    meta = Dict(
+        "dggrid_operation" => "GENERATE_GRID",
+        "dggs_type" => "ISEA4H",
+        "clip_subset_type" => "WHOLE_EARTH",
+        "cell_output_type" => "GEOJSON",
+        "cell_output_file_name" => "out"
+    )
+
+    if Symbol(grid.type) in values(Base.Enums.namemap(GridPreset))
+        meta["dggs_type"] = grid.type
+    else
+        meta["dggs_type"] = "CUSTOM"
+        meta["dggs_topology"] = String(grid.topology)
+        meta["dggs_proj"] = String(grid.projection)
+        meta["dggs_res_spec"] = String(grid.resolution)
+        meta["dggs_type"] = "CUSTOM"
+
+    end
+
+    dir = dg_call(meta)
+
+    jsonbytes = read("$(dir)/out.geojson")
+    fc = GeoJSON.read(jsonbytes, ndim=3)
+    df = DataFrame(fc)
+    return (df)
+
+    rm(dir, recursive=true)
 end
