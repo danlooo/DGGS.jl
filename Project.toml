@@ -5,6 +5,8 @@ version = "1.0.0-DEV"
 
 [deps]
 DGGRID7_jll = "56fc471b-e449-5679-a438-44d065b4fb79"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+GeoJSON = "61d90e0f-e114-555e-ac52-39dfb47a3ef9"
 LibExpat = "522f3ed2-3f36-55e3-b6df-e94fee9b0c07"
 
 [compat]
