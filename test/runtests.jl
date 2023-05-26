@@ -15,11 +15,14 @@ using GeoJSON
     d = dg_call(meta)
     @test length(GeoJSON.read(open("$(d)/out.geojson"), ndim=3)) == 162
 
-    grid = Grid(DGGS.ISEA4H)
-    @test grid.projection == DGGS.ISEA
+    grid = Grid("ISEA4H")
+    @test grid.projection == "ISEA"
     @test grid.type == "ISEA4H"
     @test grid.aperture == 4
     @test grid.resolution == 9
-    @test grid.projection == DGGS.ISEA
-    @test grid.topology == DGGS.HEXAGON
+    @test grid.projection == "ISEA"
+    @test grid.topology == "HEXAGON"
+
+    @test_throws DomainError Grid("Foo")
+    @test_throws DomainError Grid("ISEA", 100, "HEXAGON", 5)
 end

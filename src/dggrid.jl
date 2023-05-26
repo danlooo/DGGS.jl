@@ -31,13 +31,13 @@ function generate_cells(grid::Grid)
         "cell_output_file_name" => "out"
     )
 
-    if Symbol(grid.type) in values(Base.Enums.namemap(GridPreset))
+    if Symbol(grid.type) in GridPresets
         meta["dggs_type"] = grid.type
     else
         meta["dggs_type"] = "CUSTOM"
-        meta["dggs_topology"] = String(Symbol(grid.topology))
-        meta["dggs_proj"] = String(Symbol(grid.projection))
-        meta["dggs_res_spec"] = String(Symbol(grid.resolution))
+        meta["dggs_topology"] = grid.topology
+        meta["dggs_proj"] = grid.projection
+        meta["dggs_res_spec"] = grid.resolution
     end
 
     dir = dg_call(meta)
