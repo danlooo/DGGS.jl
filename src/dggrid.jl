@@ -35,11 +35,9 @@ function generate_cells(grid::Grid)
         meta["dggs_type"] = grid.type
     else
         meta["dggs_type"] = "CUSTOM"
-        meta["dggs_topology"] = String(grid.topology)
-        meta["dggs_proj"] = String(grid.projection)
-        meta["dggs_res_spec"] = String(grid.resolution)
-        meta["dggs_type"] = "CUSTOM"
-
+        meta["dggs_topology"] = String(Symbol(grid.topology))
+        meta["dggs_proj"] = String(Symbol(grid.projection))
+        meta["dggs_res_spec"] = String(Symbol(grid.resolution))
     end
 
     dir = dg_call(meta)
