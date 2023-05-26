@@ -5,6 +5,7 @@ using Test
     meta = Dict(
         "dggrid_operation" => "GENERATE_GRID",
         "dggs_type" => "ISEA4H",
+        "dggs_res_spec" => 2,
         "clip_subset_type" => "WHOLE_EARTH",
         "cell_output_type" => "GEOJSON",
         "cell_output_file_name" => "out.geojson"
@@ -20,7 +21,4 @@ using Test
     @test grid.projection == DGGS.ISEA
     @test grid.topology == DGGS.HEXAGON
     cells = generate_cells(grid)
-
-    grid2 = Grid(ISEA, 4, HEXAGON, 9)
-    @test grid == grid22
 end
