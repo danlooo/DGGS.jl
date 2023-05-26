@@ -1,5 +1,6 @@
 using DGGS
 using Test
+using GeoJSON
 
 @testset "DGGS.jl" begin
     meta = Dict(
@@ -8,10 +9,11 @@ using Test
         "dggs_res_spec" => 2,
         "clip_subset_type" => "WHOLE_EARTH",
         "cell_output_type" => "GEOJSON",
-        "cell_output_file_name" => "out.geojson"
+        "cell_output_file_name" => "out"
     )
 
     d = dg_call(meta)
+    @test length(GeoJSON.read(open("$(d)/out.geojson"), ndim=3)) == 162
 
     grid = Grid(DGGS.ISEA4H)
     @test grid.projection == DGGS.ISEA
@@ -20,5 +22,4 @@ using Test
     @test grid.resolution == 9
     @test grid.projection == DGGS.ISEA
     @test grid.topology == DGGS.HEXAGON
-    cells = generate_cells(grid)
 end
