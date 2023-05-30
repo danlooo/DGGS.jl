@@ -23,7 +23,7 @@ function dg_call(meta::Dict)
     return (tmp_dir)
 end
 
-function generate_cells(grid_spec::GridSpec)
+function generate_centers(grid_spec::GridSpec)
     # represent cells as kd-tree of center points
     # cell center points encode grid tpopology (e.g. hexagon or square) implicitly
     # Fast average search in O(log n) and efficient in batch processing
@@ -46,7 +46,7 @@ function generate_cells(grid_spec::GridSpec)
     out_dir = dg_call(meta)
 
     df = CSV.read("$(out_dir)/centers.txt", DataFrame; header=["name", "lon", "lat"], footerskip=1)
-    kd_tree = Matrix(df[:, 2:3]) |> transpose |> KDTree
+    kd_tree = df[:, 2:3] |> Matrix |> transpose |> KDTree
 
     rm(out_dir, recursive=true)
     return (kd_tree)
