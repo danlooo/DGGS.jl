@@ -26,11 +26,17 @@ using GeoJSON
     @test_throws DomainError Grid("Foo")
     @test_throws DomainError Grid("ISEA", 100, "HEXAGON", 5)
 
-    grid2 = Grid("ISEA", 4, "HEXAGON", 3)
+    grid2 = toyGrid()
     @test length(grid2.data.data) == 642
-    @test cell_name(grid2, 0, 0) == 157
-    @test cell_name(grid2, 80, 170) == 289
-    @test_throws DomainError cell_name(grid2, 180, 0)
-    @test_throws DomainError cell_name(grid2, 0, 200)
-    @test length(geo_coords(grid2, [1, 2, 10])) == 3
+
+    grid3 = Grid("ISEA", 4, "HEXAGON", 3)
+    @test length(grid3.data.data) == 642
+    @test cell_name(grid3, 0, 0) == 157
+    @test cell_name(grid3, 80, 170) == 289
+    @test_throws DomainError cell_name(grid3, 180, 0)
+    @test_throws DomainError cell_name(grid3, 0, 200)
+
+    @test length(geo_coords(grid3, [1, 2, 10])) == 3
+
+    @test length(cell_boundaries(grid3.spec)) == 642
 end

@@ -1,10 +1,5 @@
 using NearestNeighbors
 
-Projections = ["ISEA", "FULLER"]
-Topologies = ["HEXAGON", "TRIANGLE", "DIAMOND"]
-GridPresets = ["SUPERFUND", "PLANETRISK", "ISEA4T", "ISEA4D", "ISEA3H", "ISEA4H", "ISEA7H", "ISEA43H", "FULLER4T", "FULLER4D", "FULLER3H", "FULLER4H", "FULLER7H", "FULLER43H"]
-Apertures = [3, 4, 7]
-
 struct GridSpec
     type::String
     projection::String
@@ -29,9 +24,11 @@ function Grid(preset::String)
     end
 
     spec = PresetGridSpecs[preset]
-    data = generate_centers(spec)
+    data = cell_centers(spec)
     return Grid(spec, data)
 end
+
+Grid() = Grid("ISEA4H")
 
 function Grid(projection::String, aperture::Int, topology::String, resolution::Int)
     if !(projection in Projections)
@@ -47,9 +44,11 @@ function Grid(projection::String, aperture::Int, topology::String, resolution::I
     end
 
     spec = GridSpec("CUSTOM", projection, aperture, topology, resolution)
-    data = generate_centers(spec)
+    data = cell_centers(spec)
     return Grid(spec, data)
 end
+
+toyGrid() = Grid("ISEA", 4, "HEXAGON", 3)
 
 "Convert geographic corrdinates to cell id"
 function cell_name(grid::Grid, lat::Real, lon::Real)
