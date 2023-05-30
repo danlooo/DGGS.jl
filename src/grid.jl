@@ -3,18 +3,22 @@ Topologies = ["HEXAGON", "TRIANGLE", "DIAMOND"]
 GridPresets = ["SUPERFUND", "PLANETRISK", "ISEA4T", "ISEA4D", "ISEA3H", "ISEA4H", "ISEA7H", "ISEA43H", "FULLER4T", "FULLER4D", "FULLER3H", "FULLER4H", "FULLER7H", "FULLER43H"]
 Apertures = [3, 4, 7]
 
-struct Grid
+struct GridSpec
     type::String
     projection::String
     aperture::Int
     topology::String
     resolution::Int
+end
+
+struct Grid
+    spec::GridSpec
     data::Any
 end
 
-PresetParams = Dict(
-    "FULLER7H" => Grid("FULLER7H", "FULLER", 7, "HEXAGON", 9, nothing),
-    "ISEA4H" => Grid("ISEA4H", "ISEA", 4, "HEXAGON", 9, nothing)
+PresetGridSpecs = Dict(
+    "FULLER7H" => GridSpec("FULLER7H", "FULLER", 7, "HEXAGON", 9),
+    "ISEA4H" => GridSpec("ISEA4H", "ISEA", 4, "HEXAGON", 9)
 )
 
 function Grid(preset::String)
@@ -22,7 +26,9 @@ function Grid(preset::String)
         throw(DomainError("preset must be an any of $(join(GridPresets, ","))"))
     end
 
-    return PresetParams[preset]
+    spec = PresetGridSpecs[preset]
+    data = generate_cells(spec)
+    return Grid(spec, data)
 end
 
 function Grid(projection::String, aperture::Int, topology::String, resolution::Int)
@@ -38,8 +44,7 @@ function Grid(projection::String, aperture::Int, topology::String, resolution::I
         throw(DomainError("Argument topology must be an any of $(join(Topologies, ","))"))
     end
 
-    res = Grid("CUSTOM", projection, aperture, topology, resolution, nothing)
-    res.data = generate_cells(res)
-
-    return res
+    spec = GridSpec("CUSTOM", projection, aperture, topology, resolution)
+    data = generate_cells(spec)
+    return Grid(spec, data)
 end

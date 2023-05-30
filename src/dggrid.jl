@@ -22,10 +22,9 @@ function dg_call(meta::Dict)
     return (tmp_dir)
 end
 
-function generate_cells(grid::Grid)
+function generate_cells(grid::GridSpec)
     meta = Dict(
         "dggrid_operation" => "GENERATE_GRID",
-        "dggs_type" => "ISEA4H",
         "clip_subset_type" => "WHOLE_EARTH",
         "cell_output_type" => "GEOJSON",
         "cell_output_file_name" => "out"

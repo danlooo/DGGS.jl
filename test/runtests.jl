@@ -16,13 +16,15 @@ using GeoJSON
     @test length(GeoJSON.read(open("$(d)/out.geojson"), ndim=3)) == 162
 
     grid = Grid("ISEA4H")
-    @test grid.projection == "ISEA"
-    @test grid.type == "ISEA4H"
-    @test grid.aperture == 4
-    @test grid.resolution == 9
-    @test grid.projection == "ISEA"
-    @test grid.topology == "HEXAGON"
+    @test grid.spec.projection == "ISEA"
+    @test grid.spec.type == "ISEA4H"
+    @test grid.spec.aperture == 4
+    @test grid.spec.resolution == 9
+    @test grid.spec.projection == "ISEA"
+    @test grid.spec.topology == "HEXAGON"
 
     @test_throws DomainError Grid("Foo")
     @test_throws DomainError Grid("ISEA", 100, "HEXAGON", 5)
+
+    grid2 = Grid("ISEA", 4, "HEXAGON", 2)
 end
