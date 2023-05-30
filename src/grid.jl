@@ -1,3 +1,5 @@
+using NearestNeighbors
+
 Projections = ["ISEA", "FULLER"]
 Topologies = ["HEXAGON", "TRIANGLE", "DIAMOND"]
 GridPresets = ["SUPERFUND", "PLANETRISK", "ISEA4T", "ISEA4D", "ISEA3H", "ISEA4H", "ISEA7H", "ISEA43H", "FULLER4T", "FULLER4D", "FULLER3H", "FULLER4H", "FULLER7H", "FULLER43H"]
@@ -48,3 +50,19 @@ function Grid(projection::String, aperture::Int, topology::String, resolution::I
     data = generate_cells(spec)
     return Grid(spec, data)
 end
+
+"Convert geographic corrdinates to cell id"
+function cell_name(grid::Grid, lat::Real, lon::Real)
+    if abs(lat) > 90
+        throw(DomainError("Latitude argument lat must be within [-90, 90]"))
+    end
+
+    if abs(lon) > 180
+        throw(DomainError("Longitude argument lon must be within [-180, 180]"))
+    end
+
+    NearestNeighbors.nn(grid.data, [lat, lon])[1]
+end
+
+"Convert cell id to geographic coordinate of cell center"
+geo_coords(grid::Grid, ids::Vector{Int}) = grid.data.data[ids]
