@@ -9,11 +9,12 @@ struct Grid
     aperture::Int
     topology::String
     resolution::Int
+    data::Any
 end
 
 PresetParams = Dict(
-    "FULLER7H" => Grid("FULLER7H", "FULLER", 7, "HEXAGON", 9),
-    "ISEA4H" => Grid("ISEA4H", "ISEA", 4, "HEXAGON", 9)
+    "FULLER7H" => Grid("FULLER7H", "FULLER", 7, "HEXAGON", 9, nothing),
+    "ISEA4H" => Grid("ISEA4H", "ISEA", 4, "HEXAGON", 9, nothing)
 )
 
 function Grid(preset::String)
@@ -37,5 +38,8 @@ function Grid(projection::String, aperture::Int, topology::String, resolution::I
         throw(DomainError("Argument topology must be an any of $(join(Topologies, ","))"))
     end
 
-    return Grid("CUSTOM", projection, aperture, topology, resolution)
+    res = Grid("CUSTOM", projection, aperture, topology, resolution, nothing)
+    res.data = generate_cells(res)
+
+    return res
 end

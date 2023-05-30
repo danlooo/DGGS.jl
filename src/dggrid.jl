@@ -32,20 +32,19 @@ function generate_cells(grid::Grid)
     )
 
     if Symbol(grid.type) in GridPresets
-        meta["dggs_type"] = grid.type
+        meta["dggs_type"] = string(grid.type)
     else
         meta["dggs_type"] = "CUSTOM"
-        meta["dggs_topology"] = grid.topology
-        meta["dggs_proj"] = grid.projection
-        meta["dggs_res_spec"] = grid.resolution
+        meta["dggs_topology"] = string(grid.topology)
+        meta["dggs_proj"] = string(grid.projection)
+        meta["dggs_res_spec"] = string(grid.resolution)
     end
 
-    dir = dg_call(meta)
+    out_dir = dg_call(meta)
 
-    jsonbytes = read("$(dir)/out.geojson")
-    fc = GeoJSON.read(jsonbytes, ndim=3)
-    df = DataFrame(fc)
+    jsonbytes = read("$(out_dir)/out.geojson")
+    cell_feature_collection = GeoJSON.read(jsonbytes, ndim=3)
+    df = DataFrame(cell_feature_collection)
+    rm(out_dir, recursive=true)
     return (df)
-
-    rm(dir, recursive=true)
 end
