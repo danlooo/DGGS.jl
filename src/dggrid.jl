@@ -53,7 +53,7 @@ function cell_centers(grid_spec::GridSpec)
 
     df = CSV.read("$(out_dir)/centers.txt", DataFrame; header=["name", "lon", "lat"], footerskip=1)
     # KDTree defaults to Euklidean metric
-    # However, should be afetr and monotonous with haversine
+    # However, should be faster and monotonous with haversine
     kd_tree = df[:, 2:3] |> Matrix |> transpose |> KDTree
 
     rm(out_dir, recursive=true)
