@@ -9,7 +9,7 @@ Topologies = ["HEXAGON", "TRIANGLE", "DIAMOND"]
 GridPresets = ["SUPERFUND", "PLANETRISK", "ISEA4T", "ISEA4D", "ISEA3H", "ISEA4H", "ISEA7H", "ISEA43H", "FULLER4T", "FULLER4D", "FULLER3H", "FULLER4H", "FULLER7H", "FULLER43H"]
 Apertures = [3, 4, 7]
 
-function dg_call(meta::Dict)
+function dg_call(meta::Dict; verbose=false)
     meta_string = ""
     for (key, val) in meta
         meta_string *= "$(key) $(val)\n"
@@ -22,7 +22,12 @@ function dg_call(meta::Dict)
 
     DGGRID7_jll.dggrid() do dggrid_path
         cd(tmp_dir)
+        oldstd = stdout
+        if !verbose
+            redirect_stdout(devnull)
+        end
         run(`$dggrid_path $(meta_path)`)
+        redirect_stdout(oldstd)
     end
 
     rm(meta_path)
