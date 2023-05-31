@@ -69,3 +69,4 @@ end
 
 "Convert cell id to geographic coordinate of cell center"
 get_geo_coords(grid::Grid, ids::Vector{Int}) = grid.data.data[ids]
+get_geo_coords(grid::Grid, id::Int) = grid.data.data[id]
