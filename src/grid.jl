@@ -28,7 +28,7 @@ function Grid(preset::String)
     end
 
     spec = PresetGridSpecs[preset]
-    data = get_cell_centers(spec)
+    data = get_grid_data(spec)
     return Grid(spec, data)
 end
 
@@ -50,7 +50,7 @@ function Grid(projection::String, aperture::Int, topology::String, resolution::I
     end
 
     spec = GridSpec("CUSTOM", projection, aperture, topology, resolution)
-    data = get_cell_centers(spec)
+    data = get_grid_data(spec)
     return Grid(spec, data)
 end
 

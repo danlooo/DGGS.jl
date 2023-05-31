@@ -12,7 +12,7 @@ using GeoDataFrames
         "point_output_file_name" => "centers"
     )
 
-    d = dg_call(meta)
+    d = call_dggrid(meta)
     @test isfile("$(d)/centers.txt")
 
     @test_throws DomainError Grid("Foo")
@@ -42,6 +42,6 @@ using GeoDataFrames
 
     @test length(get_geo_coords(grid3, [1, 2, 10])) == 3
 
-    @test grid3.spec |> get_cell_boundaries |> size == (642, 2)
-    @test length(get_cell_centers(grid3.spec).data) == 642
+    @test grid3 |> get_cell_boundaries |> size == (642, 2)
+    @test grid3 |> get_cell_centers |> size == (642, 1)
 end
