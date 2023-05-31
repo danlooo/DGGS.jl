@@ -28,7 +28,7 @@ function Grid(preset::String)
     end
 
     spec = PresetGridSpecs[preset]
-    data = cell_centers(spec)
+    data = get_cell_centers(spec)
     return Grid(spec, data)
 end
 
@@ -48,14 +48,14 @@ function Grid(projection::String, aperture::Int, topology::String, resolution::I
     end
 
     spec = GridSpec("CUSTOM", projection, aperture, topology, resolution)
-    data = cell_centers(spec)
+    data = get_cell_centers(spec)
     return Grid(spec, data)
 end
 
-toyGrid() = Grid("ISEA", 4, "HEXAGON", 3)
+create_toy_grid() = Grid("ISEA", 4, "HEXAGON", 3)
 
 "Convert geographic corrdinates to cell id"
-function cell_name(grid::Grid, lat::Real, lon::Real)
+function get_cell_name(grid::Grid, lat::Real, lon::Real)
     if abs(lat) > 90
         throw(DomainError("Latitude argument lat must be within [-90, 90]"))
     end
@@ -68,4 +68,4 @@ function cell_name(grid::Grid, lat::Real, lon::Real)
 end
 
 "Convert cell id to geographic coordinate of cell center"
-geo_coords(grid::Grid, ids::Vector{Int}) = grid.data.data[ids]
+get_geo_coords(grid::Grid, ids::Vector{Int}) = grid.data.data[ids]

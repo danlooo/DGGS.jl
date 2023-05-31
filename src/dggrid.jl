@@ -21,12 +21,14 @@ function dg_call(meta::Dict; verbose=false)
     write(meta_path, meta_string)
 
     DGGRID7_jll.dggrid() do dggrid_path
+        old_pwd = pwd()
         cd(tmp_dir)
         oldstd = stdout
         if !verbose
             redirect_stdout(devnull)
         end
         run(`$dggrid_path $(meta_path)`)
+        cd(old_pwd)
         redirect_stdout(oldstd)
     end
 
@@ -34,7 +36,7 @@ function dg_call(meta::Dict; verbose=false)
     return (tmp_dir)
 end
 
-function cell_centers(grid_spec::GridSpec)
+function get_cell_centers(grid_spec::GridSpec)
     # represent cells as kd-tree of center points
     # cell center points encode grid tpopology (e.g. hexagon or square) implicitly
     # Fast average search in O(log n) and efficient in batch processing
@@ -65,9 +67,9 @@ function cell_centers(grid_spec::GridSpec)
     return (kd_tree)
 end
 
-cell_centers(grid::Grid) = cell_centers(grid.spec)
+get_cell_centers(grid::Grid) = get_cell_centers(grid.spec)
 
-function cell_boundaries(grid_spec::GridSpec)
+function get_cell_boundaries(grid_spec::GridSpec)
     meta = Dict(
         "dggrid_operation" => "GENERATE_GRID",
         "clip_subset_type" => "WHOLE_EARTH",
@@ -91,4 +93,4 @@ function cell_boundaries(grid_spec::GridSpec)
     return (cell_feature_collection)
 end
 
-cell_boundaries(grid::Grid) = cell_boundaries(grid.spec)
+get_cell_boundaries(grid::Grid) = get_cell_boundaries(grid.spec)
