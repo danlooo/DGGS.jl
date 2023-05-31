@@ -70,5 +70,8 @@ function get_cell_name(grid::Grid, lat::Real, lon::Real)
 end
 
 "Convert cell id to geographic coordinate of cell center"
-get_geo_coords(grid::Grid, id::Int) = get_cell_centers(grid)[id, :geometry]
-# TODO: This is right but extremly slow. Can we infer it from the kd-tree object directly?
+function get_geo_coords(grid::Grid, id::Int)
+    tree_id = findfirst(x -> x == id, grid.data.indices)
+    res = grid.data.data[tree_id]
+    return (res[2], res[1])
+end

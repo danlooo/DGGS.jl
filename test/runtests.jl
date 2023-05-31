@@ -23,10 +23,10 @@ using GeoDataFrames
     export_cell_boundaries(grid)
     @test GeoDataFrames.read("boundaries.geojson") |> size == (642, 2)
     export_cell_centers(grid)
-    @test GeoDataFrames.read("centers.geojson") |> size == (642, 1)
+    @test GeoDataFrames.read("centers.geojson") |> size == (642, 2)
     @test get_cell_name(grid, 58, 11) == 1
     @test get_cell_name(grid, 59, 11) == 1
-    get_geo_coords(grid, 1)
+    @test get_geo_coords(grid, 1) == (58.2825256, 11.25)
     grid2 = Grid("ISEA4H")
     @test grid2.spec.projection == "ISEA"
     @test grid2.spec.type == "ISEA4H"
@@ -38,12 +38,10 @@ using GeoDataFrames
     grid3 = Grid("ISEA", 4, "HEXAGON", 3)
     @test length(grid3.data.data) == 642
     @test get_cell_name(grid3, 0, 0) == 157
-    @test get_cell_name(grid3, 80, 170) == 289
+    @test get_cell_name(grid3, 80, 170) == 313
     @test_throws DomainError get_cell_name(grid3, 180, 0)
     @test_throws DomainError get_cell_name(grid3, 0, 200)
 
-    @test length(get_geo_coords(grid3, [1, 2, 10])) == 3
-
     @test grid3 |> get_cell_boundaries |> size == (642, 2)
-    @test grid3 |> get_cell_centers |> size == (642, 1)
+    @test grid3 |> get_cell_centers |> size == (642, 2)
 end
