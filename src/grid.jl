@@ -13,6 +13,10 @@ struct Grid
     data::Any
 end
 
+function Base.show(io::IO, ::MIME"text/plain", grid::Grid)
+    println(io, "DGGS Grid with $(grid.spec.topology) topology, $(grid.spec.projection) projection, apterture of $(grid.spec.aperture), and $(length(grid.data.data)) cells")
+end
+
 PresetGridSpecs = Dict(
     "FULLER7H" => GridSpec("FULLER7H", "FULLER", 7, "HEXAGON", 9),
     "ISEA4H" => GridSpec("ISEA4H", "ISEA", 4, "HEXAGON", 9)
