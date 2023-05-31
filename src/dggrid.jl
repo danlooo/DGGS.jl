@@ -2,7 +2,9 @@ using DGGRID7_jll
 using NearestNeighbors
 using CSV
 using DataFrames
-using GeoJSON
+using ArchGDAL
+using GeoDataFrames
+using GeoFormatTypes
 
 Projections = ["ISEA", "FULLER"]
 Topologies = ["HEXAGON", "TRIANGLE", "DIAMOND"]
@@ -69,6 +71,16 @@ end
 
 get_cell_centers(grid::Grid) = get_cell_centers(grid.spec)
 
+function export_cell_centers(grid::Grid; filepath::String="centers.geojson")
+    # Using ArchGDAL directly results in segfaults and code would be more complex
+    geometry = Vector{ArchGDAL.IGeometry}(undef, length(grid))
+    for i in eachindex(grid.data.data)
+        geometry[i] = ArchGDAL.createpoint(grid.data.data[i][1], grid.data.data[i][2])
+    end
+    df = DataFrame(geometry=geometry)
+    GeoDataFrames.write(filepath, df, crs=GeoFormatTypes.EPSG(4326))
+end
+
 function get_cell_boundaries(grid_spec::GridSpec)
     meta = Dict(
         "dggrid_operation" => "GENERATE_GRID",
@@ -87,10 +99,14 @@ function get_cell_boundaries(grid_spec::GridSpec)
     end
 
     out_dir = dg_call(meta)
-    jsonbytes = read("$(out_dir)/boundaries.geojson")
-    cell_feature_collection = GeoJSON.read(jsonbytes, ndim=3)
+    df = GeoDataFrames.read("$(out_dir)/boundaries.geojson")
     rm(out_dir, recursive=true)
-    return (cell_feature_collection)
+    return df
 end
 
 get_cell_boundaries(grid::Grid) = get_cell_boundaries(grid.spec)
+
+function export_cell_boundaries(grid::Grid; filepath::String="boundaries.geojson")
+    boundaries = get_cell_boundaries(grid)
+    GeoDataFrames.write(filepath, boundaries)
+end

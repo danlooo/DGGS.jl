@@ -32,6 +32,8 @@ function Grid(preset::String)
     return Grid(spec, data)
 end
 
+Base.length(grid::Grid) = Base.length(grid.data.data)
+
 Grid() = Grid("ISEA4H")
 
 function Grid(projection::String, aperture::Int, topology::String, resolution::Int)
