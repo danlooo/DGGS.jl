@@ -9,6 +9,7 @@ DGGS.jl is a Julia Package for scalable geospatial analysis using Discrete Globa
 
 ## Get Started
 
+DGGS.jl currently only officially supports Julia 1.9 running on a 64bit Linux machine.
 This package can be installed in Julia with the following commands:
 
 ```Julia
