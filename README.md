@@ -13,7 +13,15 @@ This package can be installed in Julia with the following commands:
 
 ```Julia
 using Pkg
-Pkg.add("DGGS")
+Pkg.add(url="https://github.com/danlooo/DGGS.jl.git")
+```
+
+Create a simple grid:
+
+```julia
+using DGGS
+grid = create_toy_grid()
+# DGGS Grid with HEXAGON topology, ISEA projection, apterture of 4, and 642 cells
 ```
 
 ## Development
