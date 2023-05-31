@@ -24,7 +24,9 @@ using GeoDataFrames
     @test GeoDataFrames.read("boundaries.geojson") |> size == (642, 2)
     export_cell_centers(grid)
     @test GeoDataFrames.read("centers.geojson") |> size == (642, 1)
-
+    @test get_cell_name(grid, 58, 11) == 1
+    @test get_cell_name(grid, 59, 11) == 1
+    get_geo_coords(grid, 1)
     grid2 = Grid("ISEA4H")
     @test grid2.spec.projection == "ISEA"
     @test grid2.spec.type == "ISEA4H"

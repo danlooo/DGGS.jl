@@ -29,8 +29,9 @@ Convert between cell id and geographic coordinates:
 
 ```
 get_cell_name(grid, 80, -170)
-# 483
-get_geo_coords(grid, 483)
+# 5
+get_geo_coords(grid, 5)
+# Geometry: POINT (-168.75 81.8823154)
 ```
 
 ## Development

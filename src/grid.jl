@@ -66,9 +66,9 @@ function get_cell_name(grid::Grid, lat::Real, lon::Real)
         throw(DomainError("Longitude argument lon must be within [-180, 180]"))
     end
 
-    NearestNeighbors.nn(grid.data, [lat, lon])[1]
+    NearestNeighbors.nn(grid.data, [lon, lat])[1]
 end
 
 "Convert cell id to geographic coordinate of cell center"
-get_geo_coords(grid::Grid, ids::Vector{Int}) = grid.data.data[ids]
-get_geo_coords(grid::Grid, id::Int) = grid.data.data[id]
+get_geo_coords(grid::Grid, id::Int) = get_cell_centers(grid)[id, :geometry]
+# TODO: This is right but extremly slow. Can we infer it from the kd-tree object directly?
