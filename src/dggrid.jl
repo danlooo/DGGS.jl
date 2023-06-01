@@ -120,7 +120,7 @@ function export_cell_boundaries(grid::Grid; filepath::String="boundaries.geojson
 end
 
 
-function get_cell_id(grid_spec::GridSpec, lat_range::AbstractVector, lon_range::AbstractVector)
+function get_cell_ids(grid_spec::GridSpec, lat_range::AbstractVector, lon_range::AbstractVector)
     # TODO: Add check if grid is of type DGGRID 
 
     points_path = tempname()
@@ -150,4 +150,4 @@ function get_cell_id(grid_spec::GridSpec, lat_range::AbstractVector, lon_range::
     return cell_ids
 end
 
-get_cell_id(grid::Grid, lat_range::AbstractVector, lon_range::AbstractVector) = get_cell_id(grid.spec, lat_range, lon_range)
+get_cell_ids(grid::Grid, lat_range::AbstractVector, lon_range::AbstractVector) = get_cell_ids(grid.spec, lat_range, lon_range)
