@@ -27,6 +27,7 @@ using GeoDataFrames
     @test get_cell_name(grid, 58, 11) == 1
     @test get_cell_name(grid, 59, 11) == 1
     @test get_geo_coords(grid, 1) == (58.2825256, 11.25)
+
     grid2 = Grid("ISEA4H")
     @test grid2.spec.projection == "ISEA"
     @test grid2.spec.type == "ISEA4H"
