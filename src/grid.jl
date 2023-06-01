@@ -57,7 +57,7 @@ end
 create_toy_grid() = Grid("ISEA", 4, "HEXAGON", 3)
 
 "Convert geographic corrdinates to cell id"
-function get_cell_name(grid::Grid, lat::Real, lon::Real)
+function get_cell_id(grid::Grid, lat::Real, lon::Real)
     if abs(lat) > 90
         throw(DomainError("Latitude argument lat must be within [-90, 90]"))
     end

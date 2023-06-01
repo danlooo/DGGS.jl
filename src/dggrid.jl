@@ -78,8 +78,8 @@ function get_cell_centers(grid::Grid)
     for i in eachindex(grid.data.data)
         geometry[i] = ArchGDAL.createpoint(grid.data.data[i][1], grid.data.data[i][2])
     end
-    df = DataFrame(geometry=geometry, cell_name=grid.data.indices)
-    sort!(df, :cell_name)
+    df = DataFrame(geometry=geometry, cell_id=grid.data.indices)
+    sort!(df, :cell_id)
     return df
 end
 
@@ -107,7 +107,7 @@ function get_cell_boundaries(grid_spec::GridSpec)
 
     out_dir = call_dggrid(meta)
     df = GeoDataFrames.read("$(out_dir)/boundaries.geojson")
-    rename!(df, [:geometry, :cell_name])
+    rename!(df, [:geometry, :cell_id])
     rm(out_dir, recursive=true)
     return df
 end
