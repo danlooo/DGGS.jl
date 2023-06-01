@@ -118,3 +118,36 @@ function export_cell_boundaries(grid::Grid; filepath::String="boundaries.geojson
     boundaries = get_cell_boundaries(grid)
     GeoDataFrames.write(filepath, boundaries)
 end
+
+
+function get_cell_id(grid_spec::GridSpec, lat_range::AbstractVector, lon_range::AbstractVector)
+    # TODO: Add check if grid is of type DGGRID 
+
+    points_path = tempname()
+    points_string = ""
+    for lat in lat_range
+        for lon in lon_range
+            points_string *= "$(lat),$(lon)\n"
+        end
+    end
+    write(points_path, points_string)
+
+    meta = Dict(
+        "dggrid_operation" => "TRANSFORM_POINTS", "dggs_type" => grid_spec.type,
+        "dggs_topology" => grid_spec.topology,
+        "dggs_proj" => grid_spec.projection,
+        "dggs_res_spec" => grid_spec.resolution, "input_file_name" => points_path,
+        "input_address_type" => "GEO",
+        "input_delimiter" => "\",\"", "output_file_name" => "cell_ids.csv",
+        "output_address_type" => "SEQNUM",
+        "output_delimiter" => "\",\"",
+    )
+
+    out_dir = call_dggrid(meta; verbose=true)
+    cell_ids = CSV.read("$(out_dir)/cell_ids.csv", DataFrame; header=["cell_id"]).cell_id
+    rm(out_dir, recursive=true)
+    rm(points_path)
+    return cell_ids
+end
+
+get_cell_id(grid::Grid, lat_range::AbstractVector, lon_range::AbstractVector) = get_cell_id(grid.spec, lat_range, lon_range)
