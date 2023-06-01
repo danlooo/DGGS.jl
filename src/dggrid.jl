@@ -143,7 +143,7 @@ function get_cell_id(grid_spec::GridSpec, lat_range::AbstractVector, lon_range::
         "output_delimiter" => "\",\"",
     )
 
-    out_dir = call_dggrid(meta; verbose=true)
+    out_dir = call_dggrid(meta)
     cell_ids = CSV.read("$(out_dir)/cell_ids.csv", DataFrame; header=["cell_id"]).cell_id
     rm(out_dir, recursive=true)
     rm(points_path)
