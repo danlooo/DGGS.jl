@@ -14,6 +14,7 @@ LibExpat = "522f3ed2-3f36-55e3-b6df-e94fee9b0c07"
 NearestNeighbors = "b8a86587-4115-5ab1-83bc-aa920d37bbce"
 
 [compat]
+NearestNeighbors = "0.4"
 julia = "1.1"
 
 [extras]
