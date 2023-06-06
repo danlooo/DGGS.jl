@@ -15,7 +15,13 @@ NearestNeighbors = "b8a86587-4115-5ab1-83bc-aa920d37bbce"
 
 [compat]
 GeoFormatTypes = "0.4"
-julia = "1.1"
+DataFrames = "1"
+NearestNeighbors = "0.4"
+CSV = "0.10"
+ArchGDAL = "0.10"
+LibExpat = "0.6"
+GeoDataFrames = "0.3"
+julia = "1.6"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
