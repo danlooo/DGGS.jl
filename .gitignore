@@ -4,3 +4,4 @@
 /docs/build/
 test/examples/**
 *.geojson
+.vscode

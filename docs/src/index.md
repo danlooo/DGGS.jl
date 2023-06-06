@@ -2,22 +2,29 @@
 CurrentModule = DGGS
 ```
 
-# DGGS
+# DGGS.jl: A Discrete Global Grid System for Julia 
 
 Documentation for [DGGS](https://github.com/danlooo/DGGS.jl).
 
-```@index
-```
+DGGS.jl is a Julia Package for scalable geospatial analysis using Discrete Global Grid Systems (DGGS), which tessellate the surface of the earth with hierarchical cells of equal area, minimizing distortion and loading time of large geospatial datasets, which is crucial in spatial statistics and building Machine Learning models.
 
-```@autodocs
-Modules = [DGGS]
-```
-
-# Get Started
+## Get Started
 
 Install DGGS.jl:
 
-```{julia}
+```julia
 using Pkg
 Pkg.add("DGGS")
+```
+
+Create a simple grid:
+
+```julia
+using DGGS
+grid = create_toy_grid()
+```
+
+## API
+
+```@index
 ```

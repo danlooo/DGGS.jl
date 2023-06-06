@@ -1,6 +1,6 @@
 # Tutorial
 
-## Create a grid
+## Explore the grid
 
 Let's create our first grid from a preset:
 
@@ -8,8 +8,6 @@ Let's create our first grid from a preset:
 using DGGS
 grid = create_toy_grid()
 ```
-
-## Explore the grid
 
 Create a data frame containing the center point or boundary polygon for all cells of the grid:
 
@@ -27,9 +25,7 @@ using GeoDataFrames
 GeoDataFrames.write("boundaries.geojson", boundaries)
 ```
 
-## Convert points
-
-Convert between cell id and geographic coordinates:
+Convert points between cell id and geographic coordinates:
 
 ```@example 1
 get_cell_ids(grid, 80, -170)
@@ -41,7 +37,7 @@ and vice versa:
 get_geo_coords(grid, 5)
 ```
 
-## Convert data cube
+## Convert a data cube
 
 A data cube is an n-dimensional array in which we have a value for each possible combination of indices, e.g., a temperature value for each geographical coordinate and also for each time point.
 Here, [YAXArrays](https://juliadatacubes.github.io/YAXArrays.jl/dev/) is used to represent the data cube.
