@@ -25,6 +25,8 @@ grid = create_toy_grid()
 # DGGS Grid with HEXAGON topology, ISEA projection, apterture of 4, and 642 cells
 ```
 
+Checkout the [tutorial](https://danlooo.github.io/DGGS.jl/dev/tutorial/) for further examples.
+
 ## Development
 
 This project is based on [DGGRID](https://github.com/sahrk/DGGRID).
