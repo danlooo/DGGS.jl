@@ -1,6 +1,7 @@
 using DGGS
 using Test
 using GeoDataFrames
+using YAXArrays
 
 @testset "DGGS.jl" begin
     meta = Dict(
@@ -27,6 +28,10 @@ using GeoDataFrames
     @test get_cell_ids(grid, 58, 11) == 1
     @test get_cell_ids(grid, 59, 11) == 1
     @test get_geo_coords(grid, 1) == (58.2825256, 11.25)
+
+    geo_cube = Cube("tos_O1_2001-2002.nc")
+    cell_cube = get_cell_cube(grid, geo_cube, "Y", "X")
+    @test cell_cube.cell_id |> length == 642
 
     grid2 = Grid("ISEA4H")
     @test grid2.spec.projection == "ISEA"

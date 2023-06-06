@@ -12,15 +12,16 @@ GeoDataFrames = "62cb38b5-d8d2-4862-a48e-6a340996859f"
 GeoFormatTypes = "68eda718-8dee-11e9-39e7-89f7f65f511f"
 LibExpat = "522f3ed2-3f36-55e3-b6df-e94fee9b0c07"
 NearestNeighbors = "b8a86587-4115-5ab1-83bc-aa920d37bbce"
+YAXArrays = "c21b50f5-aa40-41ea-b809-c0f5e47bfa5c"
 
 [compat]
-GeoFormatTypes = "0.4"
-DataFrames = "1"
-NearestNeighbors = "0.4"
-CSV = "0.10"
 ArchGDAL = "0.10"
-LibExpat = "0.6"
+CSV = "0.10"
+DataFrames = "1"
 GeoDataFrames = "0.3"
+GeoFormatTypes = "0.4"
+LibExpat = "0.6"
+NearestNeighbors = "0.4"
 julia = "1.6"
 
 [extras]

@@ -27,7 +27,9 @@ using GeoDataFrames
 GeoDataFrames.write("boundaries.geojson", boundaries)
 ```
 
-## Convert between cell id and geographic coordinates
+## Convert points
+
+Convert between cell id and geographic coordinates:
 
 ```@example 1
 get_cell_ids(grid, 80, -170)
@@ -37,4 +39,28 @@ and vice versa:
 
 ```@example 1
 get_geo_coords(grid, 5)
+```
+
+## Convert data cube
+
+A data cube is an n-dimensional array in which we have a value for each possible combination of indices, e.g., a temperature value for each geographical coordinate and also for each time point.
+Here, [YAXArrays](https://juliadatacubes.github.io/YAXArrays.jl/dev/) is used to represent the data cube.
+
+Create a data cube with geographical coordinates using YAXArrays:
+
+```@example 2
+using YAXArrays, NetCDF
+using Downloads
+url = "https://www.unidata.ucar.edu/software/netcdf/examples/tos_O1_2001-2002.nc"
+filename = Downloads.download(url, "tos_O1_2001-2002.nc") # you pick your own path
+geo_cube = Cube(filename)
+```
+
+Indeed, we have both longitude and latitude as spatial index dimensions.
+Now we can define a grid and create a new data cube `cell_cube` having just the cell id as a single spatial index dimension in accordance to the created grid:
+
+```@example 2
+using DGGS
+grid = Grid("ISEA", 4, "HEXAGON", 3)
+cell_cube = get_cell_cube(grid, geo_cube, "lat", "lon")
 ```
