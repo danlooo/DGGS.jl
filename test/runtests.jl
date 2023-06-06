@@ -24,8 +24,8 @@ using GeoDataFrames
     @test GeoDataFrames.read("boundaries.geojson") |> size == (642, 2)
     export_cell_centers(grid)
     @test GeoDataFrames.read("centers.geojson") |> size == (642, 2)
-    @test get_cell_id(grid, 58, 11) == 1
-    @test get_cell_id(grid, 59, 11) == 1
+    @test get_cell_ids(grid, 58, 11) == 1
+    @test get_cell_ids(grid, 59, 11) == 1
     @test get_geo_coords(grid, 1) == (58.2825256, 11.25)
 
     grid2 = Grid("ISEA4H")
@@ -39,11 +39,11 @@ using GeoDataFrames
     grid3 = Grid("ISEA", 4, "HEXAGON", 3)
     @test length(grid3.data.data) == 642
 
-    @test get_cell_id(grid3, 0, 0) == 157
-    @test get_cell_id(grid3, 80, 170) == 313
-    @test_throws DomainError get_cell_id(grid3, 180, 0)
-    @test_throws DomainError get_cell_id(grid3, 0, 200)
-    @test get_cell_id(grid3, -90:5:90, -180:5:180) |> length == 2701
+    @test get_cell_ids(grid3, 0, 0) == 157
+    @test get_cell_ids(grid3, 80, 170) == 313
+    @test_throws DomainError get_cell_ids(grid3, 180, 0)
+    @test_throws DomainError get_cell_ids(grid3, 0, 200)
+    @test get_cell_ids(grid3, -90:5:90, -180:5:180) |> length == 2701
 
     @test grid3 |> get_cell_boundaries |> size == (642, 2)
     @test grid3 |> get_cell_centers |> size == (642, 2)
