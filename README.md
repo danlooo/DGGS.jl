@@ -25,15 +25,6 @@ grid = create_toy_grid()
 # DGGS Grid with HEXAGON topology, ISEA projection, apterture of 4, and 642 cells
 ```
 
-Convert between cell id and geographic coordinates:
-
-```
-get_cell_id(grid, 80, -170)
-# 5
-get_geo_coords(grid, 5)
-# (81.8823154, -168.75)
-```
-
 ## Development
 
 This project is based on [DGGRID](https://github.com/sahrk/DGGRID).

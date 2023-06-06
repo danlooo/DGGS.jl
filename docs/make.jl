@@ -12,14 +12,15 @@ makedocs(;
         prettyurls=get(ENV, "CI", "false") == "true",
         canonical="https://danlooo.github.io/DGGS.jl",
         edit_link="main",
-        assets=String[],
+        assets=String[]
     ),
     pages=[
         "Home" => "index.md",
-    ],
+        "Tutorial" => "tutorial.md"
+    ]
 )
 
 deploydocs(;
     repo="github.com/danlooo/DGGS.jl",
-    devbranch="main",
+    devbranch="main"
 )
