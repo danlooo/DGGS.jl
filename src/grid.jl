@@ -29,7 +29,7 @@ function Grid(preset::String)
     end
 
     spec = PresetGridSpecs[preset]
-    data = get_grid_data(spec)
+    data = spec |> get_grid_data |> get_kd_tree
     return Grid(spec, data)
 end
 
@@ -51,8 +51,15 @@ function Grid(projection::String, aperture::Int, topology::String, resolution::I
     end
 
     spec = GridSpec("CUSTOM", projection, aperture, topology, resolution)
-    data = get_grid_data(spec)
+    data = spec |> get_grid_data |> get_kd_tree
     return Grid(spec, data)
+end
+
+function get_kd_tree(df)
+    # KDTree defaults to Euklidean metric
+    # However, should be faster than haversine and return same indices
+    kd_tree = df[:, 2:3] |> Matrix |> transpose |> KDTree
+    return kd_tree
 end
 
 create_toy_grid() = Grid("ISEA", 4, "HEXAGON", 3)
@@ -104,3 +111,14 @@ function get_cell_cube(grid_spec::GridSpec, geo_cube::YAXArray, latitude_name="l
     return cell_cube
 end
 get_cell_cube(grid::Grid, geo_cube::YAXArray, latitude_name, longitude_name) = get_cell_cube(grid.spec, geo_cube::YAXArray, latitude_name, longitude_name)
+
+"""
+Export cell data cube into a traditional geographical one
+
+Transforms a data cube with one spatial index dimensions, i. e., the cell id,
+into a traditional geographical data cube with two spatial index dimensions longitude and latitude.
+Re-gridding is done by putting the cell value into the center point of its cell.
+"""
+function get_geo_cube(grid_spec::GridSpec, cell_cube::YAXArray)
+    grid_points = get_grid_data(grid_spec)
+end
