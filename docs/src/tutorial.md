@@ -69,3 +69,52 @@ Vice versa, we can also transform a cell cube back to a geographical one:
 geo_cube_2 = get_geo_cube(grid, cell_cube)
 geo_cube_2
 ```
+
+## Plot a cell data cube
+
+The cell data cube can be visualized with the cells plotted as a choropleth map.
+Cell boundaries can be drawn as shapes.
+Lets start by importing a cell data cube from a NetCDF file:
+
+```@example 3
+# create the grid
+using DGGS
+grid = create_toy_grid()
+boundaries = get_cell_boundaries(grid)
+
+# create the cell cube
+using YAXArrays, NetCDF
+using Downloads
+url = "https://www.unidata.ucar.edu/software/netcdf/examples/tos_O1_2001-2002.nc"
+filename = Downloads.download(url, "tos_O1_2001-2002.nc") # you pick your own path
+geo_cube = Cube(filename)
+cell_cube = get_cell_cube(grid, geo_cube, "lat", "lon")
+```
+
+Now we can export the cell boundary polygons and use [GeoMakie](https://geo.makie.org/stable/) for plotting:
+
+```@example 3
+using GeoDataFrames, GeoJSON, GeoMakie, CairoMakie
+
+boundaries_path = "boundaries.geojson"
+GeoDataFrames.write(boundaries_path, boundaries)
+boundaries_fc = GeoJSON.read(read(boundaries_path))
+
+fig = Figure(resolution = (1200,800), fontsize = 22)
+
+ax = GeoAxis(
+    fig[1,1];
+    dest = "+proj=wintri",
+    title = "DGGS",
+    tellheight = true,
+)
+
+hm2 = poly!(
+    ax, boundaries_fc;
+    color = cell_cube.data,
+    colormap = Reverse(:plasma),
+    strokecolor = :blue,
+    strokewidth = 0.25
+)
+fig
+```
