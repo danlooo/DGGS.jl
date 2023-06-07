@@ -50,6 +50,7 @@ using Downloads
 url = "https://www.unidata.ucar.edu/software/netcdf/examples/tos_O1_2001-2002.nc"
 filename = Downloads.download(url, "tos_O1_2001-2002.nc") # you pick your own path
 geo_cube = Cube(filename)
+geo_cube
 ```
 
 Indeed, we have both longitude and latitude as spatial index dimensions.
@@ -59,4 +60,12 @@ Now we can define a grid and create a new data cube `cell_cube` having just the 
 using DGGS
 grid = Grid("ISEA", 4, "HEXAGON", 3)
 cell_cube = get_cell_cube(grid, geo_cube, "lat", "lon")
+cell_cube
+```
+
+Vice versa, we can also transform a cell cube back to a geographical one:
+
+```@example 2
+geo_cube_2 = get_geo_cube(grid, cell_cube)
+geo_cube_2
 ```

@@ -1,5 +1,8 @@
 using NearestNeighbors
 using YAXArrays
+using Interpolations
+using Statistics
+using LinearAlgebra
 
 struct GridSpec
     type::String
@@ -117,8 +120,32 @@ Export cell data cube into a traditional geographical one
 
 Transforms a data cube with one spatial index dimensions, i. e., the cell id,
 into a traditional geographical data cube with two spatial index dimensions longitude and latitude.
-Re-gridding is done by putting the cell value into the center point of its cell.
+Re-gridding is done by mapping the cell value into the center point of its cell.
+Interpolation of values is performed, because grid cells on the same meridian may have different latitudes.
 """
 function get_geo_cube(grid_spec::GridSpec, cell_cube::YAXArray)
-    grid_points = get_grid_data(grid_spec)
+    df = get_grid_data(grid_spec)
+    df.value = cell_cube.data
+    sort!(df, [:lon, :lat])
+    itp = linear_interpolation((sort(df.lon), sort(df.lat)), Diagonal(df.value))
+
+    itr_lon = minimum(df.lon):2:maximum(df.lon)
+    itr_lat = minimum(df.lat):2:maximum(df.lat)
+
+    regridded_matrix = Array{Float64}(undef, length(itr_lon), length(itr_lat))
+    for (lon_i, lon_val) in enumerate(itr_lon)
+        for (lat_i, lat_val) in enumerate(itr_lat)
+            regridded_matrix[lon_i, lat_i] = itp(lon_val, lat_val)
+        end
+    end
+
+    axlist = [
+        RangeAxis("lon", itr_lon),
+        RangeAxis("lat", itr_lat)
+    ]
+
+    cube = YAXArray(axlist, regridded_matrix)
+    return cube
 end
+
+get_geo_cube(grid::Grid, cell_cube::YAXArray) = get_geo_cube(grid.spec, cell_cube)
