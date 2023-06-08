@@ -11,6 +11,9 @@ Topologies = ["HEXAGON", "TRIANGLE", "DIAMOND"]
 GridPresets = ["SUPERFUND", "PLANETRISK", "ISEA4T", "ISEA4D", "ISEA3H", "ISEA4H", "ISEA7H", "ISEA43H", "FULLER4T", "FULLER4D", "FULLER3H", "FULLER4H", "FULLER7H", "FULLER43H"]
 Apertures = [3, 4, 7]
 
+"""
+Execute sytem call of DGGRID binary
+"""
 function call_dggrid(meta::Dict; verbose=false)
     meta_string = ""
     for (key, val) in meta
@@ -38,10 +41,10 @@ function call_dggrid(meta::Dict; verbose=false)
     return (tmp_dir)
 end
 
+"""
+Get a DataFrame of cell center points
+"""
 function get_grid_data(grid_spec::GridSpec)
-    # represent cells as kd-tree of center points
-    # cell center points encode grid tpopology (e.g. hexagon or square) implicitly
-    # Fast average search in O(log n) and efficient in batch processing
     meta = Dict(
         "dggrid_operation" => "GENERATE_GRID",
         "clip_subset_type" => "WHOLE_EARTH",
@@ -83,6 +86,9 @@ function export_cell_centers(grid::Grid; filepath::String="centers.geojson")
     GeoDataFrames.write(filepath, df)
 end
 
+"""
+Get a GeoDataFrame with boundary polygons for each cell
+"""
 function get_cell_boundaries(grid_spec::GridSpec)
     meta = Dict(
         "dggrid_operation" => "GENERATE_GRID",
@@ -115,9 +121,10 @@ function export_cell_boundaries(grid::Grid; filepath::String="boundaries.geojson
 end
 
 
+"""
+Transform geographical coordinates into cell ids
+"""
 function get_cell_ids(grid_spec::GridSpec, lat_range::AbstractVector, lon_range::AbstractVector)
-    # TODO: Add check if grid is of type DGGRID 
-
     points_path = tempname()
     points_string = ""
     for lat in lat_range

@@ -3,7 +3,11 @@ using YAXArrays
 using Interpolations
 using Statistics
 using LinearAlgebra
+using DataFrames
 
+"""
+Specification of a grid as defined by DGGRID
+"""
 struct GridSpec
     type::String
     projection::String
@@ -12,20 +16,29 @@ struct GridSpec
     resolution::Int
 end
 
+"""
+A grid as defined by DGGRID with the actual grid points
+"""
 struct Grid
     spec::GridSpec
-    data::Any
+    data::KDTree
 end
 
 function Base.show(io::IO, ::MIME"text/plain", grid::Grid)
     println(io, "DGGS Grid with $(grid.spec.topology) topology, $(grid.spec.projection) projection, apterture of $(grid.spec.aperture), and $(length(grid.data.data)) cells")
 end
 
+"""
+DGGRID grid presets
+"""
 PresetGridSpecs = Dict(
     "FULLER7H" => GridSpec("FULLER7H", "FULLER", 7, "HEXAGON", 9),
     "ISEA4H" => GridSpec("ISEA4H", "ISEA", 4, "HEXAGON", 9)
 )
 
+"""
+Create a grid using DGGRID preset
+"""
 function Grid(preset::String)
     if !(preset in GridPresets)
         throw(DomainError("preset must be an any of $(join(GridPresets, ","))"))
@@ -40,6 +53,9 @@ Base.length(grid::Grid) = Base.length(grid.data.data)
 
 Grid() = Grid("ISEA4H")
 
+"""
+Create a grid using DGGRID parameters
+"""
 function Grid(projection::String, aperture::Int, topology::String, resolution::Int)
     if !(projection in Projections)
         throw(DomainError("Argument projection must be an any of $(join(Projections, ","))"))
@@ -58,16 +74,23 @@ function Grid(projection::String, aperture::Int, topology::String, resolution::I
     return Grid(spec, data)
 end
 
-function get_kd_tree(df)
+"""
+represent cell table as kd-tree of center points
+"""
+function get_kd_tree(df::DataFrame; longitude_col=:lon, latitude_col=:lat)
+    # cell center points encode grid tpopology (e.g. hexagon or square) implicitly
+    # Fast average search in O(log n) and efficient in batch processing
     # KDTree defaults to Euklidean metric
     # However, should be faster than haversine and return same indices
-    kd_tree = df[:, 2:3] |> Matrix |> transpose |> KDTree
+    kd_tree = df[:, [longitude_col, latitude_col]] |> Matrix |> transpose |> KDTree
     return kd_tree
 end
 
 create_toy_grid() = Grid("ISEA", 4, "HEXAGON", 3)
 
-"Convert geographic corrdinates to cell id"
+"""
+Convert geographic corrdinates to cell id
+"""
 function get_cell_ids(grid::Grid, lat::Real, lon::Real)
     if abs(lat) > 90
         throw(DomainError("Latitude argument lat must be within [-90, 90]"))
@@ -80,7 +103,9 @@ function get_cell_ids(grid::Grid, lat::Real, lon::Real)
     NearestNeighbors.nn(grid.data, [lon, lat])[1]
 end
 
-"Convert cell id to geographic coordinate of cell center"
+"""
+Convert cell id to geographic coordinate of cell center
+"""
 function get_geo_coords(grid::Grid, id::Int)
     tree_id = findfirst(x -> x == id, grid.data.indices)
     res = grid.data.data[tree_id]
@@ -113,6 +138,7 @@ function get_cell_cube(grid_spec::GridSpec, geo_cube::YAXArray, latitude_name="l
     cell_cube = YAXArray(axlist, cell_cube_vector)
     return cell_cube
 end
+
 get_cell_cube(grid::Grid, geo_cube::YAXArray, latitude_name, longitude_name) = get_cell_cube(grid.spec, geo_cube::YAXArray, latitude_name, longitude_name)
 
 """
