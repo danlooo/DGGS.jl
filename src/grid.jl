@@ -175,3 +175,36 @@ function get_geo_cube(grid_spec::GridSpec, cell_cube::YAXArray)
 end
 
 get_geo_cube(grid::Grid, cell_cube::YAXArray) = get_geo_cube(grid.spec, cell_cube)
+
+"""
+Create a grid system of different resolutions
+"""
+function create_grids(projection::String, topology::String, n_resolutions::Int)
+    grids = [Grid(projection, 4, topology, resolution) for resolution in 0:n_resolutions-1]
+    return grids
+end
+
+"""
+Get id of parent cell
+"""
+function get_parent_cell_id(grids::Vector{Grid}, resolution::Int, cell_id::Int)
+    if resolution == 1
+        error("Lowest rosolutio can not have any further parents")
+    end
+
+    parent_resolution = resolution - 1
+    geo_coord = get_geo_coords(grids[resolution], cell_id)
+    parent_cell_id = get_cell_ids(grids[parent_resolution], geo_coord[1], geo_coord[2])
+    return parent_cell_id
+end
+
+"""
+Get ids of all child cells
+"""
+function get_children_cell_ids(grids::Vector{Grid}, resolution::Int, cell_id::Int)
+    if resolution == length(grids)
+        error("Highest resolution can not have any further children")
+    end
+    parent_cell_ids = get_parent_cell_id.(Ref(grids), resolution + 1, 1:length(grids[resolution+1].data.data))
+    findall(x -> x == cell_id, parent_cell_ids)
+end
