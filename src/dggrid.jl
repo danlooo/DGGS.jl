@@ -93,8 +93,10 @@ function get_cell_boundaries(grid_spec::GridSpec)
     meta = Dict(
         "dggrid_operation" => "GENERATE_GRID",
         "clip_subset_type" => "WHOLE_EARTH",
-        "cell_output_type" => "GEOJSON",
-        "cell_output_file_name" => "boundaries"
+        # use GDAL geojson, see https://github.com/sahrk/DGGRID/issues/4
+        "cell_output_type" => "GDAL",
+        "cell_output_gdal_format" => "GeoJSON",
+        "cell_output_file_name" => "boundaries.geojson"
     )
 
     if Symbol(grid_spec.type) in GridPresets
