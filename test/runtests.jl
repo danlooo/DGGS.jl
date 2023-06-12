@@ -59,7 +59,7 @@ using YAXArrays
     @test get_children_cell_ids(grids, 1, 4) == [9, 10, 11, 12, 27]
     @test get_parent_cell_id(grids, 2, 27) == 4
     # going back and forth must return the same cell id 4 again
-    @test get_parent_cell_id.(Ref(grids), 2, get_children_cel_ids(grids, 1, 4)) == fill(4, 5)
+    @test get_parent_cell_id.(Ref(grids), 2, get_children_cell_ids(grids, 1, 4)) == fill(4, 5)
 
     dggs = GridSystem(geo_cube, "ISEA", 4, "HEXAGON", 3; latitude_name="Y", longitude_name="X")
     @test dggs.data |> last |> size == (162,)
