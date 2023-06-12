@@ -119,7 +119,7 @@ Transforms a data cube with spatial index dimensions longitude and latitude
 into a data cube with the cell id as a single spatial index dimension.
 Re-gridding is done using the average value of all geographical coordinates belonging to a particular cell defined by the grid specification `grid_spec`.
 """
-function get_cell_cube(grid_spec::GridSpec, geo_cube::YAXArray, latitude_name="lat", longitude_name="lon")
+function get_cell_cube(grid_spec::GridSpec, geo_cube::YAXArray; latitude_name::String="lat", longitude_name::String="lon")
     latitude_axis = getproperty(geo_cube, Symbol(latitude_name))
     longitude_axis = getproperty(geo_cube, Symbol(longitude_name))
     cell_ids = DGGS.get_cell_ids(grid_spec, latitude_axis, longitude_axis)
@@ -139,7 +139,7 @@ function get_cell_cube(grid_spec::GridSpec, geo_cube::YAXArray, latitude_name="l
     return cell_cube
 end
 
-get_cell_cube(grid::Grid, geo_cube::YAXArray, latitude_name, longitude_name) = get_cell_cube(grid.spec, geo_cube::YAXArray, latitude_name, longitude_name)
+get_cell_cube(grid::Grid, geo_cube::YAXArray; latitude_name="lat", longitude_name="lon") = get_cell_cube(grid.spec, geo_cube::YAXArray; latitude_name=latitude_name, longitude_name=longitude_name)
 
 """
 Export cell data cube into a traditional geographical one
@@ -179,8 +179,8 @@ get_geo_cube(grid::Grid, cell_cube::YAXArray) = get_geo_cube(grid.spec, cell_cub
 """
 Create a grid system of different resolutions
 """
-function create_grids(projection::String, topology::String, n_resolutions::Int)
-    grids = [Grid(projection, 4, topology, resolution) for resolution in 0:n_resolutions-1]
+function create_grids(projection::String, aperture::Int, topology::String, n_resolutions::Int)
+    grids = [Grid(projection, aperture, topology, resolution) for resolution in 0:n_resolutions-1]
     return grids
 end
 
@@ -207,4 +207,61 @@ function get_children_cell_ids(grids::Vector{Grid}, resolution::Int, cell_id::In
     end
     parent_cell_ids = get_parent_cell_id.(Ref(grids), resolution + 1, 1:length(grids[resolution+1].data.data))
     findall(x -> x == cell_id, parent_cell_ids)
+end
+
+"""
+Get a cell data cube pyramid
+
+Calculates a stack of cell data cubes with incrementally lower resolutions
+based on the same data as provided by `cell_cube`
+"""
+function get_cube_pyramid(grids::Vector{Grid}, cell_cube::YAXArray; combine_function::Function=mean)
+    res = Vector{YAXArray}(undef, length(grids))
+    res[length(grids)] = cell_cube
+
+    # Calculate lower resolution based on the previous one
+    for resolution in length(grids)-1:-1:1
+        parent_cell_cube = res[resolution+1]
+        child_grid = grids[resolution]
+        child_cell_vector = Vector{Float32}(undef, length(child_grid))
+        parent_grid = grids[resolution+1]
+
+        for cell_id in 1:length(child_grid)
+            # downscale
+            cell_ids = get_children_cell_ids(grids, resolution, cell_id)
+            child_cell_vector[cell_id] = combine_function(parent_cell_cube[cell_ids])
+        end
+
+        res[resolution] = YAXArray(child_cell_vector)
+    end
+    return res
+end
+
+struct GridSystem
+    grids::Vector{Grid}
+    data::Vector{YAXArray}
+    projection::String
+    aperture::Int
+    topology::String
+    n_resolutions::Int
+end
+
+function GridSystem(geo_cube::YAXArray, projection::String, aperture::Int, topology::String, n_resolutions::Int; latitude_name="lat", longitude_name="lon")
+    grids = create_grids(projection, aperture, topology, n_resolutions)
+    finest_grid = grids[n_resolutions]
+    finest_cell_cube = get_cell_cube(finest_grid, geo_cube; latitude_name=latitude_name, longitude_name=longitude_name)
+    data = get_cube_pyramid(grids, finest_cell_cube)
+    res = GridSystem(grids, data, projection, aperture, topology, n_resolutions)
+    return res
+end
+
+# imported from https://github.com/JuliaDataCubes/YAXArrays.jl
+cubesize(c::YAXArray{T}) where {T} = (sizeof(T)) * prod(map(length, caxes(c)))
+cubesize(::YAXArray{T,0}) where {T} = sizeof(T)
+
+function Base.show(io::IO, ::MIME"text/plain", grid_system::GridSystem)
+    println(io, "Discrete Global Grid System")
+    println(io, "Grid:\t$(grid_system.topology) topology, $(grid_system.projection) projection, aperture of $(grid_system.aperture)")
+    println(io, "Cells:\t$(grid_system.n_resolutions) resolutions with up to $(grid_system.grids |> last |> length) cells")
+    println(io, "Data:\tYAXArray of type $(typeof(grid_system.data[1].data)) with $(grid_system.data |> x -> map(cubesize, x) |> sum) bytes")
 end

@@ -31,8 +31,18 @@ Create a simple grid:
 
 ```julia
 using DGGS
-grid = create_toy_grid()
-# DGGS Grid with HEXAGON topology, ISEA projection, apterture of 4, and 642 cells
+using YAXArrays, NetCDF, Downloads
+url = "https://www.unidata.ucar.edu/software/netcdf/examples/tos_O1_2001-2002.nc"
+filename = Downloads.download(url, "tos_O1_2001-2002.nc")
+geo_cube = Cube(filename)
+
+dggs = GridSystem(geo_cube, "ISEA", 4, "HEXAGON", 3)
+```
+```
+Discrete Global Grid System
+Grid:   HEXAGON topology, ISEA projection, aperture of 4
+Cells:  3 resolutions with up to 162 cells
+Data:   YAXArray of type Vector{Float32} with 864 bytes
 ```
 
 Checkout the [tutorial](https://danlooo.github.io/DGGS.jl/dev/tutorial/) for further examples.

@@ -30,7 +30,7 @@ using YAXArrays
     @test get_geo_coords(grid, 1) == (58.2825256, 11.25)
 
     geo_cube = Cube("tos_O1_2001-2002.nc")
-    cell_cube = get_cell_cube(grid, geo_cube, "Y", "X")
+    cell_cube = get_cell_cube(grid, geo_cube; latitude_name="Y", longitude_name="X")
     @test cell_cube.cell_id |> length == 642
     geo_cube2 = get_geo_cube(grid, cell_cube)
     @test isdefined(geo_cube2, :data)
@@ -55,9 +55,12 @@ using YAXArrays
     @test grid3 |> get_cell_boundaries |> size == (642, 2)
     @test grid3 |> get_cell_centers |> size == (642, 2)
 
-    grids = create_grids("ISEA", "HEXAGON", 3)
+    grids = create_grids("ISEA", 4, "HEXAGON", 3)
     @test get_children_cell_ids(grids, 1, 4) == [9, 10, 11, 12, 27]
     @test get_parent_cell_id(grids, 2, 27) == 4
     # going back and forth must return the same cell id 4 again
-    @test get_parent_cell_id.(Ref(grids), 2, get_children_cell_ids(grids, 1, 4)) == fill(4, 5)
+    @test get_parent_cell_id.(Ref(grids), 2, get_children_cel_ids(grids, 1, 4)) == fill(4, 5)
+
+    dggs = GridSystem(geo_cube, "ISEA", 4, "HEXAGON", 3; latitude_name="Y", longitude_name="X")
+    @test dggs.data |> last |> size == (162,)
 end
