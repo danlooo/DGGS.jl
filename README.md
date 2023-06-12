@@ -27,7 +27,7 @@ using Pkg
 Pkg.add(url="https://github.com/danlooo/DGGS.jl.git")
 ```
 
-Create a simple grid:
+Create a Discrete Global Grid System (DGGS) based on data stored in a NetCDF file:
 
 ```julia
 using DGGS
