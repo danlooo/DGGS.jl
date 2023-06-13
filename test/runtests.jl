@@ -31,7 +31,7 @@ using YAXArrays
 
     geo_cube = Cube("tos_O1_2001-2002.nc")
     cell_cube = get_cell_cube(grid, geo_cube; latitude_name="Y", longitude_name="X")
-    @test cell_cube.cell_id |> length == 642
+    @test cell_cube.cell_id |> length == 330
     geo_cube2 = get_geo_cube(grid, cell_cube)
     @test isdefined(geo_cube2, :data)
 

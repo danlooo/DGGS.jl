@@ -104,6 +104,9 @@ function get_cell_ids(grid::Grid, lat_range::Union{AbstractVector,Number}, lon_r
             append!(res, NearestNeighbors.nn(grid.data, [lon, lat])[1])
         end
     end
+    if length(res) == 1
+        res = res[1]
+    end
     return res
 end
 
