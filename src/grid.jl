@@ -53,6 +53,12 @@ Base.length(grid::Grid) = Base.length(grid.data.data)
 
 Grid() = Grid("ISEA4H")
 
+function Grid(grid_spec::GridSpec)
+    data = grid_spec |> get_grid_data |> get_kd_tree
+    grid = Grid(grid_spec, data)
+    return grid
+end
+
 """
 Create a grid using DGGRID parameters
 """
@@ -89,18 +95,16 @@ end
 create_toy_grid() = Grid("ISEA", 4, "HEXAGON", 3)
 
 """
-Convert geographic corrdinates to cell id
+Get cell ids given geographic corrdinates
 """
-function get_cell_ids(grid::Grid, lat::Real, lon::Real)
-    if abs(lat) > 90
-        throw(DomainError("Latitude argument lat must be within [-90, 90]"))
+function get_cell_ids(grid::Grid, lat_range::Union{AbstractVector,Number}, lon_range::Union{AbstractVector,Number})
+    res = []
+    for lat in lat_range
+        for lon in lon_range
+            append!(res, NearestNeighbors.nn(grid.data, [lon, lat])[1])
+        end
     end
-
-    if abs(lon) > 180
-        throw(DomainError("Longitude argument lon must be within [-180, 180]"))
-    end
-
-    NearestNeighbors.nn(grid.data, [lon, lat])[1]
+    return res
 end
 
 """
@@ -119,10 +123,10 @@ Transforms a data cube with spatial index dimensions longitude and latitude
 into a data cube with the cell id as a single spatial index dimension.
 Re-gridding is done using the average value of all geographical coordinates belonging to a particular cell defined by the grid specification `grid_spec`.
 """
-function get_cell_cube(grid_spec::GridSpec, geo_cube::YAXArray; latitude_name::String="lat", longitude_name::String="lon")
+function get_cell_cube(grid::Grid, geo_cube::YAXArray; latitude_name::String="lat", longitude_name::String="lon")
     latitude_axis = getproperty(geo_cube, Symbol(latitude_name))
     longitude_axis = getproperty(geo_cube, Symbol(longitude_name))
-    cell_ids = DGGS.get_cell_ids(grid_spec, latitude_axis, longitude_axis)
+    cell_ids = get_cell_ids(grid, latitude_axis, longitude_axis)
 
     # binary matrix mapping geographic coordinates to cell ids
     geo_cell_mapping_matrix = cell_ids' .== unique(cell_ids)
@@ -138,8 +142,6 @@ function get_cell_cube(grid_spec::GridSpec, geo_cube::YAXArray; latitude_name::S
     cell_cube = YAXArray(axlist, cell_cube_vector)
     return cell_cube
 end
-
-get_cell_cube(grid::Grid, geo_cube::YAXArray; latitude_name="lat", longitude_name="lon") = get_cell_cube(grid.spec, geo_cube::YAXArray; latitude_name=latitude_name, longitude_name=longitude_name)
 
 """
 Export cell data cube into a traditional geographical one
