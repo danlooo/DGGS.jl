@@ -134,6 +134,7 @@ function get_cell_cube(grid::Grid, geo_cube::YAXArray; latitude_name::String="la
     latitude_axis = getproperty(geo_cube, Symbol(latitude_name))
     longitude_axis = getproperty(geo_cube, Symbol(longitude_name))
     cell_ids = get_cell_ids(grid, latitude_axis, longitude_axis)
+    sort!(cell_ids) # main idea of this package: Store cells next to each other
 
     # binary matrix mapping geographic coordinates to cell ids
     geo_cell_mapping_matrix = cell_ids' .== unique(cell_ids)
@@ -228,18 +229,27 @@ function get_cube_pyramid(grids::Vector{Grid}, cell_cube::YAXArray; combine_func
 
     # Calculate lower resolution based on the previous one
     for resolution in length(grids)-1:-1:1
+        print(resolution)
+
+        # parent: has higher resolution, used for combining
+        # child: has lower resolution, to be calculated, stores the combined values
         parent_cell_cube = res[resolution+1]
         child_grid = grids[resolution]
         child_cell_vector = Vector{Float32}(undef, length(child_grid))
-        parent_grid = grids[resolution+1]
 
         for cell_id in 1:length(child_grid)
-            # downscale
+            # println(cell_id)
+
+            # downscaling by combining corresponding values from parent
             cell_ids = get_children_cell_ids(grids, resolution, cell_id)
-            child_cell_vector[cell_id] = combine_function(parent_cell_cube[cell_ids])
+            cell_values = parent_cell_cube.data[cell_ids]
+            child_cell_vector[cell_id] = combine_function(cell_values)
         end
 
-        res[resolution] = YAXArray(child_cell_vector)
+        axlist = [
+            RangeAxis("cell_id", range(1, length(child_grid)))
+        ]
+        res[resolution] = YAXArray(axlist, child_cell_vector)
     end
     return res
 end
