@@ -119,6 +119,10 @@ function get_geo_coords(grid::Grid, id::Int)
     return (res[2], res[1])
 end
 
+function get_geo_coords(grid::Grid, id::AbstractVector)
+    return get_geo_coords.(Ref(grid), id)
+end
+
 """
 Import geographical data cube into a DGGS
 
@@ -154,14 +158,14 @@ into a traditional geographical data cube with two spatial index dimensions long
 Re-gridding is done by mapping the cell value into the center point of its cell.
 Interpolation of values is performed, because grid cells on the same meridian may have different latitudes.
 """
-function get_geo_cube(grid_spec::GridSpec, cell_cube::YAXArray)
-    df = get_grid_data(grid_spec)
-    df.value = cell_cube.data
-    sort!(df, [:lon, :lat])
-    itp = linear_interpolation((sort(df.lon), sort(df.lat)), Diagonal(df.value))
+function get_geo_cube(grid::Grid, cell_cube::YAXArray)
+    coords = get_geo_coords(grid, cell_cube.cell_id) |> sort
+    longitudes = map(x -> x[2], coords) |> sort
+    latitudes = map(x -> x[1], coords) |> sort
+    itp = linear_interpolation((longitudes, latitudes), Diagonal(cell_cube.data))
 
-    itr_lon = minimum(df.lon):2:maximum(df.lon)
-    itr_lat = minimum(df.lat):2:maximum(df.lat)
+    itr_lon = minimum(longitudes):2:maximum(longitudes)
+    itr_lat = minimum(latitudes):2:maximum(latitudes)
 
     regridded_matrix = Array{Float64}(undef, length(itr_lon), length(itr_lat))
     for (lon_i, lon_val) in enumerate(itr_lon)
@@ -178,8 +182,6 @@ function get_geo_cube(grid_spec::GridSpec, cell_cube::YAXArray)
     cube = YAXArray(axlist, regridded_matrix)
     return cube
 end
-
-get_geo_cube(grid::Grid, cell_cube::YAXArray) = get_geo_cube(grid.spec, cell_cube)
 
 """
 Create a grid system of different resolutions
