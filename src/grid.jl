@@ -228,9 +228,10 @@ end
 Get a cell data cube pyramid
 
 Calculates a stack of cell data cubes with incrementally lower resolutions
-based on the same data as provided by `cell_cube`
+based on the same data as provided by `cell_cube`.
+Cell values are combined according to the provided `aggregate_function`.
 """
-function get_cube_pyramid(grids::Vector{Grid}, cell_cube::YAXArray; combine_function::Function=mean)
+function get_cube_pyramid(grids::Vector{Grid}, cell_cube::YAXArray; aggregate_function::Function=mean)
     res = Vector{YAXArray}(undef, length(grids))
     res[length(grids)] = cell_cube
 
@@ -246,7 +247,7 @@ function get_cube_pyramid(grids::Vector{Grid}, cell_cube::YAXArray; combine_func
             # downscaling by combining corresponding values from parent
             cell_ids = get_children_cell_ids(grids, resolution, cell_id)
             cell_values = [parent_cell_cube[cell_id=x].data for x in cell_ids]
-            child_cell_vector[cell_id] = cell_values |> combine_function |> first
+            child_cell_vector[cell_id] = cell_values |> aggregate_function |> first
         end
 
         axlist = [
