@@ -229,8 +229,6 @@ function get_cube_pyramid(grids::Vector{Grid}, cell_cube::YAXArray; combine_func
 
     # Calculate lower resolution based on the previous one
     for resolution in length(grids)-1:-1:1
-        print(resolution)
-
         # parent: has higher resolution, used for combining
         # child: has lower resolution, to be calculated, stores the combined values
         parent_cell_cube = res[resolution+1]
@@ -238,12 +236,10 @@ function get_cube_pyramid(grids::Vector{Grid}, cell_cube::YAXArray; combine_func
         child_cell_vector = Vector{Float32}(undef, length(child_grid))
 
         for cell_id in 1:length(child_grid)
-            # println(cell_id)
-
             # downscaling by combining corresponding values from parent
             cell_ids = get_children_cell_ids(grids, resolution, cell_id)
-            cell_values = parent_cell_cube.data[cell_ids]
-            child_cell_vector[cell_id] = combine_function(cell_values)
+            cell_values = [parent_cell_cube[cell_id=x].data for x in cell_ids]
+            child_cell_vector[cell_id] = cell_values |> combine_function |> first
         end
 
         axlist = [
@@ -263,7 +259,7 @@ struct GridSystem
     n_resolutions::Int
 end
 
-function GridSystem(geo_cube::YAXArray, projection::String, aperture::Int, topology::String, n_resolutions::Int; latitude_name="lat", longitude_name="lon")
+function GridSystem(geo_cube::YAXArray, projection::String, aperture::Int, topology::String, n_resolutions::Int; latitude_name::String="lat", longitude_name::String="lon")
     grids = create_grids(projection, aperture, topology, n_resolutions)
     finest_grid = grids[n_resolutions]
     finest_cell_cube = get_cell_cube(finest_grid, geo_cube; latitude_name=latitude_name, longitude_name=longitude_name)
