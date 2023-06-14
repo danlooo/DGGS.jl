@@ -146,8 +146,14 @@ function get_cell_cube(grid::Grid, geo_cube::YAXArray; latitude_name::String="la
     cell_cube_matrix = geo_cell_mapping_matrix * geo_cube_vector ./ sum(geo_cell_mapping_matrix, dims=2)
     cell_cube_vector = cell_cube_matrix[:, 1]
 
-    axlist = [CategoricalAxis("cell_id", unique(cell_ids))]
-    cell_cube = YAXArray(axlist, cell_cube_vector)
+    # reindex to global grid
+    global_cell_cube_vector = typeof(cell_cube_vector)(undef, length(grid))
+    for i in 1:length(cell_cube_vector)
+        global_cell_cube_vector[unique(cell_ids)[i]] = cell_cube_vector[i]
+    end
+
+    axlist = [RangeAxis("cell_id", range(1, length(grid)))]
+    cell_cube = YAXArray(axlist, global_cell_cube_vector)
     return cell_cube
 end
 
