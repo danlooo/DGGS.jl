@@ -286,3 +286,12 @@ function Base.show(io::IO, ::MIME"text/plain", grid_system::GridSystem)
     println(io, "Cells:\t$(grid_system.n_resolutions) resolutions with up to $(grid_system.grids |> last |> length) cells")
     println(io, "Data:\tYAXArray of type $(typeof(grid_system.data[1].data)) with $(grid_system.data |> x -> map(cubesize, x) |> sum) bytes")
 end
+
+
+function get_geo_cube(dggs::GridSystem, resolution::Int=3)
+    get_geo_cube(dggs.grids[resolution], dggs.data[resolution])
+end
+
+function get_cell_cube(dggs::GridSystem, resolution::Int=3)
+    dggs.data[resolution]
+end

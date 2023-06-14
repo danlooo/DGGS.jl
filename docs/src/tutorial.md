@@ -1,5 +1,46 @@
 # Tutorial
 
+## Create a Discrete Global Grid System (DGGS)
+
+Create a data cube in geographical coordinates:
+
+```@example dggs
+using YAXArrays
+lon_range = -180:180
+lat_range = -90:90
+data = [exp(cosd(lon)) + 3(lat / 90) for lon in lon_range, lat in lat_range]
+axlist = [
+    RangeAxis("lon", lon_range),
+    RangeAxis("lat", lat_range)
+]
+geo_cube = YAXArray(axlist, data)
+```
+
+Let's create a DGGS using Synder Equal Area projection (`"ISEA"`), an aperture of 4 (number of child cells of a given parent cell), a hexagonal grid shape at 3 different resolutions:
+
+```@example dggs
+using DGGS
+dggs = GridSystem(geo_cube, "ISEA", 4, "HEXAGON", 3)
+```
+
+The data cube at the highest resolution has only one spatial index dimension, i.e. the cell id:
+
+```@example dggs
+get_cell_cube(dggs, 3)
+```
+
+Plotting requires re-griding to geographical coordinates:
+
+```@example dggs
+using CairoMakie
+using GeoMakie
+dggs_geo_cube = get_geo_cube(dggs, 3)
+fig = Figure(resolution=(1000, 1000))
+ga1 = GeoAxis(fig[1, 1]; dest="+proj=ortho", coastlines=true, lonlims=(-90, 90))
+surface!(ga1, lon_range, lat_range, dggs_geo_cube.data; colormap=:rainbow_bgyrm_35_85_c69_n256, shading=false)
+fig
+```
+
 ## Explore the grid
 
 Let's create our first grid from a preset:
