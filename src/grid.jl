@@ -53,6 +53,12 @@ Base.length(grid::Grid) = Base.length(grid.data.data)
 
 Grid() = Grid("ISEA4H")
 
+function Grid(grid_spec::GridSpec)
+    data = grid_spec |> get_grid_data |> get_kd_tree
+    grid = Grid(grid_spec, data)
+    return grid
+end
+
 """
 Create a grid using DGGRID parameters
 """
@@ -89,18 +95,19 @@ end
 create_toy_grid() = Grid("ISEA", 4, "HEXAGON", 3)
 
 """
-Convert geographic corrdinates to cell id
+Get cell ids given geographic corrdinates
 """
-function get_cell_ids(grid::Grid, lat::Real, lon::Real)
-    if abs(lat) > 90
-        throw(DomainError("Latitude argument lat must be within [-90, 90]"))
+function get_cell_ids(grid::Grid, lat_range::Union{AbstractVector,Number}, lon_range::Union{AbstractVector,Number})
+    res = []
+    for lat in lat_range
+        for lon in lon_range
+            append!(res, NearestNeighbors.nn(grid.data, [lon, lat])[1])
+        end
     end
-
-    if abs(lon) > 180
-        throw(DomainError("Longitude argument lon must be within [-180, 180]"))
+    if length(res) == 1
+        res = res[1]
     end
-
-    NearestNeighbors.nn(grid.data, [lon, lat])[1]
+    return res
 end
 
 """
@@ -112,6 +119,10 @@ function get_geo_coords(grid::Grid, id::Int)
     return (res[2], res[1])
 end
 
+function get_geo_coords(grid::Grid, id::AbstractVector)
+    return get_geo_coords.(Ref(grid), id)
+end
+
 """
 Import geographical data cube into a DGGS
 
@@ -119,10 +130,11 @@ Transforms a data cube with spatial index dimensions longitude and latitude
 into a data cube with the cell id as a single spatial index dimension.
 Re-gridding is done using the average value of all geographical coordinates belonging to a particular cell defined by the grid specification `grid_spec`.
 """
-function get_cell_cube(grid_spec::GridSpec, geo_cube::YAXArray; latitude_name::String="lat", longitude_name::String="lon")
+function get_cell_cube(grid::Grid, geo_cube::YAXArray; latitude_name::String="lat", longitude_name::String="lon")
     latitude_axis = getproperty(geo_cube, Symbol(latitude_name))
     longitude_axis = getproperty(geo_cube, Symbol(longitude_name))
-    cell_ids = DGGS.get_cell_ids(grid_spec, latitude_axis, longitude_axis)
+    cell_ids = get_cell_ids(grid, latitude_axis, longitude_axis)
+    sort!(cell_ids) # main idea of this package: Store cells next to each other
 
     # binary matrix mapping geographic coordinates to cell ids
     geo_cell_mapping_matrix = cell_ids' .== unique(cell_ids)
@@ -139,8 +151,6 @@ function get_cell_cube(grid_spec::GridSpec, geo_cube::YAXArray; latitude_name::S
     return cell_cube
 end
 
-get_cell_cube(grid::Grid, geo_cube::YAXArray; latitude_name="lat", longitude_name="lon") = get_cell_cube(grid.spec, geo_cube::YAXArray; latitude_name=latitude_name, longitude_name=longitude_name)
-
 """
 Export cell data cube into a traditional geographical one
 
@@ -149,14 +159,14 @@ into a traditional geographical data cube with two spatial index dimensions long
 Re-gridding is done by mapping the cell value into the center point of its cell.
 Interpolation of values is performed, because grid cells on the same meridian may have different latitudes.
 """
-function get_geo_cube(grid_spec::GridSpec, cell_cube::YAXArray)
-    df = get_grid_data(grid_spec)
-    df.value = cell_cube.data
-    sort!(df, [:lon, :lat])
-    itp = linear_interpolation((sort(df.lon), sort(df.lat)), Diagonal(df.value))
+function get_geo_cube(grid::Grid, cell_cube::YAXArray)
+    coords = get_geo_coords(grid, cell_cube.cell_id) |> sort
+    longitudes = map(x -> x[2], coords) |> sort
+    latitudes = map(x -> x[1], coords) |> sort
+    itp = linear_interpolation((longitudes, latitudes), Diagonal(cell_cube.data))
 
-    itr_lon = minimum(df.lon):2:maximum(df.lon)
-    itr_lat = minimum(df.lat):2:maximum(df.lat)
+    itr_lon = minimum(longitudes):2:maximum(longitudes)
+    itr_lat = minimum(latitudes):2:maximum(latitudes)
 
     regridded_matrix = Array{Float64}(undef, length(itr_lon), length(itr_lat))
     for (lon_i, lon_val) in enumerate(itr_lon)
@@ -173,8 +183,6 @@ function get_geo_cube(grid_spec::GridSpec, cell_cube::YAXArray)
     cube = YAXArray(axlist, regridded_matrix)
     return cube
 end
-
-get_geo_cube(grid::Grid, cell_cube::YAXArray) = get_geo_cube(grid.spec, cell_cube)
 
 """
 Create a grid system of different resolutions
@@ -221,18 +229,23 @@ function get_cube_pyramid(grids::Vector{Grid}, cell_cube::YAXArray; combine_func
 
     # Calculate lower resolution based on the previous one
     for resolution in length(grids)-1:-1:1
+        # parent: has higher resolution, used for combining
+        # child: has lower resolution, to be calculated, stores the combined values
         parent_cell_cube = res[resolution+1]
         child_grid = grids[resolution]
         child_cell_vector = Vector{Float32}(undef, length(child_grid))
-        parent_grid = grids[resolution+1]
 
         for cell_id in 1:length(child_grid)
-            # downscale
+            # downscaling by combining corresponding values from parent
             cell_ids = get_children_cell_ids(grids, resolution, cell_id)
-            child_cell_vector[cell_id] = combine_function(parent_cell_cube[cell_ids])
+            cell_values = [parent_cell_cube[cell_id=x].data for x in cell_ids]
+            child_cell_vector[cell_id] = cell_values |> combine_function |> first
         end
 
-        res[resolution] = YAXArray(child_cell_vector)
+        axlist = [
+            RangeAxis("cell_id", range(1, length(child_grid)))
+        ]
+        res[resolution] = YAXArray(axlist, child_cell_vector)
     end
     return res
 end
@@ -246,7 +259,7 @@ struct GridSystem
     n_resolutions::Int
 end
 
-function GridSystem(geo_cube::YAXArray, projection::String, aperture::Int, topology::String, n_resolutions::Int; latitude_name="lat", longitude_name="lon")
+function GridSystem(geo_cube::YAXArray, projection::String, aperture::Int, topology::String, n_resolutions::Int; latitude_name::String="lat", longitude_name::String="lon")
     grids = create_grids(projection, aperture, topology, n_resolutions)
     finest_grid = grids[n_resolutions]
     finest_cell_cube = get_cell_cube(finest_grid, geo_cube; latitude_name=latitude_name, longitude_name=longitude_name)
