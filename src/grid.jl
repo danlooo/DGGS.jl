@@ -135,9 +135,10 @@ function get_cell_cube(grid::Grid, geo_cube::YAXArray; latitude_name::String="la
     longitude_axis = getproperty(geo_cube, Symbol(longitude_name))
     cell_ids = get_cell_ids(grid, latitude_axis, longitude_axis)
     sort!(cell_ids) # main idea of this package: Store cells next to each other
+    unique_cell_ids = unique(cell_ids)
 
     # binary matrix mapping geographic coordinates to cell ids
-    geo_cell_mapping_matrix = cell_ids' .== unique(cell_ids)
+    geo_cell_mapping_matrix = cell_ids' .== unique_cell_ids
     geo_cube_vector = geo_cube[:, :, 1] |> vec
     replace!(geo_cube_vector, missing => 0) # ignore missing values in average
 
@@ -149,7 +150,7 @@ function get_cell_cube(grid::Grid, geo_cube::YAXArray; latitude_name::String="la
     # reindex to global grid
     global_cell_cube_vector = typeof(cell_cube_vector)(undef, length(grid))
     for i in 1:length(cell_cube_vector)
-        global_cell_cube_vector[unique(cell_ids)[i]] = cell_cube_vector[i]
+        global_cell_cube_vector[unique_cell_ids[i]] = cell_cube_vector[i]
     end
 
     axlist = [RangeAxis("cell_id", range(1, length(grid)))]
