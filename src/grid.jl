@@ -142,7 +142,6 @@ function get_cell_cube(grid::Grid, geo_cube::YAXArray; latitude_name::String="la
     cell_values = Vector{Union{cell_value_type,Missing}}(missing, length(grid))
 
     for cell_id in unique(cell_ids)
-        println(cell_id)
         cell_coords = findall(isequal(cell_id), cell_ids)
         if isempty(cell_coords)
             continue
