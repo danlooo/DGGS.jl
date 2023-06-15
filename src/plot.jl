@@ -1,6 +1,9 @@
 using Makie
 using GeoMakie
 
+# Can not use Makie plot recipies, because we need to specify the axis for GeoMakie
+# see https://discourse.julialang.org/t/accessing-axis-in-makie-plot-recipes/66006
+
 function plot_geo_cube(geo_cube::YAXArray; latitude_name::String="lat", longitude_name::String="lon")
     latitude_axis = getproperty(geo_cube, Symbol(latitude_name))
     longitude_axis = getproperty(geo_cube, Symbol(longitude_name))

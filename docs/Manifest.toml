@@ -261,8 +261,10 @@ uuid = "56fc471b-e449-5679-a438-44d065b4fb79"
 version = "0.9.1+0"
 
 [[deps.DGGS]]
-deps = ["ArchGDAL", "CSV", "DGGRID7_jll", "DataFrames", "GeoDataFrames", "GeoFormatTypes", "Interpolations", "LibExpat", "LinearAlgebra", "NearestNeighbors", "Statistics", "YAXArrays"]
-path = ".."
+deps = ["ArchGDAL", "CSV", "DGGRID7_jll", "DataFrames", "GeoDataFrames", "GeoFormatTypes", "GeoMakie", "LibExpat", "Makie", "MakieCore", "NearestNeighbors", "Statistics", "YAXArrays"]
+git-tree-sha1 = "6c4db32310562c8ac74a659fce5defd029a0d3c5"
+repo-rev = "main"
+repo-url = "/home/dloos/prj/DGGS.jl"
 uuid = "1b1208a4-f9dd-4606-8704-9f68bba98fd1"
 version = "1.0.0-DEV"
 
@@ -622,9 +624,9 @@ version = "0.3.17"
 
 [[deps.IOCapture]]
 deps = ["Logging", "Random"]
-git-tree-sha1 = "f7be53659ab06ddc986428d3a9dcc95f6fa6705a"
+git-tree-sha1 = "d75853a0bdbfb1ac815478bacd89cd27b550ace6"
 uuid = "b5f81e59-6552-4d32-b1f0-c071b021bf89"
-version = "0.2.2"
+version = "0.2.3"
 
 [[deps.ImageAxes]]
 deps = ["AxisArrays", "ImageBase", "ImageCore", "Reexport", "SimpleTraits"]
@@ -1183,10 +1185,10 @@ uuid = "d96e819e-fc66-5662-9728-84c9c7592b0a"
 version = "0.12.3"
 
 [[deps.Parsers]]
-deps = ["Dates", "SnoopPrecompile"]
-git-tree-sha1 = "478ac6c952fddd4399e71d4779797c538d0ff2bf"
+deps = ["Dates", "PrecompileTools", "UUIDs"]
+git-tree-sha1 = "5a6ab2f64388fd1175effdf73fe5933ef1e0bac0"
 uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
-version = "2.5.8"
+version = "2.7.0"
 
 [[deps.Pixman_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "LLVMOpenMP_jll", "Libdl"]
@@ -1426,9 +1428,9 @@ uuid = "6462fe0b-24de-5631-8697-dd941f90decc"
 
 [[deps.SortingAlgorithms]]
 deps = ["DataStructures"]
-git-tree-sha1 = "a4ada03f999bd01b3a25dcaa30b2d929fe537e00"
+git-tree-sha1 = "c60ec5c62180f27efea3ba2908480f8055e17cee"
 uuid = "a2af1166-a08f-5f64-846c-94a0d3cef48c"
-version = "1.1.0"
+version = "1.1.1"
 
 [[deps.SparseArrays]]
 deps = ["Libdl", "LinearAlgebra", "Random", "Serialization", "SuiteSparse_jll"]
