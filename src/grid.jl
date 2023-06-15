@@ -136,7 +136,7 @@ function get_cell_cube(grid::Grid, geo_cube::YAXArray; latitude_name::String="la
     longitude_axis = getproperty(geo_cube, Symbol(longitude_name))
 
     cell_ids = get_cell_ids(grid, latitude_axis, longitude_axis)
-    cell_value_type = geo_cube.data |> first |> typeof
+    cell_value_type = eltype(geo_cube)
     cell_values = Vector{Union{cell_value_type,Missing}}(missing, length(grid))
 
     for cell_id in unique(cell_ids)
@@ -163,7 +163,7 @@ function get_geo_cube(grid::Grid, cell_cube::YAXArray)
     longitudes = -180:180
     latitudes = -90:90
 
-    cell_value_type = cell_cube.data |> first |> typeof
+    cell_value_type = eltype(cell_cube)
     regridded_matrix = Matrix{Union{cell_value_type,Missing}}(missing, length(longitudes), length(latitudes))
 
     for (lon_i, lon) in enumerate(longitudes)
@@ -232,7 +232,7 @@ function get_cube_pyramid(grids::Vector{Grid}, cell_cube::YAXArray; aggregate_fu
         # child: has lower resolution, to be calculated, stores the combined values
         parent_cell_cube = res[resolution+1]
         child_grid = grids[resolution]
-        child_cell_vector = Vector{Float32}(undef, length(child_grid))
+        child_cell_vector = Vector{eltype(cell_cube)}(undef, length(child_grid))
 
         for cell_id in 1:length(child_grid)
             # downscaling by combining corresponding values from parent
