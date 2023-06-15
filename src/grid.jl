@@ -1,8 +1,6 @@
 using NearestNeighbors
 using YAXArrays
-using Interpolations
 using Statistics
-using LinearAlgebra
 using DataFrames
 
 """

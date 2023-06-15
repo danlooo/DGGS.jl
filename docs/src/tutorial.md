@@ -29,17 +29,39 @@ The data cube at the highest resolution has only one spatial index dimension, i.
 get_cell_cube(dggs, 3)
 ```
 
-Plotting requires re-griding to geographical coordinates:
+Define a function for plotting:
 
 ```@example dggs
 using CairoMakie
 using GeoMakie
-dggs_geo_cube = get_geo_cube(dggs, 3)
-fig = Figure(resolution=(1000, 1000))
-ga1 = GeoAxis(fig[1, 1]; dest="+proj=ortho", coastlines=true, lonlims=(-90, 90))
-surface!(ga1, lon_range, lat_range, dggs_geo_cube.data; colormap=:rainbow_bgyrm_35_85_c69_n256, shading=false)
-fig
+
+function plot_geo_cube(geo_cube::YAXArray; latitude_name::String="lat", longitude_name::String="lon")
+    latitude_axis = getproperty(geo_cube, Symbol(latitude_name))
+    longitude_axis = getproperty(geo_cube, Symbol(longitude_name))
+    fig = Figure()
+    ga1 = GeoAxis(fig[1, 1]; dest="+proj=wintri", coastlines=true)
+    sf = surface!(ga1, longitude_axis, latitude_axis, geo_cube.data; colormap=:viridis, shading=false)
+    cb1 = Colorbar(fig[1, 2], sf; label = "Value", height = Relative(0.5))
+    fig
+end
 ```
+
+Plot the original geo cube:
+
+```@example dggs
+plot_geo_cube(geo_cube)
+```
+
+Plotting cell_cubes requires re-griding to geographical coordinates:
+
+```@example dggs
+geo_cube2 = get_geo_cube(dggs, 2)
+plot_geo_cube(geo_cube2)
+```
+
+A DGGS cell represent all points within its boundary polygon.
+This acts as a pooling mechanism.
+The hexagonal topology is easily recognizable at this low resolution.
 
 ## Explore the grid
 
