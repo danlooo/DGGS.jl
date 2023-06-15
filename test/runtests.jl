@@ -29,8 +29,16 @@ using YAXArrays
     @test get_cell_ids(grid, 59, 11) == 1
     @test get_geo_coords(grid, 1) == (58.2825256, 11.25)
 
-    geo_cube = Cube("tos_O1_2001-2002.nc")
-    cell_cube = get_cell_cube(grid, geo_cube; latitude_name="Y", longitude_name="X")
+    lon_range = -180:180
+    lat_range = -90:90
+    data = [exp(cosd(lon)) + 3(lat / 90) for lon in lon_range, lat in lat_range]
+    axlist = [
+        RangeAxis("lon", lon_range),
+        RangeAxis("lat", lat_range)
+    ]
+    geo_cube = YAXArray(axlist, data)
+
+    cell_cube = get_cell_cube(grid, geo_cube)
     @test cell_cube.cell_id |> length == 642
     geo_cube2 = get_geo_cube(grid, cell_cube)
     @test isdefined(geo_cube2, :data)
@@ -59,6 +67,6 @@ using YAXArrays
     # going back and forth must return the same cell id 4 again
     @test get_parent_cell_id.(Ref(grids), 2, get_children_cell_ids(grids, 1, 4)) == fill(4, 5)
 
-    dggs = GridSystem(geo_cube, "ISEA", 4, "HEXAGON", 3; latitude_name="Y", longitude_name="X")
+    dggs = GridSystem(geo_cube, "ISEA", 4, "HEXAGON", 3)
     @test dggs.data |> last |> size == (162,)
 end

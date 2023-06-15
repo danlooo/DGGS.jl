@@ -98,16 +98,19 @@ create_toy_grid() = Grid("ISEA", 4, "HEXAGON", 3)
 Get cell ids given geographic corrdinates
 """
 function get_cell_ids(grid::Grid, lat_range::Union{AbstractVector,Number}, lon_range::Union{AbstractVector,Number})
-    res = []
-    for lat in lat_range
-        for lon in lon_range
-            append!(res, NearestNeighbors.nn(grid.data, [lon, lat])[1])
+    cell_ids = Matrix{Int}(undef, length(lat_range), length(lon_range))
+
+    for (lat_i, lat) in enumerate(lat_range)
+        for (lon_i, lon) in enumerate(lon_range)
+            cell_ids[lat_i, lon_i] = NearestNeighbors.nn(grid.data, [lon, lat])[1]
         end
     end
-    if length(res) == 1
-        res = res[1]
+
+    if size(cell_ids) == (1, 1)
+        return cell_ids[1, 1]
+    else
+        return cell_ids
     end
-    return res
 end
 
 """
@@ -130,31 +133,25 @@ Transforms a data cube with spatial index dimensions longitude and latitude
 into a data cube with the cell id as a single spatial index dimension.
 Re-gridding is done using the average value of all geographical coordinates belonging to a particular cell defined by the grid specification `grid_spec`.
 """
-function get_cell_cube(grid::Grid, geo_cube::YAXArray; latitude_name::String="lat", longitude_name::String="lon")
+function get_cell_cube(grid::Grid, geo_cube::YAXArray; latitude_name::String="lat", longitude_name::String="lon", aggregate_function::Function=mean)
     latitude_axis = getproperty(geo_cube, Symbol(latitude_name))
     longitude_axis = getproperty(geo_cube, Symbol(longitude_name))
+
     cell_ids = get_cell_ids(grid, latitude_axis, longitude_axis)
-    sort!(cell_ids) # main idea of this package: Store cells next to each other
-    unique_cell_ids = unique(cell_ids)
+    cell_value_type = geo_cube.data |> first |> typeof
+    cell_values = Vector{Union{cell_value_type,Missing}}(missing, length(grid))
 
-    # binary matrix mapping geographic coordinates to cell ids
-    geo_cell_mapping_matrix = cell_ids' .== unique_cell_ids
-    geo_cube_vector = geo_cube[:, :, 1] |> vec
-    replace!(geo_cube_vector, missing => 0) # ignore missing values in average
-
-    # calculate new values using a weighted average of all points 
-    # Account for different number of points per cell in the division
-    cell_cube_matrix = geo_cell_mapping_matrix * geo_cube_vector ./ sum(geo_cell_mapping_matrix, dims=2)
-    cell_cube_vector = cell_cube_matrix[:, 1]
-
-    # reindex to global grid
-    global_cell_cube_vector = typeof(cell_cube_vector)(undef, length(grid))
-    for i in 1:length(cell_cube_vector)
-        global_cell_cube_vector[unique_cell_ids[i]] = cell_cube_vector[i]
+    for cell_id in unique(cell_ids)
+        println(cell_id)
+        cell_coords = findall(isequal(cell_id), cell_ids)
+        if isempty(cell_coords)
+            continue
+        end
+        cell_values[cell_id] = aggregate_function(geo_cube.data'[cell_coords])
     end
 
     axlist = [RangeAxis("cell_id", range(1, length(grid)))]
-    cell_cube = YAXArray(axlist, global_cell_cube_vector)
+    cell_cube = YAXArray(axlist, cell_values)
     return cell_cube
 end
 
