@@ -29,34 +29,11 @@ The data cube at the highest resolution has only one spatial index dimension, i.
 get_cell_cube(dggs, 3)
 ```
 
-Define a function for plotting:
+Plot the DGGS at a given resolution
 
 ```@example dggs
 using CairoMakie
-using GeoMakie
-
-function plot_geo_cube(geo_cube::YAXArray; latitude_name::String="lat", longitude_name::String="lon")
-    latitude_axis = getproperty(geo_cube, Symbol(latitude_name))
-    longitude_axis = getproperty(geo_cube, Symbol(longitude_name))
-    fig = Figure()
-    ga1 = GeoAxis(fig[1, 1]; dest="+proj=wintri", coastlines=true)
-    sf = surface!(ga1, longitude_axis, latitude_axis, geo_cube.data; colormap=:viridis, shading=false)
-    cb1 = Colorbar(fig[1, 2], sf; label = "Value", height = Relative(0.5))
-    fig
-end
-```
-
-Plot the original geo cube:
-
-```@example dggs
-plot_geo_cube(geo_cube)
-```
-
-Plotting cell_cubes requires re-griding to geographical coordinates:
-
-```@example dggs
-geo_cube2 = get_geo_cube(dggs, 2)
-plot_geo_cube(geo_cube2)
+plot_grid_system(dggs, 3)
 ```
 
 A DGGS cell represent all points within its boundary polygon.
@@ -111,8 +88,31 @@ Create a data cube with geographical coordinates using YAXArrays:
 using YAXArrays, NetCDF
 using Downloads
 url = "https://www.unidata.ucar.edu/software/netcdf/examples/tos_O1_2001-2002.nc"
-filename = Downloads.download(url, "tos_O1_2001-2002.nc") # you pick your own path
-geo_cube = Cube(filename)
+filename = Downloads.download(url, "tos_O1_2001-2002.nc")
+geo_cube_raw = Cube("tos_O1_2001-2002.nc")
+geo_cube_raw
+
+data = reverse(geo_cube_raw.data[:, :, 1]; dims = 2)
+latitudes = reverse(geo_cube_raw.lat)
+longitudes = geo_cube_raw.lon .- 180
+axlist = [
+    RangeAxis("lon", longitudes),
+    RangeAxis("lat", latitudes)
+]
+geo_cube = YAXArray(axlist, data)
+```
+
+Plot the original geo cube:
+
+```@example 2
+plot_geo_cube(geo_cube)
+```
+
+Transform it into a DGGS:
+
+```@example 2
+dggs = GridSystem(geo_cube, "ISEA", 4, "HEXAGON", 3)
+plot_grid_system(dggs, 3)
 ```
 
 Indeed, we have both longitude and latitude as spatial index dimensions.
