@@ -159,28 +159,25 @@ Export cell data cube into a traditional geographical one
 
 Transforms a data cube with one spatial index dimensions, i. e., the cell id,
 into a traditional geographical data cube with two spatial index dimensions longitude and latitude.
-Re-gridding is done by mapping the cell value into the center point of its cell.
-Interpolation of values is performed, because grid cells on the same meridian may have different latitudes.
+Values are taken from the nearest cell.
 """
 function get_geo_cube(grid::Grid, cell_cube::YAXArray)
-    coords = get_geo_coords(grid, cell_cube.cell_id) |> sort
-    longitudes = map(x -> x[2], coords) |> sort
-    latitudes = map(x -> x[1], coords) |> sort
-    itp = linear_interpolation((longitudes, latitudes), Diagonal(cell_cube.data))
+    longitudes = -180:180
+    latitudes = -90:90
 
-    itr_lon = minimum(longitudes):2:maximum(longitudes)
-    itr_lat = minimum(latitudes):2:maximum(latitudes)
+    cell_value_type = cell_cube.data |> first |> typeof
+    regridded_matrix = Matrix{Union{cell_value_type,Missing}}(missing, length(longitudes), length(latitudes))
 
-    regridded_matrix = Array{Float64}(undef, length(itr_lon), length(itr_lat))
-    for (lon_i, lon_val) in enumerate(itr_lon)
-        for (lat_i, lat_val) in enumerate(itr_lat)
-            regridded_matrix[lon_i, lat_i] = itp(lon_val, lat_val)
+    for (lon_i, lon) in enumerate(longitudes)
+        for (lat_i, lat) in enumerate(latitudes)
+            cur_cell_id = get_cell_ids(grid, lat, lon)
+            regridded_matrix[lon_i, lat_i] = cell_cube.data[cur_cell_id]
         end
     end
 
     axlist = [
-        RangeAxis("lon", itr_lon),
-        RangeAxis("lat", itr_lat)
+        RangeAxis("lon", longitudes),
+        RangeAxis("lat", latitudes)
     ]
 
     cube = YAXArray(axlist, regridded_matrix)
