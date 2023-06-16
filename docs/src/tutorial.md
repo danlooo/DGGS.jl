@@ -103,12 +103,22 @@ filename = Downloads.download(url, "tos_O1_2001-2002.nc")
 geo_cube_raw = Cube("tos_O1_2001-2002.nc")
 ```
 
-The longitudes range from ~0° to ~365°.
-We need to convert them to the interval -180° to 180°:
+Lets have a look at the raw data:
 
 ```@example netcdf
-data = reverse(geo_cube_raw.data[:, :, 1]; dims = 2)
-latitudes = reverse(geo_cube_raw.lat)
+using CairoMakie
+heatmap(geo_cube_raw[:,:,1])
+```
+
+The map is centered at the Pacific Ocean and has longitudes ranging from ~0° to ~365°.
+We need to convert the map into a null meridian centric one with longitudes ranging from -180° to 180°:
+
+```@example netcdf
+data = geo_cube_raw[:,:,1] |>
+    Matrix |> 
+    x -> circshift(x, 90)
+
+latitudes = geo_cube_raw.lat
 longitudes = geo_cube_raw.lon .- 180
 axlist = [
     RangeAxis("lon", longitudes),
@@ -130,3 +140,5 @@ Transform it into a DGGS:
 dggs = GridSystem(geo_cube, "ISEA", 4, "HEXAGON", 3)
 plot_grid_system(dggs, 3)
 ```
+
+Since this dataset is about ocean temperature, we do not have cells on the land area.
