@@ -16,10 +16,15 @@ axlist = [
 geo_cube = YAXArray(axlist, data)
 ```
 
+```@example dggs
+using DGGS
+using CairoMakie
+plot_geo_cube(geo_cube)
+```
+
 Let's create a DGGS using Synder Equal Area projection (`"ISEA"`), an aperture of 4 (number of child cells of a given parent cell), a hexagonal grid shape at 3 different resolutions:
 
 ```@example dggs
-using DGGS
 dggs = GridSystem(geo_cube, "ISEA", 4, "HEXAGON", 3)
 ```
 
@@ -32,7 +37,6 @@ get_cell_cube(dggs, 3)
 Plot the DGGS at a given resolution
 
 ```@example dggs
-using CairoMakie
 plot_grid_system(dggs, 3)
 ```
 
@@ -42,16 +46,17 @@ The hexagonal topology is easily recognizable at this low resolution.
 
 ## Explore the grid
 
-Let's create our first grid from a preset:
+A DGGS consists of multiple grids with varying resolutions.
+Let's create our first grid to explore its properties:
 
-```@example 1
+```@example grid
 using DGGS
-grid = create_toy_grid()
+grid = Grid("ISEA", 4, "HEXAGON", 2)
 ```
 
 Create a data frame containing the center point or boundary polygon for all cells of the grid:
 
-```@example 1
+```@example grid
 boundaries = get_cell_boundaries(grid)
 centers = get_cell_centers(grid)
 
@@ -60,38 +65,48 @@ println(boundaries[1:5,:])
 
 The data frames can be saved e.g. as geojson to be used in other tools like GIS:
 
-```julia
+```@example grid
 using GeoDataFrames
 GeoDataFrames.write("boundaries.geojson", boundaries)
 ```
 
 Convert points between cell id and geographic coordinates:
 
-```@example 1
+```@example grid
 get_cell_ids(grid, 80, -170)
 ```
 
 and vice versa:
 
-```@example 1
+```@example grid
 get_geo_coords(grid, 5)
 ```
 
-## Convert a data cube
+The coordinates may differ slightly, because a cell covers all points of a given area and only the center point is returned.
+This tutorial uses very low resolutions to demonstrate the properties of a DGGS.
+In practice, much higher resolution levels should be chosen for spatial analysis, diminishing these inaccuracies.
 
-A data cube is an n-dimensional array in which we have a value for each possible combination of indices, e.g., a temperature value for each geographical coordinate and also for each time point.
-Here, [YAXArrays](https://juliadatacubes.github.io/YAXArrays.jl/dev/) is used to represent the data cube.
+## Import NetCDF files into a DGGS 
+
+Here we will import data with a geographical grid into a DGGS.
+Here we will explore Sea surface temperatures collected by PCMDI for use by the IPCC stored in a NetCDF file.
+First, we need to create a geographical data cube.
 
 Create a data cube with geographical coordinates using YAXArrays:
 
-```@example 2
-using YAXArrays, NetCDF
+```@example netcdf
+using YAXArrays
+using NetCDF
 using Downloads
 url = "https://www.unidata.ucar.edu/software/netcdf/examples/tos_O1_2001-2002.nc"
 filename = Downloads.download(url, "tos_O1_2001-2002.nc")
 geo_cube_raw = Cube("tos_O1_2001-2002.nc")
-geo_cube_raw
+```
 
+The longitudes range from ~0° to ~365°.
+We need to convert them to the interval -180° to 180°:
+
+```@example netcdf
 data = reverse(geo_cube_raw.data[:, :, 1]; dims = 2)
 latitudes = reverse(geo_cube_raw.lat)
 longitudes = geo_cube_raw.lon .- 180
@@ -102,79 +117,16 @@ axlist = [
 geo_cube = YAXArray(axlist, data)
 ```
 
-Plot the original geo cube:
+Plot the imported geo data cube:
 
-```@example 2
+```@example netcdf
+using DGGS
 plot_geo_cube(geo_cube)
 ```
 
 Transform it into a DGGS:
 
-```@example 2
+```@example netcdf
 dggs = GridSystem(geo_cube, "ISEA", 4, "HEXAGON", 3)
 plot_grid_system(dggs, 3)
-```
-
-Indeed, we have both longitude and latitude as spatial index dimensions.
-Now we can define a grid and create a new data cube `cell_cube` having just the cell id as a single spatial index dimension in accordance to the created grid:
-
-```@example 2
-using DGGS
-grid = Grid("ISEA", 4, "HEXAGON", 3)
-cell_cube = get_cell_cube(grid, geo_cube; latitude_name="lat", longitude_name="lon")
-```
-
-Vice versa, we can also transform a cell cube back to a geographical one:
-
-```@example 2
-geo_cube_2 = get_geo_cube(grid, cell_cube)
-```
-
-## Plot a cell data cube
-
-The cell data cube can be visualized with the cells plotted as a choropleth map.
-Cell boundaries can be drawn as shapes.
-Lets start by importing a cell data cube from a NetCDF file:
-
-```@example 3
-# create the grid
-using DGGS
-grid = create_toy_grid()
-boundaries = get_cell_boundaries(grid)
-
-# create the cell cube
-using YAXArrays, NetCDF
-using Downloads
-url = "https://www.unidata.ucar.edu/software/netcdf/examples/tos_O1_2001-2002.nc"
-filename = Downloads.download(url, "tos_O1_2001-2002.nc") # you pick your own path
-geo_cube = Cube(filename)
-cell_cube = get_cell_cube(grid, geo_cube; latitude_name="lat", longitude_name="lon")
-```
-
-Now we can export the cell boundary polygons and use [GeoMakie](https://geo.makie.org/stable/) for plotting:
-
-```@example 3
-using GeoDataFrames, GeoJSON, GeoMakie, CairoMakie
-
-boundaries_path = "boundaries.geojson"
-GeoDataFrames.write(boundaries_path, boundaries)
-boundaries_fc = GeoJSON.read(read(boundaries_path))
-
-fig = Figure(resolution = (1200,800), fontsize = 22)
-
-ax = GeoAxis(
-    fig[1,1];
-    dest = "+proj=wintri",
-    title = "DGGS",
-    tellheight = true,
-)
-
-hm2 = poly!(
-    ax, boundaries_fc;
-    color = cell_cube.data,
-    colormap = Reverse(:plasma),
-    strokecolor = :blue,
-    strokewidth = 0.25
-)
-fig
 ```
