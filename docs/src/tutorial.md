@@ -114,10 +114,7 @@ The map is centered at the Pacific Ocean and has longitudes ranging from ~0° to
 We need to convert the map into a null meridian centric one with longitudes ranging from -180° to 180°:
 
 ```@example netcdf
-data = geo_cube_raw[:,:,1] |>
-    Matrix |> 
-    x -> circshift(x, 90)
-
+data = circshift(geo_cube_raw[:,:,1], 90)
 latitudes = geo_cube_raw.lat
 longitudes = geo_cube_raw.lon .- 180
 axlist = [
