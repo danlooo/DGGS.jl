@@ -103,7 +103,7 @@ filename = Downloads.download(url, "tos_O1_2001-2002.nc")
 geo_cube_raw = Cube("tos_O1_2001-2002.nc")
 ```
 
-Lets have a look at the raw data:
+Lets have a look at the first time point of the raw data:
 
 ```@example netcdf
 using CairoMakie
@@ -111,7 +111,9 @@ heatmap(geo_cube_raw[:,:,1])
 ```
 
 The map is centered at the Pacific Ocean and has longitudes ranging from ~0° to ~365°.
-We need to convert the map into a null meridian centric one with longitudes ranging from -180° to 180°:
+We need to convert the map into a null meridian centric one with longitudes ranging from -180° to 180°.
+One pixel represent 2° of the longitudinal axis, because there are 180 elements.
+Therefore, we need to shift the data matrix by 180/2=90 pixels.
 
 ```@example netcdf
 data = circshift(geo_cube_raw[:,:,1], 90)
