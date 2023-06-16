@@ -51,7 +51,7 @@ Let's create our first grid to explore its properties:
 
 ```@example grid
 using DGGS
-grid = Grid("ISEA", 4, "HEXAGON", 2)
+grid = Grid("ISEA", 4, "HEXAGON", 3)
 ```
 
 Create a data frame containing the center point or boundary polygon for all cells of the grid:
