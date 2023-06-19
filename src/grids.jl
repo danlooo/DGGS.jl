@@ -22,10 +22,6 @@ struct Grid
     data::KDTree
 end
 
-function Base.show(io::IO, ::MIME"text/plain", grid::Grid)
-    println(io, "DGGS Grid with $(grid.spec.topology) topology, $(grid.spec.projection) projection, apterture of $(grid.spec.aperture), and $(length(grid.data.data)) cells")
-end
-
 """
 DGGRID grid presets
 """
@@ -33,6 +29,12 @@ PresetGridSpecs = Dict(
     "FULLER7H" => GridSpec("FULLER7H", "FULLER", 7, "HEXAGON", 9),
     "ISEA4H" => GridSpec("ISEA4H", "ISEA", 4, "HEXAGON", 9)
 )
+
+
+function Base.show(io::IO, ::MIME"text/plain", grid::Grid)
+    println(io, "DGGS Grid with $(grid.spec.topology) topology, $(grid.spec.projection) projection, apterture of $(grid.spec.aperture), and $(length(grid.data.data)) cells")
+end
+
 
 """
 Create a grid using DGGRID preset
@@ -122,64 +124,6 @@ end
 
 function get_geo_coords(grid::Grid, id::AbstractVector)
     return get_geo_coords.(Ref(grid), id)
-end
-
-"""
-Import geographical data cube into a DGGS
-
-Transforms a data cube with spatial index dimensions longitude and latitude
-into a data cube with the cell id as a single spatial index dimension.
-Re-gridding is done using the average value of all geographical coordinates belonging to a particular cell defined by the grid specification `grid_spec`.
-"""
-function get_cell_cube(grid::Grid, geo_cube::YAXArray; latitude_name::String="lat", longitude_name::String="lon", aggregate_function::Function=mean)
-    latitude_axis = getproperty(geo_cube, Symbol(latitude_name))
-    longitude_axis = getproperty(geo_cube, Symbol(longitude_name))
-
-    cell_ids = get_cell_ids(grid, latitude_axis, longitude_axis)
-    cell_value_type = eltype(geo_cube)
-    cell_values = Vector{Union{cell_value_type,Missing}}(missing, length(grid))
-
-    for cell_id in unique(cell_ids)
-        cell_coords = findall(isequal(cell_id), cell_ids)
-        if isempty(cell_coords)
-            continue
-        end
-        cell_values[cell_id] = aggregate_function(geo_cube.data'[cell_coords])
-    end
-
-    axlist = [RangeAxis("cell_id", range(1, length(grid)))]
-    cell_cube = YAXArray(axlist, cell_values)
-    return cell_cube
-end
-
-"""
-Export cell data cube into a traditional geographical one
-
-Transforms a data cube with one spatial index dimensions, i. e., the cell id,
-into a traditional geographical data cube with two spatial index dimensions longitude and latitude.
-Values are taken from the nearest cell.
-"""
-function get_geo_cube(grid::Grid, cell_cube::YAXArray)
-    longitudes = -180:180
-    latitudes = -90:90
-
-    cell_value_type = eltype(cell_cube)
-    regridded_matrix = Matrix{Union{cell_value_type,Missing}}(missing, length(longitudes), length(latitudes))
-
-    for (lon_i, lon) in enumerate(longitudes)
-        for (lat_i, lat) in enumerate(latitudes)
-            cur_cell_id = get_cell_ids(grid, lat, lon)
-            regridded_matrix[lon_i, lat_i] = cell_cube.data[cur_cell_id]
-        end
-    end
-
-    axlist = [
-        RangeAxis("lon", longitudes),
-        RangeAxis("lat", latitudes)
-    ]
-
-    cube = YAXArray(axlist, regridded_matrix)
-    return cube
 end
 
 """
@@ -276,13 +220,4 @@ function Base.show(io::IO, ::MIME"text/plain", grid_system::GridSystem)
     println(io, "Grid:\t$(grid_system.topology) topology, $(grid_system.projection) projection, aperture of $(grid_system.aperture)")
     println(io, "Cells:\t$(grid_system.n_resolutions) resolutions with up to $(grid_system.grids |> last |> length) cells")
     println(io, "Data:\tYAXArray of type $(typeof(grid_system.data[1].data)) with $(grid_system.data |> x -> map(cubesize, x) |> sum) bytes")
-end
-
-
-function get_geo_cube(dggs::GridSystem, resolution::Int=3)
-    get_geo_cube(dggs.grids[resolution], dggs.data[resolution])
-end
-
-function get_cell_cube(dggs::GridSystem, resolution::Int=3)
-    dggs.data[resolution]
 end
