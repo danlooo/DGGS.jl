@@ -143,10 +143,21 @@ function CellCube(geo_cube::GeoCube, grid::AbstractGrid; aggregate_function::Fun
     return CellCube(cell_cube_array, grid)
 end
 
+function CellCube(data::AbstractVector, grid::AbstractGrid)
+    length(data) == length(grid) ? true : error("Vector data must have the same length as there are cells ($(length(grid)))")
+
+    axlist = [
+        RangeAxis("cell_id", 1:length(grid)),
+    ]
+    cell_cube_arr = YAXArray(axlist, data)
+    cell_cube = CellCube(cell_cube_arr, grid)
+    return cell_cube
+end
+
 function Base.show(io::IO, ::MIME"text/plain", cell_cube::CellCube)
     println(io, "DGGS CellCube")
     println(io, "Element type: $(eltype(cell_cube))")
-    println(io, "Cell id:      RangeAxis with $(length(cell_cube.cell_ids)) elements from $(first(cell_cube.cell_ids)) to $(last(cell_cube.cell_ids))")
+    println(io, "Cell id:      Axis with $(length(cell_cube.cell_ids)) elements from $(first(cell_cube.cell_ids)) to $(last(cell_cube.cell_ids))")
     println(io, "size:         $(formatbytes(cubesize(cell_cube.data)))")
 end
 
