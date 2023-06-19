@@ -62,9 +62,22 @@ end
 
 function GeoCube(filepath::String, latitude_name, longitude_name)
     array = YAXArrays.Cube(filepath)
-    GeoCube(array, latitude_name, longitude_name)
+    geo_cube = GeoCube(array, latitude_name, longitude_name)
+    return geo_cube
 end
 
+function GeoCube(data::Matrix, latitudes::AbstractVector, longitudes::AbstractVector)
+    size(data)[1] == length(longitudes) ? true : error("Matrix data must have the same number of rows than longitudes")
+    size(data)[2] == length(latitudes) ? true : error("Matrix data must have the same number of columns than latitudes")
+
+    axlist = [
+        RangeAxis("lon", longitudes),
+        RangeAxis("lat", latitudes)
+    ]
+    geo_cube_arr = YAXArray(axlist, data)
+    geo_cube = GeoCube(geo_cube_arr)
+    return geo_cube
+end
 
 """
 Export cell data cube into a traditional geographical one
