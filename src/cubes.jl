@@ -5,6 +5,19 @@ import GeoMakie
 
 abstract type DGGSCube end
 
+struct CellCube <: DGGSCube
+    data::YAXArray
+    grid::Grid
+    cell_ids
+
+    function CellCube(data::YAXArray, grid::Grid)
+        hasproperty(data, :cell_id) ? true : @error "CellCube must have property cell_id"
+        eltype(data.cell_id) <: Int ? true : @error "Field cell_id must be an Integer"
+
+        new(data, grid, data.cell_id)
+    end
+end
+
 struct GeoCube <: DGGSCube
     data::YAXArray
     longitudes
@@ -21,6 +34,7 @@ struct GeoCube <: DGGSCube
         new(data, data.lon, data.lat)
     end
 end
+
 
 function Base.show(io::IO, ::MIME"text/plain", geo_cube::GeoCube)
     println(io, "DGGS GeoCube")
@@ -52,6 +66,35 @@ function GeoCube(filepath::String, latitude_name, longitude_name)
 end
 
 
+"""
+Export cell data cube into a traditional geographical one
+
+Transforms a data cube with one spatial index dimensions, i. e., the cell id,
+into a traditional geographical data cube with two spatial index dimensions longitude and latitude.
+Values are taken from the nearest cell.
+"""
+function GeoCube(cell_cube::CellCube)
+    longitudes = -180:180
+    latitudes = -90:90
+
+    regridded_matrix = Matrix{eltype(cell_cube)}(undef, length(longitudes), length(latitudes))
+
+    for (lon_i, lon) in enumerate(longitudes)
+        for (lat_i, lat) in enumerate(latitudes)
+            cur_cell_id = get_cell_ids(cell_cube.grid, lat, lon)
+            regridded_matrix[lon_i, lat_i] = cell_cube.data[cur_cell_id]
+        end
+    end
+
+    axlist = [
+        RangeAxis("lon", longitudes),
+        RangeAxis("lat", latitudes)
+    ]
+
+    cube = YAXArray(axlist, regridded_matrix) |> GeoCube
+    return cube
+end
+
 function plot!(geo_cube::GeoCube)
     # Can not use Makie plot recipies, because we need to specify the axis for GeoMakie
     # see https://discourse.julialang.org/t/accessing-axis-in-makie-plot-recipes/66006
@@ -61,19 +104,6 @@ function plot!(geo_cube::GeoCube)
     sf = surface!(ga1, geo_cube.longitudes, geo_cube.latitudes, geo_cube.data.data; colormap=:viridis, shading=false)
     cb1 = Colorbar(fig[1, 2], sf; label="Value", height=Relative(0.5))
     fig
-end
-
-struct CellCube <: DGGSCube
-    data::YAXArray
-    grid::Grid
-    cell_ids
-
-    function CellCube(data::YAXArray, grid::Grid)
-        hasproperty(data, :cell_id) ? true : @error "CellCube must have property cell_id"
-        eltype(data.cell_id) <: Int ? true : @error "Field cell_id must be an Integer"
-
-        new(data, grid, data.cell_id)
-    end
 end
 
 """
@@ -105,6 +135,11 @@ function Base.show(io::IO, ::MIME"text/plain", cell_cube::CellCube)
     println(io, "Element type: $(eltype(cell_cube))")
     println(io, "Cell id:      RangeAxis with $(length(cell_cube.cell_ids)) elements from $(first(cell_cube.cell_ids)) to $(last(cell_cube.cell_ids))")
     println(io, "size:         $(YAXArrays.Cubes.formatbytes(YAXArrays.Cubes.cubesize(cell_cube.data)))")
+end
+
+function plot!(cell_cube::CellCube)
+    geo_cube = GeoCube(cell_cube)
+    plot(geo_cube)
 end
 
 # Would it be better to make CellCube <: YAXArray ?

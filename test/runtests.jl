@@ -13,7 +13,7 @@ using YAXArrays
         "point_output_file_name" => "centers"
     )
 
-    d = call_dggrid(meta)
+    d = DGGS.call_dggrid(meta)
     @test isfile("$(d)/centers.txt")
 
     @test_throws DomainError Grid("Foo")
@@ -36,11 +36,12 @@ using YAXArrays
         RangeAxis("lon", lon_range),
         RangeAxis("lat", lat_range)
     ]
-    geo_cube = YAXArray(axlist, data)
+    geo_cube_array = YAXArray(axlist, data)
+    geo_cube = GeoCube(geo_cube_array)
 
-    cell_cube = get_cell_cube(grid, geo_cube)
-    @test cell_cube.cell_id |> length == 642
-    geo_cube2 = get_geo_cube(grid, cell_cube)
+    cell_cube = CellCube(geo_cube, grid)
+    @test cell_cube.cell_ids |> length == 642
+    geo_cube2 = GeoCube(cell_cube)
     @test isdefined(geo_cube2, :data)
 
     grid2 = Grid("ISEA4H")
@@ -61,11 +62,11 @@ using YAXArrays
     @test grid3 |> get_cell_boundaries |> size == (642, 2)
     @test grid3 |> get_cell_centers |> size == (642, 2)
 
-    grids = create_grids("ISEA", 4, "HEXAGON", 3)
-    @test get_children_cell_ids(grids, 1, 4) == [9, 10, 11, 12, 27]
-    @test get_parent_cell_id(grids, 2, 27) == 4
+    grids = DGGS.create_grids("ISEA", 4, "HEXAGON", 3)
+    @test DGGS.get_children_cell_ids(grids, 1, 4) == [9, 10, 11, 12, 27]
+    @test DGGS.get_parent_cell_id(grids, 2, 27) == 4
     # going back and forth must return the same cell id 4 again
-    @test get_parent_cell_id.(Ref(grids), 2, get_children_cell_ids(grids, 1, 4)) == fill(4, 5)
+    @test DGGS.get_parent_cell_id.(Ref(grids), 2, get_children_cell_ids(grids, 1, 4)) == fill(4, 5)
 
     dggs = GridSystem(geo_cube, "ISEA", 4, "HEXAGON", 3)
     @test dggs.data |> last |> size == (162,)
