@@ -3,11 +3,13 @@ module DGGS
 include("grids.jl")
 include("dggrid.jl")
 include("cubes.jl")
+include("gridsystems.jl")
 
 export
     GeoCube,
     CellCube,
     Grid,
+    DgGrid,
     get_cell_ids,
     plot!,
     create_toy_grid,

@@ -1,4 +1,4 @@
-import YAXArrays
+import YAXArrays: YAXArray, Cube, Cubes.formatbytes, Cubes.cubesize
 import Statistics: mean
 import Makie
 import GeoMakie
@@ -7,10 +7,10 @@ abstract type DGGSCube end
 
 struct CellCube <: DGGSCube
     data::YAXArray
-    grid::Grid
+    grid::AbstractGrid
     cell_ids
 
-    function CellCube(data::YAXArray, grid::Grid)
+    function CellCube(data::YAXArray, grid::AbstractGrid)
         hasproperty(data, :cell_id) ? true : @error "CellCube must have property cell_id"
         eltype(data.cell_id) <: Int ? true : @error "Field cell_id must be an Integer"
 
@@ -41,7 +41,7 @@ function Base.show(io::IO, ::MIME"text/plain", geo_cube::GeoCube)
     println(io, "Element type: $(eltype(geo_cube))")
     println(io, "Latitude:     RangeAxis with $(length(geo_cube.latitudes)) elements from $(first(geo_cube.latitudes)) to $(last(geo_cube.latitudes))")
     println(io, "Longituide:   RangeAxis with $(length(geo_cube.longitudes)) elements from $(first(geo_cube.longitudes)) to $(last(geo_cube.longitudes))")
-    println(io, "size:         $(YAXArrays.Cubes.formatbytes(YAXArrays.Cubes.cubesize(geo_cube.data)))")
+    println(io, "size:         $(formatbytes(cubesize(geo_cube.data)))")
 end
 
 Base.eltype(geo_cube::GeoCube) = eltype(geo_cube.data)
@@ -113,7 +113,7 @@ Transforms a data cube with spatial index dimensions longitude and latitude
 into a data cube with the cell id as a single spatial index dimension.
 Re-gridding is done using the average value of all geographical coordinates belonging to a particular cell defined by the grid specification `grid_spec`.
 """
-function CellCube(geo_cube::GeoCube, grid::Grid; aggregate_function::Function=mean)
+function CellCube(geo_cube::GeoCube, grid::AbstractGrid; aggregate_function::Function=mean)
     cell_ids = get_cell_ids(grid, geo_cube.latitudes, geo_cube.longitudes)
     cell_values = Vector{eltype(geo_cube)}(undef, length(grid))
 
