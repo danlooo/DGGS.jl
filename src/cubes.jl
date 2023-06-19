@@ -1,4 +1,4 @@
-import YAXArrays: YAXArray, Cube, Cubes.formatbytes, Cubes.cubesize
+import YAXArrays: YAXArray, Cube, Cubes.formatbytes, Cubes.cubesize, RangeAxis
 import Statistics: mean
 import Makie
 import GeoMakie
@@ -126,15 +126,15 @@ function CellCube(geo_cube::GeoCube, grid::AbstractGrid; aggregate_function::Fun
     end
 
     axlist = [RangeAxis("cell_id", range(1, length(grid)))]
-    cell_cube = YAXArray(axlist, cell_values)
-    return CellCube(cell_cube, grid)
+    cell_cube_array = YAXArray(axlist, cell_values)
+    return CellCube(cell_cube_array, grid)
 end
 
 function Base.show(io::IO, ::MIME"text/plain", cell_cube::CellCube)
     println(io, "DGGS CellCube")
     println(io, "Element type: $(eltype(cell_cube))")
     println(io, "Cell id:      RangeAxis with $(length(cell_cube.cell_ids)) elements from $(first(cell_cube.cell_ids)) to $(last(cell_cube.cell_ids))")
-    println(io, "size:         $(YAXArrays.Cubes.formatbytes(YAXArrays.Cubes.cubesize(cell_cube.data)))")
+    println(io, "size:         $(formatbytes(cubesize(cell_cube.data)))")
 end
 
 function plot!(cell_cube::CellCube)

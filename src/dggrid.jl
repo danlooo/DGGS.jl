@@ -8,17 +8,15 @@ using GeoFormatTypes
 
 struct DgGrid <: AbstractGrid
     data::KDTree
-    type::String
-    projection::String
+    type::Symbol
+    projection::Symbol
     aperture::Int
-    topology::String
-    resolution::Int
+    topology::Symbol
+    level::Int
 end
 
-
-Projections = ["ISEA", "FULLER"]
-Topologies = ["HEXAGON", "TRIANGLE", "DIAMOND"]
-GridPresets = ["SUPERFUND", "PLANETRISK", "ISEA4T", "ISEA4D", "ISEA3H", "ISEA4H", "ISEA7H", "ISEA43H", "FULLER4T", "FULLER4D", "FULLER3H", "FULLER4H", "FULLER7H", "FULLER43H"]
+Projections = [:isea, :fuller]
+Topologies = [:hexagon, :triangle, :diamond]
 Apertures = [3, 4, 7]
 
 """
@@ -54,7 +52,7 @@ end
 """
 Get a DataFrame of cell center points
 """
-function get_dggrid_grid_table(type::String, topology::String, projection::String, resolution::Int)
+function get_dggrid_grid_table(type::Symbol, topology::Symbol, projection::Symbol, resolution::Int)
     meta = Dict(
         "dggrid_operation" => "GENERATE_GRID",
         "clip_subset_type" => "WHOLE_EARTH",
@@ -62,14 +60,10 @@ function get_dggrid_grid_table(type::String, topology::String, projection::Strin
         "point_output_file_name" => "centers"
     )
 
-    if Symbol(type) in GridPresets
-        meta["dggs_type"] = string(type)
-    else
-        meta["dggs_type"] = "CUSTOM"
-        meta["dggs_topology"] = string(topology)
-        meta["dggs_proj"] = string(projection)
-        meta["dggs_res_spec"] = string(resolution)
-    end
+    meta["dggs_type"] = "CUSTOM"
+    meta["dggs_topology"] = uppercase(string(topology))
+    meta["dggs_proj"] = uppercase(string(projection))
+    meta["dggs_res_spec"] = uppercase(string(resolution))
 
     out_dir = call_dggrid(meta)
 
@@ -81,25 +75,21 @@ end
 """
 Create a grid using DGGRID parameters
 """
-function DgGrid(projection::String, aperture::Int, topology::String, resolution::Int)
-    if !(projection in Projections)
-        throw(DomainError("Argument projection must be an any of $(join(Projections, ","))"))
-    end
+function DgGrid(projection::Symbol, aperture::Int, topology::Symbol, resolution::Int)
+    projection in Projections ? true : error("projection :$projection must be one of $Projections")
+    aperture in Apertures ? true : error("aperture $aperture must be one of $Apertures")
+    topology in Topologies ? true : error("topology :$(topology) must be one of $Topologies")
 
-    if !(aperture in Apertures)
-        throw(DomainError("Argument aperture must be an any of $(join(Apertures, ","))"))
-    end
-
-    if !(topology in Topologies)
-        throw(DomainError("Argument topology must be an any of $(join(Topologies, ","))"))
-    end
-
-    grid_table = get_dggrid_grid_table("CUSTOM", topology, projection, resolution)
+    grid_table = get_dggrid_grid_table(:custom, topology, projection, resolution)
 
     # cell center points encode grid tpopology (e.g. hexagon or square) implicitly
     # Fast average search in O(log n) and efficient in batch processing
     # KDTree defaults to Euklidean metric
     # However, should be faster than haversine and return same indices
     grid_tree = grid_table[:, [:lon, :lat]] |> Matrix |> transpose |> KDTree
-    return DgGrid(grid_tree, "CUSTOM", projection, aperture, topology, resolution)
+    return DgGrid(grid_tree, :custom, projection, aperture, topology, resolution)
+end
+
+function Base.show(io::IO, ::MIME"text/plain", grid::DgGrid)
+    println(io, "DgGrid with $(grid.topology) topology, $(grid.projection) projection, apterture of $(grid.aperture), and $(length(grid)) cells")
 end
