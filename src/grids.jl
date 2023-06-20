@@ -32,7 +32,7 @@ end
 """
 Convert cell id to geographic coordinate of cell center
 """
-function get_geo_coords(grid::Grid, id::Int)
+function get_geo_coords(grid::AbstractGrid, id::Int)
     tree_id = findfirst(x -> x == id, grid.data.indices)
     res = grid.data.data[tree_id]
     return (res[2], res[1])
@@ -41,6 +41,6 @@ end
 """
 Convert cell id to geographic coordinate of cell center
 """
-function get_geo_coords(grid::Grid, id::AbstractVector)
+function get_geo_coords(grid::AbstractGrid, id::AbstractVector)
     return get_geo_coords.(Ref(grid), id)
 end

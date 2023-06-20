@@ -11,6 +11,31 @@ struct GlobalGridSystem
 end
 
 """
+Get id of parent cell
+"""
+function get_parent_cell_id(grids::Vector{<:AbstractGrid}, resolution::Int, cell_id::Int)
+    if resolution == 1
+        error("Lowest rosolutio can not have any further parents")
+    end
+
+    parent_resolution = resolution - 1
+    geo_coord = get_geo_coords(grids[resolution], cell_id)
+    parent_cell_id = get_cell_ids(grids[parent_resolution], geo_coord[1], geo_coord[2])
+    return parent_cell_id
+end
+
+"""
+Get ids of all child cells
+"""
+function get_children_cell_ids(grids::Vector{<:AbstractGrid}, resolution::Int, cell_id::Int)
+    if resolution == length(grids)
+        error("Highest resolution can not have any further children")
+    end
+    parent_cell_ids = get_parent_cell_id.(Ref(grids), resolution + 1, 1:length(grids[resolution+1].data.data))
+    findall(x -> x == cell_id, parent_cell_ids)
+end
+
+"""
 Get a cell data cube pyramid
 
 Calculates a stack of cell data cubes with incrementally lower resolutions
@@ -36,10 +61,7 @@ function get_cube_pyramid(grids::Vector{<:AbstractGrid}, cell_cube::CellCube; ag
             child_cell_vector[cell_id] = cell_values |> aggregate_function |> first
         end
 
-        axlist = [
-            RangeAxis("cell_id", range(1, length(child_grid)))
-        ]
-        res[resolution] = YAXArray(axlist, child_cell_vector)
+        res[resolution] = CelLCube(child_cell_vector)
     end
     return res
 end

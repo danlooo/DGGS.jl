@@ -1,7 +1,7 @@
 import YAXArrays: YAXArray, Cube, Cubes.formatbytes, Cubes.cubesize, RangeAxis
 import Statistics: mean
-import Makie
-import GeoMakie
+using Makie
+using GeoMakie
 
 abstract type DGGSCube end
 
@@ -108,15 +108,15 @@ function GeoCube(cell_cube::CellCube)
     return cube
 end
 
-function plot!(geo_cube::GeoCube)
+function plot_map(geo_cube::GeoCube)
     # Can not use Makie plot recipies, because we need to specify the axis for GeoMakie
     # see https://discourse.julialang.org/t/accessing-axis-in-makie-plot-recipes/66006
 
     fig = Figure()
-    ga1 = GeoAxis(fig[1, 1]; dest="+proj=wintri", coastlines=true)
-    sf = surface!(ga1, geo_cube.longitudes, geo_cube.latitudes, geo_cube.data.data; colormap=:viridis, shading=false)
-    cb1 = Colorbar(fig[1, 2], sf; label="Value", height=Relative(0.5))
-    fig
+    ax = GeoAxis(fig[1, 1]; dest="+proj=wintri", coastlines=true)
+    plt = surface!(ax, geo_cube.longitudes, geo_cube.latitudes, geo_cube.data.data; colormap=:viridis, shading=false)
+    cb1 = Colorbar(fig[1, 2], plt; label="Value", height=Relative(0.5))
+    return fig
 end
 
 """
@@ -161,9 +161,10 @@ function Base.show(io::IO, ::MIME"text/plain", cell_cube::CellCube)
     println(io, "size:         $(formatbytes(cubesize(cell_cube.data)))")
 end
 
-function plot!(cell_cube::CellCube)
+function plot_map(cell_cube::CellCube)
+    # raster cellcube, because geo coordinates needed for plotting
     geo_cube = GeoCube(cell_cube)
-    plot(geo_cube)
+    plot_map(geo_cube)
 end
 
 # Would it be better to make CellCube <: YAXArray ?

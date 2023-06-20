@@ -20,5 +20,5 @@ export
     get_geo_coords,
     Grid,
     Level,
-    plot!
+    plot_map
 end
