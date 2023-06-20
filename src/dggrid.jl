@@ -39,7 +39,7 @@ end
 """
 Get a DataFrame of cell center points
 """
-function get_dggrid_grid_table(type::Symbol, topology::Symbol, projection::Symbol, resolution::Int)
+function get_dggrid_grid_table(type::Symbol, topology::Symbol, projection::Symbol, level::Int)
     meta = Dict(
         "dggrid_operation" => "GENERATE_GRID",
         "clip_subset_type" => "WHOLE_EARTH",
@@ -50,7 +50,7 @@ function get_dggrid_grid_table(type::Symbol, topology::Symbol, projection::Symbo
     meta["dggs_type"] = "CUSTOM"
     meta["dggs_topology"] = uppercase(string(topology))
     meta["dggs_proj"] = uppercase(string(projection))
-    meta["dggs_res_spec"] = uppercase(string(resolution))
+    meta["dggs_res_spec"] = uppercase(string(level))
 
     out_dir = call_dggrid(meta)
 

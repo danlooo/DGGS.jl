@@ -41,7 +41,7 @@ dggs = GridSystem(geo_cube, "ISEA", 4, "HEXAGON", 3)
 ```
 Discrete Global Grid System
 Grid:   HEXAGON topology, ISEA projection, aperture of 4
-Cells:  3 resolutions with up to 162 cells
+Cells:  3 levels with up to 162 cells
 Data:   YAXArray of type Vector{Float32} with 864 bytes
 ```
 

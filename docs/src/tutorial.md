@@ -22,19 +22,19 @@ using CairoMakie
 plot_geo_cube(geo_cube)
 ```
 
-Let's create a DGGS using Synder Equal Area projection (`"ISEA"`), an aperture of 4 (number of child cells of a given parent cell), a hexagonal grid shape at 3 different resolutions:
+Let's create a DGGS using Synder Equal Area projection (`"ISEA"`), an aperture of 4 (number of child cells of a given parent cell), a hexagonal grid shape at 3 different levels:
 
 ```@example dggs
 dggs = GridSystem(geo_cube, "ISEA", 4, "HEXAGON", 3)
 ```
 
-The data cube at the highest resolution has only one spatial index dimension, i.e. the cell id:
+The data cube at the highest level has only one spatial index dimension, i.e. the cell id:
 
 ```@example dggs
 get_cell_cube(dggs, 3)
 ```
 
-Plot the DGGS at a given resolution
+Plot the DGGS at a given level
 
 ```@example dggs
 plot_grid_system(dggs, 3)
@@ -42,11 +42,11 @@ plot_grid_system(dggs, 3)
 
 A DGGS cell represent all points within its boundary polygon.
 This acts as a pooling mechanism.
-The hexagonal topology is easily recognizable at this low resolution.
+The hexagonal topology is easily recognizable at this low level.
 
 ## Explore the grid
 
-A DGGS consists of multiple grids with varying resolutions.
+A DGGS consists of multiple grids with varying levels.
 Let's create our first grid to explore its properties:
 
 ```@example grid
@@ -83,8 +83,8 @@ get_geo_coords(grid, 5)
 ```
 
 The coordinates may differ slightly, because a cell covers all points of a given area and only the center point is returned.
-This tutorial uses very low resolutions to demonstrate the properties of a DGGS.
-In practice, much higher resolution levels should be chosen for spatial analysis, diminishing these inaccuracies.
+This tutorial uses very low levels to demonstrate the properties of a DGGS.
+In practice, much higher level levels should be chosen for spatial analysis, diminishing these inaccuracies.
 
 ## Import NetCDF files into a DGGS 
 

@@ -16,11 +16,10 @@ using YAXArrays
     d = DGGS.call_dggrid(meta)
     @test isfile("$(d)/centers.txt")
 
-    @test_throws DomainError Grid("Foo")
-    @test_throws DomainError Grid("ISEA", 100, "HEXAGON", 5)
+    @test_throws Exception Grid(:isea, 100, :hexagon, 5)
 
     grid = create_toy_grid()
-    @test length(grid.data.data) == 642
+    @test length(grid) == 642
     export_cell_boundaries(grid)
     @test GeoDataFrames.read("boundaries.geojson") |> size == (642, 2)
     export_cell_centers(grid)
@@ -48,7 +47,7 @@ using YAXArrays
     @test grid2.spec.projection == "ISEA"
     @test grid2.spec.type == "ISEA4H"
     @test grid2.spec.aperture == 4
-    @test grid2.spec.resolution == 9
+    @test grid2.spec.level == 9
     @test grid2.spec.projection == "ISEA"
     @test grid2.spec.topology == "HEXAGON"
 

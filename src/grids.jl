@@ -58,21 +58,23 @@ end
 """
 Create a grid using DGGRID parameters
 """
-function DgGrid(projection::Symbol, aperture::Int, topology::Symbol, resolution::Int)
+function DgGrid(projection::Symbol, aperture::Int, topology::Symbol, level::Int)
     projection in Projections ? true : error("projection :$projection must be one of $Projections")
     aperture in Apertures ? true : error("aperture $aperture must be one of $Apertures")
     topology in Topologies ? true : error("topology :$(topology) must be one of $Topologies")
 
-    grid_table = get_dggrid_grid_table(:custom, topology, projection, resolution)
+    grid_table = get_dggrid_grid_table(:custom, topology, projection, level)
 
     # cell center points encode grid tpopology (e.g. hexagon or square) implicitly
     # Fast average search in O(log n) and efficient in batch processing
     # KDTree defaults to Euklidean metric
     # However, should be faster than haversine and return same indices
     grid_tree = grid_table[:, [:lon, :lat]] |> Matrix |> transpose |> KDTree
-    return DgGrid(grid_tree, :custom, projection, aperture, topology, resolution)
+    return DgGrid(grid_tree, :custom, projection, aperture, topology, level)
 end
 
 function Base.show(io::IO, ::MIME"text/plain", grid::DgGrid)
     println(io, "DgGrid with $(grid.topology) topology, $(grid.projection) projection, aperture of $(grid.aperture), and $(length(grid)) cells")
 end
+
+create_toy_grid() = DgGrid(:isea, 4, :hexagon, 3)
