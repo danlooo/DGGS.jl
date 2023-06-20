@@ -1,13 +1,43 @@
 struct Level
-    cube::CellCube
+    data::CellCube
     grid::AbstractGrid
 end
 
-struct GlobalGridSystem
+Base.getindex(level::Level, i...) = level.data[i...]
+
+function Base.show(io::IO, ::MIME"text/plain", level::Level)
+    println(io, "DGGS Level")
+    println(io, "Cells: $(length(level.data)) cells of type $(eltype(eltype(level.data)))")
+    println(io, "Grid:  $(repr("text/plain", level.grid))")
+end
+
+function Base.show(io::IO, ::MIME"text/plain", dggs::AbstractGlobalGridSystem)
+    println(io, "DGGS $(typeof(dggs))")
+    println(io, "Element type: $(eltype(1))")
+end
+
+abstract type AbstractGlobalGridSystem end
+
+struct GlobalGridSystem <: AbstractGlobalGridSystem
     data::Vector{Level}
-    projection::String
+end
+
+Base.eltype(dggs::AbstractGlobalGridSystem) = eltype(dggs[1].data)
+Base.length(dggs::AbstractGlobalGridSystem) = length(dggs.data)
+Base.getindex(dggs::AbstractGlobalGridSystem, i...) = dggs.data[i...]
+Base.lastindex(dggs::AbstractGlobalGridSystem) = last(dggs.data)
+
+function Base.show(io::IO, ::MIME"text/plain", dggs::AbstractGlobalGridSystem)
+    println(io, "DGGS $(typeof(dggs))")
+    println(io, "Element type: $(eltype(dggs))")
+    println(io, "Levels:       $(length(dggs))")
+end
+
+struct DgGlobalGridSystem <: AbstractGlobalGridSystem
+    data::Vector{Level}
+    projection::Symbol
     aperture::Int
-    topology::String
+    topology::Symbol
 end
 
 """
@@ -65,12 +95,24 @@ function get_cube_pyramid(grids::Vector{<:AbstractGrid}, cell_cube::CellCube; ag
 
         res[resolution] = CellCube(child_cell_vector, current_grid)
     end
+
     return res
 end
 
-function GlobalGridSystem(geo_cube::GeoCube, n_levels::Int=5, projection::Symbol=:isea, aperture::Int=4, topology::Symbol=:hexagon)
+function DgGlobalGridSystem(geo_cube::GeoCube, n_levels::Int=5, projection::Symbol=:isea, aperture::Int=4, topology::Symbol=:hexagon)
     grids = [DgGrid(projection, aperture, topology, level) for level in 0:n_levels-1]
     finest_grid = grids[n_levels]
     finest_cell_cube = CellCube(geo_cube, finest_grid)
     cell_cubes = get_cube_pyramid(grids, finest_cell_cube)
+    levels = [Level(cell_cube, grid) for (cell_cube, grid) in zip(cell_cubes, grids)]
+    println(levels)
+    dggs = DgGlobalGridSystem(levels, projection, aperture, topology)
+    return dggs
+end
+
+function Base.show(io::IO, ::MIME"text/plain", dggs::DgGlobalGridSystem)
+    println(io, "DGGS $(typeof(dggs))")
+    println(io, "Element type: $(eltype(dggs))")
+    println(io, "Levels:       $(length(dggs)) levels with up to $(length(last(dggs.data).data)) cells")
+    println(io, "Grid:         DgGrid with $(dggs.topology) topology, $(dggs.projection) projection, and aperture of $(dggs.aperture)")
 end

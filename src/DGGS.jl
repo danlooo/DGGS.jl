@@ -8,7 +8,7 @@ include("gridsystems.jl")
 
 export
     CellCube,
-    GlobalGridSystem,
+    DgGlobalGridSystem,
     create_toy_grid,
     DgGrid,
     export_cell_boundaries,
