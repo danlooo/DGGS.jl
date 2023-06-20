@@ -1,19 +1,6 @@
 using DGGRID7_jll
-using NearestNeighbors
-using CSV
+import CSV: read
 using DataFrames
-using ArchGDAL
-using GeoDataFrames
-using GeoFormatTypes
-
-struct DgGrid <: AbstractGrid
-    data::KDTree
-    type::Symbol
-    projection::Symbol
-    aperture::Int
-    topology::Symbol
-    level::Int
-end
 
 Projections = [:isea, :fuller]
 Topologies = [:hexagon, :triangle, :diamond]
@@ -67,29 +54,7 @@ function get_dggrid_grid_table(type::Symbol, topology::Symbol, projection::Symbo
 
     out_dir = call_dggrid(meta)
 
-    df = CSV.read("$(out_dir)/centers.txt", DataFrame; header=["name", "lon", "lat"], footerskip=1)
+    df = read("$(out_dir)/centers.txt", DataFrame; header=["name", "lon", "lat"], footerskip=1)
     rm(out_dir, recursive=true)
     return df
-end
-
-"""
-Create a grid using DGGRID parameters
-"""
-function DgGrid(projection::Symbol, aperture::Int, topology::Symbol, resolution::Int)
-    projection in Projections ? true : error("projection :$projection must be one of $Projections")
-    aperture in Apertures ? true : error("aperture $aperture must be one of $Apertures")
-    topology in Topologies ? true : error("topology :$(topology) must be one of $Topologies")
-
-    grid_table = get_dggrid_grid_table(:custom, topology, projection, resolution)
-
-    # cell center points encode grid tpopology (e.g. hexagon or square) implicitly
-    # Fast average search in O(log n) and efficient in batch processing
-    # KDTree defaults to Euklidean metric
-    # However, should be faster than haversine and return same indices
-    grid_tree = grid_table[:, [:lon, :lat]] |> Matrix |> transpose |> KDTree
-    return DgGrid(grid_tree, :custom, projection, aperture, topology, resolution)
-end
-
-function Base.show(io::IO, ::MIME"text/plain", grid::DgGrid)
-    println(io, "DgGrid with $(grid.topology) topology, $(grid.projection) projection, aperture of $(grid.aperture), and $(length(grid)) cells")
 end

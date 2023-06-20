@@ -14,7 +14,6 @@ export
     export_cell_boundaries,
     export_cell_centers,
     GeoCube,
-    get_cube_pyramid,
     get_cell_boundaries,
     get_cell_centers,
     get_cell_ids,
