@@ -1,4 +1,6 @@
 import NearestNeighbors: KDTree
+import DataFrames: DataFrame
+using ArchGDAL
 
 abstract type AbstractGrid end
 
@@ -54,6 +56,17 @@ struct DgGrid <: AbstractGrid
     level::Int
 end
 
+function get_cell_centers(grid::AbstractGrid)
+    # Using ArchGDAL directly results in segfaults and code would be more complex
+    geometry = Vector{ArchGDAL.IGeometry}(undef, length(grid))
+    for i in eachindex(grid.data.data)
+        geometry[i] = ArchGDAL.createpoint(grid.data.data[i][1], grid.data.data[i][2])
+    end
+    df = DataFrame(geometry=geometry, cell_id=grid.data.indices)
+    sort!(df, :cell_id)
+    return df
+end
+
 
 """
 Create a grid using DGGRID parameters
@@ -63,7 +76,7 @@ function DgGrid(projection::Symbol, aperture::Int, topology::Symbol, level::Int)
     aperture in Apertures ? true : error("aperture $aperture must be one of $Apertures")
     topology in Topologies ? true : error("topology :$(topology) must be one of $Topologies")
 
-    grid_table = get_dggrid_grid_table(:custom, topology, projection, level)
+    grid_table = get_dggrid_grid_table(topology, projection, level)
 
     # cell center points encode grid tpopology (e.g. hexagon or square) implicitly
     # Fast average search in O(log n) and efficient in batch processing
@@ -75,6 +88,10 @@ end
 
 function Base.show(io::IO, ::MIME"text/plain", grid::DgGrid)
     println(io, "DgGrid with $(grid.topology) topology, $(grid.projection) projection, aperture of $(grid.aperture), and $(length(grid)) cells")
+end
+
+function get_cell_boundaries(grid::DgGrid)
+    get_dggrid_cell_boundaries(grid.topology, grid.projection, grid.level)
 end
 
 create_toy_grid() = DgGrid(:isea, 4, :hexagon, 3)

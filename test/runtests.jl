@@ -20,10 +20,10 @@ using YAXArrays
 
     grid = create_toy_grid()
     @test length(grid) == 642
-    export_cell_boundaries(grid)
-    @test GeoDataFrames.read("boundaries.geojson") |> size == (642, 2)
-    export_cell_centers(grid)
-    @test GeoDataFrames.read("centers.geojson") |> size == (642, 2)
+
+    @test get_cell_boundaries(grid) |> size == (642, 2)
+    @test get_cell_centers(grid) |> size == (642, 2)
+
     @test get_cell_ids(grid, 58, 11) == 1
     @test get_cell_ids(grid, 59, 11) == 1
     @test get_geo_coords(grid, 1) == (58.2825256, 11.25)

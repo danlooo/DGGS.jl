@@ -1,5 +1,6 @@
 using DGGRID7_jll
 import CSV: read
+using GeoDataFrames
 using DataFrames
 
 Projections = [:isea, :fuller]
@@ -39,7 +40,7 @@ end
 """
 Get a DataFrame of cell center points
 """
-function get_dggrid_grid_table(type::Symbol, topology::Symbol, projection::Symbol, level::Int)
+function get_dggrid_grid_table(topology::Symbol, projection::Symbol, level::Int)
     meta = Dict(
         "dggrid_operation" => "GENERATE_GRID",
         "clip_subset_type" => "WHOLE_EARTH",
@@ -55,6 +56,32 @@ function get_dggrid_grid_table(type::Symbol, topology::Symbol, projection::Symbo
     out_dir = call_dggrid(meta)
 
     df = read("$(out_dir)/centers.txt", DataFrame; header=["name", "lon", "lat"], footerskip=1)
+    rm(out_dir, recursive=true)
+    return df
+end
+
+
+"""
+Get a GeoDataFrame with boundary polygons for each cell
+"""
+function get_dggrid_cell_boundaries(topology::Symbol, projection::Symbol, level::Int)
+    meta = Dict(
+        "dggrid_operation" => "GENERATE_GRID",
+        "clip_subset_type" => "WHOLE_EARTH",
+        # use GDAL geojson, see https://github.com/sahrk/DGGRID/issues/4
+        "cell_output_type" => "GDAL",
+        "cell_output_gdal_format" => "GeoJSON",
+        "cell_output_file_name" => "boundaries.geojson"
+    )
+
+    meta["dggs_type"] = "CUSTOM"
+    meta["dggs_topology"] = uppercase(string(topology))
+    meta["dggs_proj"] = uppercase(string(projection))
+    meta["dggs_res_spec"] = uppercase(string(level))
+
+    out_dir = call_dggrid(meta)
+    df = GeoDataFrames.read("$(out_dir)/boundaries.geojson")
+    rename!(df, [:geometry, :cell_id])
     rm(out_dir, recursive=true)
     return df
 end
