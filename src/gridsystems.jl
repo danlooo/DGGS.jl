@@ -51,22 +51,24 @@ function get_cube_pyramid(grids::Vector{<:AbstractGrid}, cell_cube::CellCube; ag
         # parent: has higher resolution, used for combining
         # child: has lower resolution, to be calculated, stores the combined values
         parent_cell_cube = res[resolution+1]
-        child_grid = grids[resolution]
-        child_cell_vector = Vector{eltype(cell_cube)}(undef, length(child_grid))
+        current_grid = grids[resolution]
+        child_cell_vector = Vector{eltype(cell_cube)}(undef, length(current_grid))
 
-        for cell_id in 1:length(child_grid)
+        for cell_id in 1:length(current_grid)
             # downscaling by combining corresponding values from parent
             cell_ids = get_children_cell_ids(grids, resolution, cell_id)
-            cell_values = [parent_cell_cube[cell_id=x].data for x in cell_ids]
-            child_cell_vector[cell_id] = cell_values |> aggregate_function |> first
+            child_cell_vector[cell_id] =
+                parent_cell_cube[cell_ids] |>
+                aggregate_function |>
+                first
         end
 
-        res[resolution] = CelLCube(child_cell_vector)
+        res[resolution] = CellCube(child_cell_vector, current_grid)
     end
     return res
 end
 
-function GlobalGridSystem(geo_cube::GeoCube, n_levels::Int=5, projection=:isea::Symbol, aperture=4::Int, topology::Symbol=:hexagon)
+function GlobalGridSystem(geo_cube::GeoCube, n_levels::Int=5, projection::Symbol=:isea, aperture::Int=4, topology::Symbol=:hexagon)
     grids = [DgGrid(projection, aperture, topology, level) for level in 0:n_levels-1]
     finest_grid = grids[n_levels]
     finest_cell_cube = CellCube(geo_cube, finest_grid)
