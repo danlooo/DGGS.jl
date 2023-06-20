@@ -1,5 +1,5 @@
-import NearestNeighbors: KDTree
-import DataFrames: DataFrame
+using NearestNeighbors
+using DataFrames
 using ArchGDAL
 
 abstract type AbstractGrid end

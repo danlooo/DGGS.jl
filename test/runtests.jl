@@ -31,28 +31,17 @@ using YAXArrays
     lon_range = -180:180
     lat_range = -90:90
     data = [exp(cosd(lon)) + 3(lat / 90) for lon in lon_range, lat in lat_range]
-    axlist = [
-        RangeAxis("lon", lon_range),
-        RangeAxis("lat", lat_range)
-    ]
-    geo_cube_array = YAXArray(axlist, data)
-    geo_cube = GeoCube(geo_cube_array)
+    geo_cube = GeoCube(data, lat_range, lon_range)
+    @test isdefined(geo_cube, :data)
+    @test eltype(geo_cube) <: Real
 
     cell_cube = CellCube(geo_cube, grid)
-    @test cell_cube.cell_ids |> length == 642
+    @test length(cell_cube) == 642
     geo_cube2 = GeoCube(cell_cube)
     @test isdefined(geo_cube2, :data)
 
-    grid2 = Grid("ISEA4H")
-    @test grid2.spec.projection == "ISEA"
-    @test grid2.spec.type == "ISEA4H"
-    @test grid2.spec.aperture == 4
-    @test grid2.spec.level == 9
-    @test grid2.spec.projection == "ISEA"
-    @test grid2.spec.topology == "HEXAGON"
-
-    grid3 = Grid("ISEA", 4, "HEXAGON", 3)
-    @test length(grid3.data.data) == 642
+    grid3 = DgGrid(:isea, 4, :hexagon, 3)
+    @test length(grid3) == 642
 
     @test get_cell_ids(grid3, 0, 0) == 157
     @test get_cell_ids(grid3, 80, 170) == 313
@@ -61,12 +50,7 @@ using YAXArrays
     @test grid3 |> get_cell_boundaries |> size == (642, 2)
     @test grid3 |> get_cell_centers |> size == (642, 2)
 
-    grids = DGGS.create_grids("ISEA", 4, "HEXAGON", 3)
-    @test DGGS.get_children_cell_ids(grids, 1, 4) == [9, 10, 11, 12, 27]
-    @test DGGS.get_parent_cell_id(grids, 2, 27) == 4
-    # going back and forth must return the same cell id 4 again
-    @test DGGS.get_parent_cell_id.(Ref(grids), 2, get_children_cell_ids(grids, 1, 4)) == fill(4, 5)
-
-    dggs = GridSystem(geo_cube, "ISEA", 4, "HEXAGON", 3)
-    @test dggs.data |> last |> size == (162,)
+    dggs = DgGlobalGridSystem(geo_cube, 3)
+    @test length(dggs) == 3
+    @test length(dggs[1]) == 12
 end

@@ -3,6 +3,7 @@ struct Level
     grid::AbstractGrid
 end
 
+Base.length(level::Level) = length(level.data)
 Base.getindex(level::Level, i...) = level.data[i...]
 
 function Base.show(io::IO, ::MIME"text/plain", level::Level)
