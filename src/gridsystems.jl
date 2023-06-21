@@ -6,11 +6,13 @@ end
 
 Base.length(level::Level) = length(level.data)
 Base.getindex(level::Level, i...) = level.data[i...]
+Base.eltype(level::Level) = eltype(level.data)
 
 function Base.show(io::IO, ::MIME"text/plain", level::Level)
     println(io, "DGGS Level")
-    println(io, "Cells: $(length(level.data)) cells of type $(eltype(eltype(level.data)))")
-    println(io, "Grid:  $(repr("text/plain", level.grid))")
+    println(io, "Cells:   level $(level.level) with $(length(level.data)) cells of type $(eltype(eltype(level.data)))")
+    println(io, "Grid:    $(strip(repr("text/plain", level.grid)))")
+    print(io, "Size:    $(formatbytes(cubesize(level.data)))")
 end
 
 plot_map(level::Level) = plot_map(level.data)
@@ -27,12 +29,15 @@ end
 
 Base.length(dggs::AbstractGlobalGridSystem) = length(dggs.data)
 Base.getindex(dggs::AbstractGlobalGridSystem, i...) = dggs.data[i...]
-Base.lastindex(dggs::AbstractGlobalGridSystem) = last(dggs.data)
+Base.lastindex(dggs::AbstractGlobalGridSystem) = lastindex(dggs.data)
+Base.last(dggs::AbstractGlobalGridSystem) = last(dggs.data)
+Base.size(dggs::AbstractGlobalGridSystem) = size(dggs.data)
 
 function Base.show(io::IO, ::MIME"text/plain", dggs::AbstractGlobalGridSystem)
     println(io, "DGGS $(typeof(dggs))")
-    println(io, "Cell type: $(eltype(dggs.data[1]))")
-    println(io, "Levels:       $(length(dggs))")
+    println(io, "Cells: $(eltype(dggs.data))")
+    println(io, "Grid:  $(strip(repr("text/plain", dggs[1].grid)))")
+    print(io, "Levels:    $(length(dggs))")
 end
 
 struct DgGlobalGridSystem <: AbstractGlobalGridSystem
@@ -109,6 +114,7 @@ end
 
 function Base.show(io::IO, ::MIME"text/plain", dggs::DgGlobalGridSystem)
     println(io, "DGGS $(typeof(dggs))")
-    println(io, "Levels:       $(length(dggs)) levels")
-    println(io, "Grid:         DgGrid with $(dggs.topology) topology, $(dggs.projection) projection, and aperture of $(dggs.aperture)")
+    println(io, "Cells:   $(length(dggs)) levels with up to $(dggs |> last |> length) cells of type $(dggs |> last |> eltype)")
+    println(io, "Grid:    DgGrid with $(dggs.topology) topology, $(dggs.projection) projection, and aperture of $(dggs.aperture)")
+    print(io, "Size:    $(formatbytes(sum([cubesize(x.data) for x in dggs])))")
 end

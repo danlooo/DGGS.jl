@@ -66,6 +66,7 @@ using Test
 
         dggs = DgGlobalGridSystem(geo_cube, 3)
         @test length(dggs) == 3
+        @test [x for x in dggs] |> length == 3 # test iterator
         @test length(dggs[1]) == 12
         @test length(dggs[1][1:10]) == 10
     end

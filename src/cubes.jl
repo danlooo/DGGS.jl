@@ -5,6 +5,8 @@ using GeoMakie
 
 abstract type DGGSCube end
 
+cubesize(cube::DGGSCube) = cubesize(cube.data)
+
 struct CellCube <: DGGSCube
     data::YAXArray
     grid::AbstractGrid
@@ -39,7 +41,7 @@ function Base.show(io::IO, ::MIME"text/plain", geo_cube::GeoCube)
     println(io, "Element type: $(eltype(geo_cube))")
     println(io, "Latitude:     RangeAxis with $(length(geo_cube.latitudes)) elements from $(first(geo_cube.latitudes)) to $(last(geo_cube.latitudes))")
     println(io, "Longituide:   RangeAxis with $(length(geo_cube.longitudes)) elements from $(first(geo_cube.longitudes)) to $(last(geo_cube.longitudes))")
-    println(io, "size:         $(formatbytes(cubesize(geo_cube.data)))")
+    print(io, "Size:         $(formatbytes(cubesize(geo_cube.data)))")
 end
 
 Base.eltype(geo_cube::GeoCube) = eltype(geo_cube.data)
@@ -154,9 +156,8 @@ end
 
 function Base.show(io::IO, ::MIME"text/plain", cell_cube::CellCube)
     println(io, "DGGS CellCube")
-    println(io, "Element type: $(eltype(cell_cube))")
-    println(io, "Cell id:      Axis with $(length(cell_cube.cell_ids)) elements from $(first(cell_cube.cell_ids)) to $(last(cell_cube.cell_ids))")
-    println(io, "size:         $(formatbytes(cubesize(cell_cube.data)))")
+    println(io, "Cells:   $(length(cell_cube)) cells of type $(eltype(cell_cube))")
+    print(io, "Size:    $(formatbytes(cubesize(cell_cube.data)))")
 end
 
 function plot_map(cell_cube::CellCube)
