@@ -11,14 +11,13 @@ abstract type AbstractGrid end
 
 struct Grid <: AbstractGrid
     data::KDTree
-    level::Int
 
-    function Grid(tree::KDTree, level::Int)
+    function Grid(tree::KDTree)
         all([-180 <= x[1] <= 180 for x in tree.data]) ||
             throw(ArgumentError("Longitudes must be in range [-180, 180]"))
         all([-90 <= x[2] <= 90 for x in tree.data]) ||
             throw(ArgumentError("Latitudes must be in range [-90, 90]"))
-        new(tree, level)
+        new(tree)
     end
 end
 
@@ -26,9 +25,9 @@ end
 Create a Grid using coordinates of center points describing a voronoi partition.
 center_points must have one point per column with 2 rows for longitude and latitude, respectiveley.
 """
-function Grid(center_points::AbstractMatrix{<:Number}, level::Int)
+function Grid(center_points::AbstractMatrix{<:Number})
     tree = KDTree(center_points)
-    Grid(tree, level)
+    Grid(tree)
 end
 
 Base.length(grid::AbstractGrid) = Base.length(grid.data.data)

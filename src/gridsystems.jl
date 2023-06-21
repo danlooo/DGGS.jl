@@ -1,6 +1,7 @@
 struct Level{G<:AbstractGrid}
     data::CellCube
     grid::G
+    level::Int
 end
 
 Base.length(level::Level) = length(level.data)
@@ -11,6 +12,8 @@ function Base.show(io::IO, ::MIME"text/plain", level::Level)
     println(io, "Cells: $(length(level.data)) cells of type $(eltype(eltype(level.data)))")
     println(io, "Grid:  $(repr("text/plain", level.grid))")
 end
+
+plot_map(level::Level) = plot_map(level.data)
 
 abstract type AbstractGlobalGridSystem <: AbstractVector{Level} end
 
@@ -88,6 +91,7 @@ function get_cube_pyramid(grids::Vector{<:AbstractGrid}, cell_cube::CellCube; ag
             cell_ids = get_children_cell_ids(grids, level, cell_id)
             child_cell_vector[cell_id] =
                 parent_cell_cube[cell_ids] |>
+                filter(!ismissing) |>
                 aggregate_function |>
                 first
         end
@@ -103,7 +107,7 @@ function DgGlobalGridSystem(geo_cube::GeoCube, n_levels::Int=5, projection::Symb
     finest_grid = grids[n_levels]
     finest_cell_cube = CellCube(geo_cube, finest_grid)
     cell_cubes = get_cube_pyramid(grids, finest_cell_cube)
-    levels = [Level(cell_cube, grid) for (cell_cube, grid) in zip(cell_cubes, grids)]
+    levels = [Level(cell_cube, grid, level) for (cell_cube, grid, level) in zip(cell_cubes, grids, 1:length(grids))]
     dggs = DgGlobalGridSystem(levels, projection, aperture, topology)
     return dggs
 end
