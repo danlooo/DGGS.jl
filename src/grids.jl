@@ -2,9 +2,13 @@ using NearestNeighbors
 using DataFrames
 using ArchGDAL
 
+
+"""
+A set of points defining a grid as a voronoi partition. 
+Points must be geographical coordinates (lon, lat) and stored as a KDTree in the filed data.
+"""
 abstract type AbstractGrid end
 
-# Most basic grid. These fileds must be included in all subtypes
 struct Grid <: AbstractGrid
     data::KDTree
     level::Int

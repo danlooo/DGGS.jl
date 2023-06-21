@@ -1,6 +1,6 @@
-struct Level
+struct Level{G<:AbstractGrid}
     data::CellCube
-    grid::AbstractGrid
+    grid::G
 end
 
 Base.length(level::Level) = length(level.data)
@@ -12,20 +12,23 @@ function Base.show(io::IO, ::MIME"text/plain", level::Level)
     println(io, "Grid:  $(repr("text/plain", level.grid))")
 end
 
-abstract type AbstractGlobalGridSystem end
+abstract type AbstractGlobalGridSystem <: AbstractVector{Level} end
 
 struct GlobalGridSystem <: AbstractGlobalGridSystem
     data::Vector{Level}
+    function GlobalGridSystem(levels)
+        length(levels) >= 1 || throw(ArgumentError("Must provide at least one level"))
+        new(levels)
+    end
 end
 
-Base.eltype(dggs::AbstractGlobalGridSystem) = eltype(dggs[1].data)
 Base.length(dggs::AbstractGlobalGridSystem) = length(dggs.data)
 Base.getindex(dggs::AbstractGlobalGridSystem, i...) = dggs.data[i...]
 Base.lastindex(dggs::AbstractGlobalGridSystem) = last(dggs.data)
 
 function Base.show(io::IO, ::MIME"text/plain", dggs::AbstractGlobalGridSystem)
     println(io, "DGGS $(typeof(dggs))")
-    println(io, "Element type: $(eltype(dggs))")
+    println(io, "Cell type: $(eltype(dggs.data[1]))")
     println(io, "Levels:       $(length(dggs))")
 end
 
@@ -101,14 +104,12 @@ function DgGlobalGridSystem(geo_cube::GeoCube, n_levels::Int=5, projection::Symb
     finest_cell_cube = CellCube(geo_cube, finest_grid)
     cell_cubes = get_cube_pyramid(grids, finest_cell_cube)
     levels = [Level(cell_cube, grid) for (cell_cube, grid) in zip(cell_cubes, grids)]
-    println(levels)
     dggs = DgGlobalGridSystem(levels, projection, aperture, topology)
     return dggs
 end
 
 function Base.show(io::IO, ::MIME"text/plain", dggs::DgGlobalGridSystem)
     println(io, "DGGS $(typeof(dggs))")
-    println(io, "Element type: $(eltype(dggs))")
-    println(io, "Levels:       $(length(dggs)) levels with up to $(length(last(dggs.data).data)) cells")
+    println(io, "Levels:       $(length(dggs)) levels")
     println(io, "Grid:         DgGrid with $(dggs.topology) topology, $(dggs.projection) projection, and aperture of $(dggs.aperture)")
 end
