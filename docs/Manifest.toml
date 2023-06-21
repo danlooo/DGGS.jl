@@ -261,10 +261,8 @@ uuid = "56fc471b-e449-5679-a438-44d065b4fb79"
 version = "0.9.1+0"
 
 [[deps.DGGS]]
-deps = ["ArchGDAL", "CSV", "DGGRID7_jll", "DataFrames", "GeoDataFrames", "GeoFormatTypes", "GeoMakie", "LibExpat", "Makie", "MakieCore", "NearestNeighbors", "Statistics", "YAXArrays"]
-git-tree-sha1 = "6c4db32310562c8ac74a659fce5defd029a0d3c5"
-repo-rev = "main"
-repo-url = "/home/dloos/prj/DGGS.jl"
+deps = ["ArchGDAL", "CSV", "DGGRID7_jll", "DataFrames", "GeoDataFrames", "GeoFormatTypes", "GeoMakie", "LibExpat", "Makie", "NearestNeighbors", "Statistics", "YAXArrays"]
+path = ".."
 uuid = "1b1208a4-f9dd-4606-8704-9f68bba98fd1"
 version = "1.0.0-DEV"
 
