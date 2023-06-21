@@ -32,6 +32,10 @@ end
 
 Base.length(grid::AbstractGrid) = Base.length(grid.data.data)
 
+function Base.show(io::IO, ::MIME"text/plain", grid::AbstractGrid)
+    print(io, "Grid with $(length(grid)) cells")
+end
+
 """
 Get cell ids given geographic corrdinates
 """
