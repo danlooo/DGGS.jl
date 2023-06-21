@@ -1,9 +1,24 @@
 module DGGS
 
-include("grid.jl")
+# must be sorted by dependency
+include("grids.jl")
 include("dggrid.jl")
-include("plot.jl")
+include("cubes.jl")
+include("gridsystems.jl")
 
-export GridSpec, Grid, create_toy_grid, PresetGridSpecs, get_grid_data, get_cell_boundaries, get_cell_centers,
-    call_dggrid, get_cell_ids, get_geo_coords, export_cell_boundaries, export_cell_centers, get_cell_cube, get_geo_cube, create_grids, get_parent_cell_id, get_children_cell_ids, GridSystem, get_cube_pyramid, plot_geo_cube, plot_cell_cube, plot_grid_system
+export
+    CellCube,
+    DgGlobalGridSystem,
+    create_toy_grid,
+    DgGrid,
+    export_cell_boundaries,
+    export_cell_centers,
+    GeoCube,
+    get_cell_boundaries,
+    get_cell_centers,
+    get_cell_ids,
+    get_geo_coords,
+    Grid,
+    Level,
+    plot_map
 end

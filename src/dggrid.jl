@@ -1,14 +1,10 @@
 using DGGRID7_jll
-using NearestNeighbors
-using CSV
-using DataFrames
-using ArchGDAL
+import CSV: read
 using GeoDataFrames
-using GeoFormatTypes
+using DataFrames
 
-Projections = ["ISEA", "FULLER"]
-Topologies = ["HEXAGON", "TRIANGLE", "DIAMOND"]
-GridPresets = ["SUPERFUND", "PLANETRISK", "ISEA4T", "ISEA4D", "ISEA3H", "ISEA4H", "ISEA7H", "ISEA43H", "FULLER4T", "FULLER4D", "FULLER3H", "FULLER4H", "FULLER7H", "FULLER43H"]
+Projections = [:isea, :fuller]
+Topologies = [:hexagon, :triangle, :diamond]
 Apertures = [3, 4, 7]
 
 """
@@ -44,7 +40,7 @@ end
 """
 Get a DataFrame of cell center points
 """
-function get_grid_data(grid_spec::GridSpec)
+function get_dggrid_grid_table(topology::Symbol, projection::Symbol, level::Int)
     meta = Dict(
         "dggrid_operation" => "GENERATE_GRID",
         "clip_subset_type" => "WHOLE_EARTH",
@@ -52,44 +48,23 @@ function get_grid_data(grid_spec::GridSpec)
         "point_output_file_name" => "centers"
     )
 
-    if Symbol(grid_spec.type) in GridPresets
-        meta["dggs_type"] = string(grid_spec.type)
-    else
-        meta["dggs_type"] = "CUSTOM"
-        meta["dggs_topology"] = string(grid_spec.topology)
-        meta["dggs_proj"] = string(grid_spec.projection)
-        meta["dggs_res_spec"] = string(grid_spec.resolution)
-    end
+    meta["dggs_type"] = "CUSTOM"
+    meta["dggs_topology"] = uppercase(string(topology))
+    meta["dggs_proj"] = uppercase(string(projection))
+    meta["dggs_res_spec"] = uppercase(string(level))
 
     out_dir = call_dggrid(meta)
 
-    df = CSV.read("$(out_dir)/centers.txt", DataFrame; header=["name", "lon", "lat"], footerskip=1)
+    df = read("$(out_dir)/centers.txt", DataFrame; header=["name", "lon", "lat"], footerskip=1)
     rm(out_dir, recursive=true)
     return df
 end
 
-get_grid_data(grid::Grid) = get_grid_data(grid.spec)
-
-function get_cell_centers(grid::Grid)
-    # Using ArchGDAL directly results in segfaults and code would be more complex
-    geometry = Vector{ArchGDAL.IGeometry}(undef, length(grid))
-    for i in eachindex(grid.data.data)
-        geometry[i] = ArchGDAL.createpoint(grid.data.data[i][1], grid.data.data[i][2])
-    end
-    df = DataFrame(geometry=geometry, cell_id=grid.data.indices)
-    sort!(df, :cell_id)
-    return df
-end
-
-function export_cell_centers(grid::Grid; filepath::String="centers.geojson")
-    df = get_cell_centers(grid)
-    GeoDataFrames.write(filepath, df)
-end
 
 """
 Get a GeoDataFrame with boundary polygons for each cell
 """
-function get_cell_boundaries(grid_spec::GridSpec)
+function get_dggrid_cell_boundaries(topology::Symbol, projection::Symbol, level::Int)
     meta = Dict(
         "dggrid_operation" => "GENERATE_GRID",
         "clip_subset_type" => "WHOLE_EARTH",
@@ -99,25 +74,14 @@ function get_cell_boundaries(grid_spec::GridSpec)
         "cell_output_file_name" => "boundaries.geojson"
     )
 
-    if Symbol(grid_spec.type) in GridPresets
-        meta["dggs_type"] = string(grid_spec.type)
-    else
-        meta["dggs_type"] = "CUSTOM"
-        meta["dggs_topology"] = string(grid_spec.topology)
-        meta["dggs_proj"] = string(grid_spec.projection)
-        meta["dggs_res_spec"] = string(grid_spec.resolution)
-    end
+    meta["dggs_type"] = "CUSTOM"
+    meta["dggs_topology"] = uppercase(string(topology))
+    meta["dggs_proj"] = uppercase(string(projection))
+    meta["dggs_res_spec"] = uppercase(string(level))
 
     out_dir = call_dggrid(meta)
     df = GeoDataFrames.read("$(out_dir)/boundaries.geojson")
     rename!(df, [:geometry, :cell_id])
     rm(out_dir, recursive=true)
     return df
-end
-
-get_cell_boundaries(grid::Grid) = get_cell_boundaries(grid.spec)
-
-function export_cell_boundaries(grid::Grid; filepath::String="boundaries.geojson")
-    boundaries = get_cell_boundaries(grid)
-    GeoDataFrames.write(filepath, boundaries)
 end
