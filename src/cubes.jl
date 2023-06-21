@@ -26,8 +26,8 @@ struct GeoCube <: DGGSCube
     function GeoCube(data)
         hasproperty(data, :lon) ? true : @error "GeoCube must have property lon"
         hasproperty(data, :lat) ? true : @error "GeoCube must have property lat"
-        issorted(data.lon) ? true : @error "Longitude must be sorted"
-        issorted(data.lat) ? true : @error "Latitude must be sorted"
+        # issorted(data.lon) ? true : @error "Longitude must be sorted"
+        # issorted(data.lat) ? true : @error "Latitude must be sorted"
         first(data.lon) == -180 && last(data.lon) == 180 ? true : @warn "Longitude grid is not global and does not range from -180 to 180"
         first(data.lat) == -90 && last(data.lat) == 90 ? true : @warn "Latitude grid is not global and does not range from -90 to 90"
 
