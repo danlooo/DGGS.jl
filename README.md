@@ -27,22 +27,33 @@ using Pkg
 Pkg.add(url="https://github.com/danlooo/DGGS.jl.git")
 ```
 
-Create a Discrete Global Grid System (DGGS) based on data stored in a NetCDF file:
+Create a data cube based on a geographical grid:
 
 ```julia
 using DGGS
-using YAXArrays, NetCDF, Downloads
-url = "https://www.unidata.ucar.edu/software/netcdf/examples/tos_O1_2001-2002.nc"
-filename = Downloads.download(url, "tos_O1_2001-2002.nc")
-geo_cube = Cube(filename)
+lon_range = -180:180
+lat_range = -90:90
+data = [exp(cosd(lon)) + 3(lat / 90) for lon in lon_range, lat in lat_range]
+geo_cube = GeoCube(data, lat_range, lon_range)
+```
+```
+DGGS GeoCube
+Element type: Float64
+Latitude:     RangeAxis with 181 elements from -90 to 90
+Longituide:   RangeAxis with 361 elements from -180 to 180
+Size:         510.48 KB
+```
 
-dggs = GridSystem(geo_cube, "ISEA", 4, "HEXAGON", 3)
+Create a DGGS from it:
+
+```julia
+dggs = DgGlobalGridSystem(geo_cube, 3, :isea, 4, :hexagon)
 ```
 ```
-Discrete Global Grid System
-Grid:   HEXAGON topology, ISEA projection, aperture of 4
-Cells:  3 levels with up to 162 cells
-Data:   YAXArray of type Vector{Float32} with 864 bytes
+DGGS DgGlobalGridSystem
+Cells:   3 levels with up to 162 cells of type Float64
+Grid:    DgGrid with hexagon topology, isea projection, and aperture of 4
+Size:    1.69 KB
 ```
 
 Checkout the [tutorial](https://danlooo.github.io/DGGS.jl/dev/tutorial/) for further examples.
@@ -50,3 +61,17 @@ Checkout the [tutorial](https://danlooo.github.io/DGGS.jl/dev/tutorial/) for fur
 ## Development
 
 This project is based on [DGGRID](https://github.com/sahrk/DGGRID).
+
+## Funding
+
+<p>
+<a href = "https://earthmonitor.org/">
+<img src="https://earthmonitor.org/wp-content/uploads/2022/04/european-union-155207_640-300x200.png" align="left" height="50" />
+</a>
+
+<a href = "https://earthmonitor.org/">
+<img src="https://earthmonitor.org/wp-content/uploads/2022/04/OEM_Logo_Horizontal_Dark_Transparent_Background_205x38.png" align="left" height="50" />
+</a>
+</p>
+
+This project has received funding from the from [Open-Earth-Monitor Cyberinfrastructure](https://earthmonitor.org/) project which is part of the European Union's Horizon Europe research and innovation programme under grant agreement No. [101059548](https://cordis.europa.eu/project/id/101059548).
