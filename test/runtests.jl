@@ -27,7 +27,7 @@ using GeoDataFrames
     @test get_cell_ids(grid, 59, 11) == 1
     @test get_geo_coords(grid, 1) == (58.2825256, 11.25)
 
-    grid2 = Grid([-170 -80; -165.12 81.12; -160 90]')
+    grid2 = Grid([-170 -80; -165.12 81.12; -160 90]', 1)
     @test length(grid2) == 3
 
     lon_range = -180:180
