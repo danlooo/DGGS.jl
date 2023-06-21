@@ -46,9 +46,7 @@ end
 Get id of parent cell
 """
 function get_parent_cell_id(grids::Vector{<:AbstractGrid}, level::Int, cell_id::Int)
-    if level == 1
-        error("Lowest rosolutio can not have any further parents")
-    end
+    level > 1 || throw(ArgumentError("Lowest resolution can not have any further parents"))
 
     parent_level = level - 1
     geo_coord = get_geo_coords(grids[level], cell_id)
@@ -60,9 +58,8 @@ end
 Get ids of all child cells
 """
 function get_children_cell_ids(grids::Vector{<:AbstractGrid}, level::Int, cell_id::Int)
-    if level == length(grids)
-        error("Highest level can not have any further children")
-    end
+    level < length(grids) || throw(ArgumentError("Highest level can not have any further children"))
+
     parent_cell_ids = get_parent_cell_id.(Ref(grids), level + 1, 1:length(grids[level+1].data.data))
     findall(x -> x == cell_id, parent_cell_ids)
 end
@@ -89,11 +86,9 @@ function get_cube_pyramid(grids::Vector{<:AbstractGrid}, cell_cube::CellCube; ag
         for cell_id in 1:length(current_grid)
             # downscaling by combining corresponding values from parent
             cell_ids = get_children_cell_ids(grids, level, cell_id)
-            child_cell_vector[cell_id] =
-                parent_cell_cube[cell_ids] |>
-                filter(!ismissing) |>
-                aggregate_function |>
-                first
+            values = parent_cell_cube[cell_ids]
+            filtered_values = filter(x -> !ismissing(x), values)
+            child_cell_vector[cell_id] = aggregate_function(filtered_values)
         end
 
         res[level] = CellCube(child_cell_vector, current_grid)

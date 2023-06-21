@@ -11,8 +11,8 @@ struct CellCube <: DGGSCube
     cell_ids
 
     function CellCube(data::YAXArray, grid::AbstractGrid)
-        hasproperty(data, :cell_id) ? true : @error "CellCube must have property cell_id"
-        eltype(data.cell_id) <: Int ? true : @error "Field cell_id must be an Integer"
+        hasproperty(data, :cell_id) || throw(ArgumentError("CellCube must have property cell_id"))
+        eltype(data.cell_id) <: Int || throw(ArgumentError("Field cell_id must be an Integer"))
 
         new(data, grid, data.cell_id)
     end
@@ -24,10 +24,8 @@ struct GeoCube <: DGGSCube
     latitudes
 
     function GeoCube(data)
-        hasproperty(data, :lon) ? true : @error "GeoCube must have property lon"
-        hasproperty(data, :lat) ? true : @error "GeoCube must have property lat"
-        # issorted(data.lon) ? true : @error "Longitude must be sorted"
-        # issorted(data.lat) ? true : @error "Latitude must be sorted"
+        hasproperty(data, :lon) || throw(ArgumentError("GeoCube must have property lon"))
+        hasproperty(data, :lat) || throw(ArgumentError("GeoCube must have property lat"))
         first(data.lon) == -180 && last(data.lon) == 180 ? true : @warn "Longitude grid is not global and does not range from -180 to 180"
         first(data.lat) == -90 && last(data.lat) == 90 ? true : @warn "Latitude grid is not global and does not range from -90 to 90"
 
@@ -50,9 +48,9 @@ function GeoCube(array::YAXArray, latitude_name, longitude_name)
     latitude_symbol = Symbol(latitude_name)
     longitude_symbol = Symbol(longitude_name)
 
-    latitude_symbol in propertynames(array) ? true : error("Missing dimension $(latitude_name)")
-    longitude_symbol in propertynames(array) ? true : error("Missing dimension $(longitude_name)")
-    latitude_symbol != longitude_symbol ? true : error("Dimensions of longitude and latitude must be different")
+    latitude_symbol in propertynames(array) || throw(ArgumentError("Missing dimension $(latitude_name)"))
+    longitude_symbol in propertynames(array) || throw(ArgumentError("Missing dimension $(longitude_name)"))
+    latitude_symbol != longitude_symbol || throw(ArgumentError("Dimensions of longitude and latitude must be different"))
 
     renameaxis!(array, latitude_symbol => :lat)
     renameaxis!(array, longitude_symbol => :lon)
@@ -67,8 +65,8 @@ function GeoCube(filepath::String, latitude_name, longitude_name)
 end
 
 function GeoCube(data::Matrix, latitudes::AbstractVector, longitudes::AbstractVector)
-    size(data)[1] == length(longitudes) ? true : error("Matrix data must have the same number of rows than longitudes")
-    size(data)[2] == length(latitudes) ? true : error("Matrix data must have the same number of columns than latitudes")
+    size(data)[1] == length(longitudes) || throw(ArgumentError("Matrix data must have the same number of rows than longitudes"))
+    size(data)[2] == length(latitudes) || throw(ArgumentError("Matrix data must have the same number of columns than latitudes"))
 
     axlist = [
         RangeAxis("lon", longitudes),
@@ -144,7 +142,7 @@ function CellCube(geo_cube::GeoCube, grid::AbstractGrid; aggregate_function::Fun
 end
 
 function CellCube(data::AbstractVector, grid::AbstractGrid)
-    length(data) == length(grid) ? true : error("Vector data must have the same length as there are cells ($(length(grid)))")
+    length(data) == length(grid) || throw(ArgumentError("Vector data must have the same length as there are grid cells ($(length(grid)))"))
 
     axlist = [
         RangeAxis("cell_id", 1:length(grid)),
