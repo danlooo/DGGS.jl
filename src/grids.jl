@@ -74,9 +74,9 @@ end
 struct DgGrid <: AbstractGrid
     data::KDTree
     type::Symbol
-    projection::Union{Symbol,Missing}
-    aperture::Union{Int,Missing}
-    topology::Union{Symbol,Missing}
+    projection::Union{Symbol,Nothing}
+    aperture::Union{Int,Nothing}
+    topology::Union{Symbol,Nothing}
     resolution::Int
 end
 
@@ -95,7 +95,7 @@ end
 """
 Create a grid using DGGRID parameters
 """
-function DgGrid(projection::Symbol, aperture::Union{Int,Missing}, topology::Union{Symbol,Missing}, resolution::Int)
+function DgGrid(projection::Symbol, aperture::Union{Int,Nothing}, topology::Union{Symbol,Nothing}, resolution::Int)
     projection in Projections || throw(ArgumentError("projection :$projection must be one of $Projections"))
     aperture in Apertures || throw(ArgumentError("aperture $aperture must be one of $Apertures"))
     topology in Topologies || throw(ArgumentError("topology :$(topology) must be one of $Topologies"))
@@ -111,7 +111,7 @@ function DgGrid(projection::Symbol, aperture::Union{Int,Missing}, topology::Unio
 end
 
 function DgGrid(preset::Symbol, resolution::Int)
-    preset in Presets || throw(ArgumentError("Symbol $(preset) must be one of $(Presets)"))
+    preset in keys(Presets) || throw(ArgumentError("Symbol $(preset) must be one of $(Presets)"))
 
     grid_table = get_dggrid_grid_table(preset, resolution)
 
@@ -120,7 +120,8 @@ function DgGrid(preset::Symbol, resolution::Int)
     # KDTree defaults to Euklidean metric
     # However, should be faster than haversine and return same indices
     grid_tree = grid_table[:, [:lon, :lat]] |> Matrix |> transpose |> KDTree
-    return DgGrid(grid_tree, preset, missing, missing, missing, resolution)
+    grid_props = Presets[preset]
+    return DgGrid(grid_tree, preset, grid_props.projection, grid_props.aperture, grid_props.topology, resolution)
 end
 
 function Base.show(io::IO, ::MIME"text/plain", grid::DgGrid)

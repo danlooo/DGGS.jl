@@ -7,11 +7,28 @@ Projections = [:isea, :fuller]
 Topologies = [:hexagon, :triangle, :diamond]
 Apertures = [3, 4, 7]
 
-Presets = [
-    :superfund, :planetrisk,
-    :isea4t, :isea4d, :isea3h, :isea4h, :isea7h, :isea43h,
-    :fuller4t, :fuller4d, :fuller3h, :fuller4h, :fuller7h, :fuller43h
-]
+struct Preset
+    topology::Symbol
+    projection::Symbol
+    aperture::Union{Int,Nothing}
+end
+
+Presets = Dict(
+    :superfund => Preset(:hexagon, :fuller, nothing),
+    :planetrisk => Preset(:hexagon, :isea, nothing),
+    :isea4t => Preset(:triangle, :isea, 4),
+    :isea4d => Preset(:diamond, :isea, 4),
+    :isea3h => Preset(:hexagon, :isea, 3),
+    :isea4h => Preset(:hexagon, :isea, 4),
+    :isea7h => Preset(:hexagon, :isea, 7),
+    :isea43h => Preset(:hexagon, :isea, nothing),
+    :fuller4t => Preset(:triangle, :fuller, 4),
+    :fuller4d => Preset(:diamond, :fuller, 4),
+    :fuller3h => Preset(:hexagon, :fuller, 3),
+    :fuller4h => Preset(:hexagon, :fuller, 4),
+    :fuller7h => Preset(:hexagon, :fuller, 7),
+    :fuller43h => Preset(:hexagon, :filler, nothing)
+)
 
 """
 Execute sytem call of DGGRID binary

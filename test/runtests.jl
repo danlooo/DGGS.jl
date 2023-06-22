@@ -44,7 +44,10 @@ using Test
         @test grid3 |> get_cell_boundaries |> size == (642, 2)
         @test grid3 |> get_cell_centers |> size == (642, 2)
 
-        @test DgGrid(:superfund, 3) |> length == 12962
+        grid4 = DgGrid(:superfund, 3)
+        @test grid4.projection == :fuller
+        @test isnothing(grid4.aperture)
+        @test length(grid4) == 12962
     end
 
     @testset "Cubes" begin
