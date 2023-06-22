@@ -42,9 +42,10 @@ end
 
 struct DgGlobalGridSystem <: AbstractGlobalGridSystem
     data::Vector{Level}
-    projection::Symbol
-    aperture::Int
-    topology::Symbol
+    type::Symbol
+    projection::Union{Symbol,Missing}
+    aperture::Union{Int,Missing}
+    topology::Union{Symbol,Missing}
 end
 
 """
@@ -102,19 +103,38 @@ function get_cube_pyramid(grids::Vector{<:AbstractGrid}, cell_cube::CellCube; ag
     return res
 end
 
+function DgGlobalGridSystem(geo_cube::GeoCube, preset::Symbol, n_levels::Int=5)
+    grids = [DgGrid(preset, level) for level in 0:n_levels-1]
+    finest_grid = grids[n_levels]
+    finest_cell_cube = CellCube(geo_cube, finest_grid)
+    cell_cubes = get_cube_pyramid(grids, finest_cell_cube)
+    levels = [Level(cell_cube, grid, level) for (cell_cube, grid, level) in zip(cell_cubes, grids, 1:length(grids))]
+    dggs = DgGlobalGridSystem(levels, preset, missing, missing, missing)
+    return dggs
+end
+
 function DgGlobalGridSystem(geo_cube::GeoCube, n_levels::Int=5, projection::Symbol=:isea, aperture::Int=4, topology::Symbol=:hexagon)
     grids = [DgGrid(projection, aperture, topology, level) for level in 0:n_levels-1]
     finest_grid = grids[n_levels]
     finest_cell_cube = CellCube(geo_cube, finest_grid)
     cell_cubes = get_cube_pyramid(grids, finest_cell_cube)
     levels = [Level(cell_cube, grid, level) for (cell_cube, grid, level) in zip(cell_cubes, grids, 1:length(grids))]
-    dggs = DgGlobalGridSystem(levels, projection, aperture, topology)
+    dggs = DgGlobalGridSystem(levels, :custom, projection, aperture, topology)
     return dggs
 end
 
+function get_apertures(dggs::DgGlobalGridSystem)
+    apertures = [level.grid.aperture for level in dggs]
+    if length(unique(apertures)) == 1
+        return apertures[1]
+    else
+        return apertures
+    end
+end
+
 function Base.show(io::IO, ::MIME"text/plain", dggs::DgGlobalGridSystem)
-    println(io, "DGGS $(typeof(dggs))")
+    println(io, "DGGS $(dggs.type) $(typeof(dggs))")
     println(io, "Cells:   $(length(dggs)) levels with up to $(dggs |> last |> length) cells of type $(dggs |> last |> eltype)")
-    println(io, "Grid:    DgGrid with $(dggs.topology) topology, $(dggs.projection) projection, and aperture of $(dggs.aperture)")
+    println(io, "Grid:    DgGrid with $(dggs.topology) topology, $(dggs.projection) projection, and aperture $(get_apertures(dggs))")
     print(io, "Size:    $(formatbytes(sum([cubesize(x.data) for x in dggs])))")
 end

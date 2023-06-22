@@ -74,9 +74,9 @@ end
 struct DgGrid <: AbstractGrid
     data::KDTree
     type::Symbol
-    projection::Symbol
-    aperture::Int
-    topology::Symbol
+    projection::Union{Symbol,Missing}
+    aperture::Union{Int,Missing}
+    topology::Union{Symbol,Missing}
     resolution::Int
 end
 
@@ -95,7 +95,7 @@ end
 """
 Create a grid using DGGRID parameters
 """
-function DgGrid(projection::Symbol, aperture::Int, topology::Symbol, resolution::Int)
+function DgGrid(projection::Symbol, aperture::Union{Int,Missing}, topology::Union{Symbol,Missing}, resolution::Int)
     projection in Projections || throw(ArgumentError("projection :$projection must be one of $Projections"))
     aperture in Apertures || throw(ArgumentError("aperture $aperture must be one of $Apertures"))
     topology in Topologies || throw(ArgumentError("topology :$(topology) must be one of $Topologies"))
@@ -110,8 +110,21 @@ function DgGrid(projection::Symbol, aperture::Int, topology::Symbol, resolution:
     return DgGrid(grid_tree, :custom, projection, aperture, topology, resolution)
 end
 
+function DgGrid(preset::Symbol, resolution::Int)
+    preset in Presets || throw(ArgumentError("Symbol $(preset) must be one of $(Presets)"))
+
+    grid_table = get_dggrid_grid_table(preset, resolution)
+
+    # cell center points encode grid tpopology (e.g. hexagon or square) implicitly
+    # Fast average search in O(log n) and efficient in batch processing
+    # KDTree defaults to Euklidean metric
+    # However, should be faster than haversine and return same indices
+    grid_tree = grid_table[:, [:lon, :lat]] |> Matrix |> transpose |> KDTree
+    return DgGrid(grid_tree, preset, missing, missing, missing, resolution)
+end
+
 function Base.show(io::IO, ::MIME"text/plain", grid::DgGrid)
-    print(io, "DgGrid with $(grid.topology) topology, $(grid.projection) projection, aperture of $(grid.aperture), and $(length(grid)) cells")
+    print(io, "DgGrid $(grid.type) with $(grid.topology) topology, $(grid.projection) projection, aperture of $(grid.aperture), and $(length(grid)) cells")
 end
 
 function get_cell_boundaries(grid::DgGrid)

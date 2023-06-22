@@ -14,6 +14,8 @@ using Test
 
         d = DGGS.call_dggrid(meta)
         @test isfile("$(d)/centers.txt")
+
+        @test DGGS.get_dggrid_grid_table(:isea4h, 3) |> size == (642, 3)
     end
 
     @testset "Grids" begin
@@ -41,6 +43,8 @@ using Test
 
         @test grid3 |> get_cell_boundaries |> size == (642, 2)
         @test grid3 |> get_cell_centers |> size == (642, 2)
+
+        @test DgGrid(:superfund, 3) |> length == 12962
     end
 
     @testset "Cubes" begin
@@ -69,6 +73,9 @@ using Test
         @test [x for x in dggs] |> length == 3 # test iterator
         @test length(dggs[1]) == 12
         @test length(dggs[1][1:10]) == 10
+
+        dggs2 = DgGlobalGridSystem(geo_cube, :superfund, 3)
+        @test length(dggs2[1]) == 42
     end
 
     @testset "Import NetCDF" begin

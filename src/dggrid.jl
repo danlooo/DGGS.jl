@@ -7,6 +7,12 @@ Projections = [:isea, :fuller]
 Topologies = [:hexagon, :triangle, :diamond]
 Apertures = [3, 4, 7]
 
+Presets = [
+    :superfund, :planetrisk,
+    :isea4t, :isea4d, :isea3h, :isea4h, :isea7h, :isea43h,
+    :fuller4t, :fuller4d, :fuller3h, :fuller4h, :fuller7h, :fuller43h
+]
+
 """
 Execute sytem call of DGGRID binary
 """
@@ -54,12 +60,27 @@ function get_dggrid_grid_table(topology::Symbol, projection::Symbol, level::Int)
     meta["dggs_res_spec"] = uppercase(string(level))
 
     out_dir = call_dggrid(meta)
-
     df = read("$(out_dir)/centers.txt", DataFrame; header=["name", "lon", "lat"], footerskip=1)
     rm(out_dir, recursive=true)
     return df
 end
 
+function get_dggrid_grid_table(preset::Symbol, level::Int)
+    meta = Dict(
+        "dggrid_operation" => "GENERATE_GRID",
+        "clip_subset_type" => "WHOLE_EARTH",
+        "point_output_type" => "TEXT",
+        "point_output_file_name" => "centers"
+    )
+
+    meta["dggs_type"] = uppercase(string(preset))
+    meta["dggs_res_spec"] = uppercase(string(level))
+
+    out_dir = call_dggrid(meta)
+    df = read("$(out_dir)/centers.txt", DataFrame; header=["name", "lon", "lat"], footerskip=1)
+    rm(out_dir, recursive=true)
+    return df
+end
 
 """
 Get a GeoDataFrame with boundary polygons for each cell
