@@ -1,4 +1,4 @@
-import YAXArrays: YAXArray, Cube, Cubes.formatbytes, Cubes.cubesize, RangeAxis, getattributes
+using YAXArrays
 import Statistics: mean
 using Makie
 using GeoMakie
@@ -126,6 +126,18 @@ function plot_map(geo_cube::GeoCube)
     return fig
 end
 
+function map_reduce_geo_to_cells(xout, current_geo_matrix; cell_ids, aggregate_function::Function)
+    cell_values = Vector{eltype(current_geo_matrix)}(undef, length(grid))
+    for cell_id in unique(cell_ids)
+        cell_coords = findall(isequal(cell_id), cell_ids)
+        if isempty(cell_coords)
+            continue
+        end
+        cell_values[cell_id] = current_geo_matrix[cell_coords] |> filter(!ismissing) |> aggregate_function
+    end
+    xout .= cell_values
+end
+
 """
 Import geographical data cube into a DGGS
 
@@ -135,19 +147,16 @@ Re-gridding is done using the average value of all geographical coordinates belo
 """
 function CellCube(geo_cube::GeoCube, grid::AbstractGrid; aggregate_function::Function=mean)
     cell_ids = get_cell_ids(grid, geo_cube.latitudes, geo_cube.longitudes)
-    cell_values = Vector{eltype(geo_cube)}(undef, length(grid))
 
-    for cell_id in unique(cell_ids)
-        cell_coords = findall(isequal(cell_id), cell_ids)
-        if isempty(cell_coords)
-            continue
-        end
-        cell_values[cell_id] = aggregate_function(geo_cube.data.data'[cell_coords])
-    end
-
-    axlist = [RangeAxis("cell_id", range(1, length(grid)))]
-    cell_cube_array = YAXArray(axlist, cell_values)
-    return CellCube(cell_cube_array, grid)
+    # Reduce spatial dimensions
+    cell_array = mapCube(map_reduce_geo_to_cells, geo_cube.data,
+        indims=InDims(:lat, :lon),
+        outdims=OutDims(RangeAxis(:cell_id, 1:length(grid)));
+        cell_ids=cell_ids,
+        aggregate_function=aggregate_function
+    )
+    cell_cube = CellCube(cell_array, grid)
+    return cell_cube
 end
 
 function CellCube(data::AbstractVector, grid::AbstractGrid)
