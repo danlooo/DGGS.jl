@@ -27,7 +27,7 @@ Presets = Dict(
     :fuller3h => Preset(:hexagon, :fuller, 3),
     :fuller4h => Preset(:hexagon, :fuller, 4),
     :fuller7h => Preset(:hexagon, :fuller, 7),
-    :fuller43h => Preset(:hexagon, :filler, nothing)
+    :fuller43h => Preset(:hexagon, :fuller, nothing)
 )
 
 """
