@@ -24,3 +24,5 @@ By Justin Kunimune - Own work, Public Domain, https://commons.wikimedia.org/w/in
 ![](assets/hexagon-children-aperture.png)
 
 ![](assets/dggs-distortion.png)
+
+![](assets/cube-shape.drawio.svg)
