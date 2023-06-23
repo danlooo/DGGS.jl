@@ -1,13 +1,13 @@
-import YAXArrays: YAXArray, Cube, Cubes.formatbytes, Cubes.cubesize, RangeAxis
+import YAXArrays: YAXArray, Cube, Cubes.formatbytes, Cubes.cubesize, RangeAxis, getattributes
 import Statistics: mean
 using Makie
 using GeoMakie
 
-abstract type DGGSCube end
+abstract type AbstractCube end
 
-cubesize(cube::DGGSCube) = cubesize(cube.data)
+cubesize(cube::AbstractCube) = cubesize(cube.data)
 
-struct CellCube <: DGGSCube
+struct CellCube <: AbstractCube
     data::YAXArray
     grid::AbstractGrid
     cell_ids
@@ -20,7 +20,7 @@ struct CellCube <: DGGSCube
     end
 end
 
-struct GeoCube <: DGGSCube
+struct GeoCube <: AbstractCube
     data::YAXArray
     longitudes
     latitudes
@@ -36,12 +36,19 @@ struct GeoCube <: DGGSCube
 end
 
 
-function Base.show(io::IO, ::MIME"text/plain", geo_cube::GeoCube)
-    println(io, "DGGS GeoCube")
-    println(io, "Element type: $(eltype(geo_cube))")
-    println(io, "Latitude:     RangeAxis with $(length(geo_cube.latitudes)) elements from $(first(geo_cube.latitudes)) to $(last(geo_cube.latitudes))")
-    println(io, "Longituide:   RangeAxis with $(length(geo_cube.longitudes)) elements from $(first(geo_cube.longitudes)) to $(last(geo_cube.longitudes))")
-    print(io, "Size:         $(formatbytes(cubesize(geo_cube.data)))")
+function Base.show(io::IO, ::MIME"text/plain", cube::AbstractCube)
+    println(io, "DGGS $(typeof(cube))")
+    println(io, "Element type:       $(eltype(cube))")
+    println(io, "Size:               $(formatbytes(cubesize(cube.data)))")
+    println(io, "Axes:")
+    for axis in cube.data.axes
+        println(io, repr(axis))
+    end
+    foreach(getattributes(cube.data)) do p
+        if p[1] in ("labels", "name", "units")
+            println(io, p[1], ": ", p[2])
+        end
+    end
 end
 
 Base.eltype(geo_cube::GeoCube) = eltype(geo_cube.data)
@@ -152,12 +159,6 @@ function CellCube(data::AbstractVector, grid::AbstractGrid)
     cell_cube_arr = YAXArray(axlist, data)
     cell_cube = CellCube(cell_cube_arr, grid)
     return cell_cube
-end
-
-function Base.show(io::IO, ::MIME"text/plain", cell_cube::CellCube)
-    println(io, "DGGS CellCube")
-    println(io, "Cells:   $(length(cell_cube)) cells of type $(eltype(cell_cube))")
-    print(io, "Size:    $(formatbytes(cubesize(cell_cube.data)))")
 end
 
 function plot_map(cell_cube::CellCube)
