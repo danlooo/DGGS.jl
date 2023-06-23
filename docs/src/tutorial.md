@@ -26,7 +26,7 @@ dggs = DgGlobalGridSystem(geo_cube, 3, :isea, 4, :hexagon)
 The data cube at the highest level has only one spatial index dimension, i.e. the cell id:
 
 ```@example dggs
-
+dggs
 ```
 
 Plot the DGGS at a given level
@@ -97,14 +97,32 @@ The coordinates may differ slightly, because a cell covers all points of a given
 This tutorial uses very low levels to demonstrate the properties of a DGGS.
 In practice, much higher level levels should be chosen for spatial analysis, diminishing these inaccuracies.
 
+## Import Zarr Arrays
 
-## Import NetCDF files into a DGGS 
+Load the zarr data into a YAXArray:
 
-Here we will import data with a geographical grid into a DGGS.
+```@example zarr
+using Zarr, YAXArrays
+url = "gs://cmip6/CMIP6/ScenarioMIP/DKRZ/MPI-ESM1-2-HR/ssp585/r1i1p1f1/3hr/tas/gn/v20190710/"
+geo_dataset = open_dataset(zopen(url, consolidated=true))
+geo_array = geo_dataset["tas"]
+```
+
+Transform the cooordinates and create the GeoCube:
+
+```@example zarr
+using DGGS
+data = circshift(geo_array[:, :, 1], length(geo_array.lon) / 2)
+latitudes = geo_array.lat
+longitudes = geo_array.lon .- 180
+geo_cube = GeoCube(data, latitudes, longitudes)
+plot_map(geo_cube)
+```
+
+## Import NetCDF files
+
 Here we will explore Sea surface temperatures collected by PCMDI for use by the IPCC stored in a NetCDF file.
-First, we need to create a geographical data cube.
-
-Create a data cube with geographical coordinates using YAXArrays:
+Download the NetCDF file into a YAXArray:
 
 ```@example netcdf
 using YAXArrays
@@ -112,26 +130,23 @@ using NetCDF
 using Downloads
 url = "https://www.unidata.ucar.edu/software/netcdf/examples/tos_O1_2001-2002.nc"
 filename = Downloads.download(url, "tos_O1_2001-2002.nc")
-geo_cube_raw = YAXArrays.Cube("tos_O1_2001-2002.nc")
+geo_array = YAXArrays.Cube("tos_O1_2001-2002.nc")
 ```
 
 Lets have a look at the first time point of the raw data:
 
 ```@example netcdf
 using CairoMakie
-heatmap(geo_cube_raw[:,:,1])
+heatmap(geo_array[:,:,1])
 ```
 
-The map is centered at the Pacific Ocean and has longitudes ranging from ~0° to ~365°.
-We need to convert the map into a null meridian centric one with longitudes ranging from -180° to 180°.
-One pixel represent 2° of the longitudinal axis, because there are 180 elements.
-Therefore, we need to shift the data matrix by 180/2=90 pixels.
+Transform the cooordinates and create the GeoCube:
 
 ```@example netcdf
 using DGGS
-data = circshift(geo_cube_raw[:,:,1], 90)
-latitudes = geo_cube_raw.lat
-longitudes = geo_cube_raw.lon .- 180
+data = circshift(geo_array[:,:,1], 90)
+latitudes = geo_array.lat
+longitudes = geo_array.lon .- 180
 geo_cube = GeoCube(data, latitudes, longitudes)
 ```
 
@@ -140,15 +155,4 @@ Plot the imported geo data cube:
 ```@example netcdf
 plot_map(geo_cube)
 ```
-
-Transform it into a DGGS:
-
-```@example netcdf
-dggs = DgGlobalGridSystem(geo_cube, 3, :isea, 4, :hexagon)
-```
-
-```@example netcdf
-plot_map(dggs[3])
-```
-
 Since this dataset is about ocean temperature, we do not have cells on the land area.
