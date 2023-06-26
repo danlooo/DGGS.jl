@@ -74,8 +74,8 @@ using Test
         @test size(cell_cube3.data) == (329, 24)
 
         # test conversion back to geoCube again
-        geo_cube3 = GeoCube(cell_cube3)
-        @test size(geo_cube3.data) == size(geo_cube3.data)
+        geo_cube4 = GeoCube(cell_cube3)
+        @test size(geo_cube4.data) == (361, 181, 24)
     end
 
     @testset "GridSystems" begin
