@@ -20,5 +20,6 @@ export
     get_geo_coords,
     Grid,
     Level,
-    plot_map
+    plot_map,
+    subsetcube
 end

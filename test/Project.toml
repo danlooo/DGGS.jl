@@ -1,5 +1,6 @@
 [deps]
 Downloads = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
+EarthDataLab = "359177bc-a543-11e8-11b7-bb015dba3358"
 NetCDF = "30363a11-5582-574a-97bb-aa9a979735b9"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 YAXArrays = "c21b50f5-aa40-41ea-b809-c0f5e47bfa5c"

@@ -1,5 +1,5 @@
 using YAXArrays
-import YAXArrays: Cubes.formatbytes, Cubes.cubesize, Cubes.getattributes
+import YAXArrays: Cubes.formatbytes, Cubes.cubesize, Cubes.getattributes, Cubes.subsetcube
 import Statistics: mean
 using Makie
 using GeoMakie
@@ -86,6 +86,8 @@ function GeoCube(data::Matrix, latitudes::AbstractVector, longitudes::AbstractVe
     geo_cube = GeoCube(geo_cube_arr)
     return geo_cube
 end
+
+subsetcube(cube::GeoCube; kwargs...) = YAXArrays.Cubes.subsetcube(cube.data; kwargs...) |> GeoCube
 
 function map_reduce_cells_to_geo(xout, cell_values::AbstractVector, cell_cube::CellCube, longitudes, latitudes)
     values_matrix = Matrix{eltype(cell_values)}(undef, length(longitudes), length(latitudes))

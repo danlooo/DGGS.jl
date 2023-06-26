@@ -97,6 +97,26 @@ The coordinates may differ slightly, because a cell covers all points of a given
 This tutorial uses very low levels to demonstrate the properties of a DGGS.
 In practice, much higher level levels should be chosen for spatial analysis, diminishing these inaccuracies.
 
+## Import Earth System Data Cube (ESDC)
+
+[Earth System Data Lab](https://www.earthsystemdatalab.net/) provides global data about 42 features about temperature, precipitation, among others.
+The data is stored online in the [Earth System Data Cube (ESDC)](https://deepesdl.readthedocs.io/en/latest/datasets/ESDC/) and can be imported with the following commands:
+
+```@example esdc
+using DGGS
+using EarthDataLab
+using YAXArrays
+esdc_cube = esdc(res="low")
+geo_cube = GeoCube(esdc_cube)
+```
+Plot the first variable (NDVI) at the time point:
+
+```@example esdc
+using CairoMakie
+sub_geo_cube = subsetcube(geo_cube, time = DateTime("2020-01-05T00:00:00"), Variable = "ndvi")
+plot_map(sub_geo_cube)
+```
+
 ## Import Zarr Arrays
 
 Load the zarr data into a YAXArray:

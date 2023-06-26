@@ -66,18 +66,17 @@ using Test
         geo_cube2 = GeoCube(cell_cube)
         @test isdefined(geo_cube2, :data)
 
-        # test non spatial index dimension, e.g. time
-        using YAXArrays
-        using NetCDF
-        cube_3 = Cube("tos_O1_2001-2002.nc")
-        geo_cube3 = GeoCube(cube_3)
-        @test size(geo_cube3.data) == (180, 170, 24)
+        # test non spatial index dimension, e.g. time and Variable
+        using EarthDataLab
+        esdc_cube = esdc(res="low")
+        subset_cube = subsetcube(esdc_cube, region="Europe", time=2020:2021, Variable=["ndvi", "transpiration"])
+        geo_cube3 = GeoCube(subset_cube)
+        grid = create_toy_grid()
         cell_cube3 = CellCube(geo_cube3, grid)
-        @test size(cell_cube3.data) == (329, 24)
-
-        # test conversion back to geoCube again
         geo_cube4 = GeoCube(cell_cube3)
-        @test size(geo_cube4.data) == (361, 181, 24)
+        @test size(subset_cube) == size(geo_cube3)
+        @test size(cell_cube3) == (22, 92, 2)
+        @test size(geo_cube4) == (361, 181, 92, 2)
     end
 
     @testset "GridSystems" begin
