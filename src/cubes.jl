@@ -127,6 +127,7 @@ end
 function plot_map(geo_cube::GeoCube)
     # Can not use Makie plot recipies, because we need to specify the axis for GeoMakie
     # see https://discourse.julialang.org/t/accessing-axis-in-makie-plot-recipes/66006
+    geo_cube.data |> size |> length == 2 || throw(ArgumentError("GeoCube must have only spatial index dimensions"))
 
     fig = Figure()
     ax = GeoAxis(fig[1, 1]; dest="+proj=wintri", coastlines=true)
