@@ -1,11 +1,12 @@
-import YAXArrays: YAXArray, Cube, Cubes.formatbytes, Cubes.cubesize, RangeAxis, getattributes
+using YAXArrays
+import YAXArrays: Cubes.formatbytes, Cubes.cubesize, Cubes.getattributes
 import Statistics: mean
 using Makie
 using GeoMakie
 
 abstract type AbstractCube end
 
-cubesize(cube::AbstractCube) = cubesize(cube.data)
+cubesize(cube::AbstractCube) = YAXArrays.Cubes.cubesize(cube.data)
 
 struct CellCube <: AbstractCube
     data::YAXArray
@@ -35,16 +36,15 @@ struct GeoCube <: AbstractCube
     end
 end
 
-
 function Base.show(io::IO, ::MIME"text/plain", cube::AbstractCube)
     println(io, "DGGS $(typeof(cube))")
     println(io, "Element type:       $(eltype(cube))")
-    println(io, "Size:               $(formatbytes(cubesize(cube.data)))")
+    println(io, "Size:               $(formatbytes(cubesize(cube)))")
     println(io, "Axes:")
     for axis in cube.data.axes
         println(io, repr(axis))
     end
-    foreach(getattributes(cube.data)) do p
+    foreach(YAXArrays.Cubes.getattributes(cube.data)) do p
         if p[1] in ("labels", "name", "units")
             println(io, p[1], ": ", p[2])
         end
@@ -86,6 +86,19 @@ function GeoCube(data::Matrix, latitudes::AbstractVector, longitudes::AbstractVe
     return geo_cube
 end
 
+function map_reduce_cells_to_geo(xout, cell_values::AbstractVector, cell_cube::CellCube, longitudes, latitudes)
+    values_matrix = Matrix{eltype(cell_values)}(undef, length(longitudes), length(latitudes))
+
+    for (lon_i, lon) in enumerate(longitudes)
+        for (lat_i, lat) in enumerate(latitudes)
+            cur_cell_id = get_cell_ids(cell_cube.grid, lat, lon)
+            values_matrix[lon_i, lat_i] = cell_cube.data[cur_cell_id]
+        end
+    end
+
+    xout .= values_matrix
+end
+
 """
 Export cell data cube into a traditional geographical one
 
@@ -97,33 +110,43 @@ function GeoCube(cell_cube::CellCube)
     longitudes = -180:180
     latitudes = -90:90
 
-    regridded_matrix = Matrix{eltype(cell_cube)}(undef, length(longitudes), length(latitudes))
-
-    for (lon_i, lon) in enumerate(longitudes)
-        for (lat_i, lat) in enumerate(latitudes)
-            cur_cell_id = get_cell_ids(cell_cube.grid, lat, lon)
-            regridded_matrix[lon_i, lat_i] = cell_cube.data[cur_cell_id]
-        end
-    end
-
-    axlist = [
-        RangeAxis("lon", longitudes),
-        RangeAxis("lat", latitudes)
-    ]
-
-    cube = YAXArray(axlist, regridded_matrix) |> GeoCube
+    # Expand spatial dimensions
+    geo_array = mapCube(
+        map_reduce_cells_to_geo,
+        cell_cube.data,
+        cell_cube,
+        longitudes,
+        latitudes,
+        indims=InDims(:cell_id),
+        outdims=OutDims(RangeAxis(:lon, longitudes), RangeAxis(:lat, latitudes))
+    )
+    cube = GeoCube(geo_array)
     return cube
 end
 
 function plot_map(geo_cube::GeoCube)
     # Can not use Makie plot recipies, because we need to specify the axis for GeoMakie
     # see https://discourse.julialang.org/t/accessing-axis-in-makie-plot-recipes/66006
+    geo_cube.data |> size |> length == 2 || throw(ArgumentError("GeoCube must have only spatial index dimensions"))
 
     fig = Figure()
     ax = GeoAxis(fig[1, 1]; dest="+proj=wintri", coastlines=true)
     plt = surface!(ax, geo_cube.longitudes, geo_cube.latitudes, geo_cube.data.data; colormap=:viridis, shading=false)
     cb1 = Colorbar(fig[1, 2], plt; label="Value", height=Relative(0.5))
     return fig
+end
+
+function map_reduce_geo_to_cells(xout, current_geo_matrix; cell_ids_matrix, cell_ids::AbstractVector, aggregate_function::Function)
+    cell_values = Vector{eltype(current_geo_matrix)}(undef, length(cell_ids))
+    # allow for missing cell ids
+    for (i, cell_id) in enumerate(cell_ids)
+        cell_coords = findall(isequal(cell_id), cell_ids_matrix)
+        if isempty(cell_coords)
+            continue
+        end
+        cell_values[i] = current_geo_matrix[cell_coords] |> filter(!ismissing) |> aggregate_function
+    end
+    xout .= cell_values
 end
 
 """
@@ -134,20 +157,19 @@ into a data cube with the cell id as a single spatial index dimension.
 Re-gridding is done using the average value of all geographical coordinates belonging to a particular cell defined by the grid specification `grid_spec`.
 """
 function CellCube(geo_cube::GeoCube, grid::AbstractGrid; aggregate_function::Function=mean)
-    cell_ids = get_cell_ids(grid, geo_cube.latitudes, geo_cube.longitudes)
-    cell_values = Vector{eltype(geo_cube)}(undef, length(grid))
+    cell_ids_matrix = get_cell_ids(grid, geo_cube.latitudes, geo_cube.longitudes)
+    cell_ids = cell_ids_matrix |> unique |> sort
 
-    for cell_id in unique(cell_ids)
-        cell_coords = findall(isequal(cell_id), cell_ids)
-        if isempty(cell_coords)
-            continue
-        end
-        cell_values[cell_id] = aggregate_function(geo_cube.data.data'[cell_coords])
-    end
-
-    axlist = [RangeAxis("cell_id", range(1, length(grid)))]
-    cell_cube_array = YAXArray(axlist, cell_values)
-    return CellCube(cell_cube_array, grid)
+    # Reduce spatial dimensions
+    cell_array = mapCube(map_reduce_geo_to_cells, geo_cube.data,
+        indims=InDims(:lat, :lon),
+        outdims=OutDims(RangeAxis(:cell_id, cell_ids));
+        cell_ids_matrix=cell_ids_matrix,
+        cell_ids=cell_ids,
+        aggregate_function=aggregate_function
+    )
+    cell_cube = CellCube(cell_array, grid)
+    return cell_cube
 end
 
 function CellCube(data::AbstractVector, grid::AbstractGrid)
