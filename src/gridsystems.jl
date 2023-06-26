@@ -1,3 +1,5 @@
+import YAXArrays: Cubes.formatbytes, Cubes.cubesize
+
 struct Level{G<:AbstractGrid}
     data::CellCube
     grid::G

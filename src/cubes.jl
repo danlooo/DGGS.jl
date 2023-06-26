@@ -1,11 +1,12 @@
 using YAXArrays
+import YAXArrays: Cubes.formatbytes, Cubes.cubesize, Cubes.getattributes
 import Statistics: mean
 using Makie
 using GeoMakie
 
 abstract type AbstractCube end
 
-cubesize(cube::AbstractCube) = cubesize(cube.data)
+cubesize(cube::AbstractCube) = YAXArrays.Cubes.cubesize(cube.data)
 
 struct CellCube <: AbstractCube
     data::YAXArray
@@ -35,16 +36,15 @@ struct GeoCube <: AbstractCube
     end
 end
 
-
 function Base.show(io::IO, ::MIME"text/plain", cube::AbstractCube)
     println(io, "DGGS $(typeof(cube))")
     println(io, "Element type:       $(eltype(cube))")
-    println(io, "Size:               $(formatbytes(cubesize(cube.data)))")
+    println(io, "Size:               $(formatbytes(cubesize(cube)))")
     println(io, "Axes:")
     for axis in cube.data.axes
         println(io, repr(axis))
     end
-    foreach(getattributes(cube.data)) do p
+    foreach(YAXArrays.Cubes.getattributes(cube.data)) do p
         if p[1] in ("labels", "name", "units")
             println(io, p[1], ": ", p[2])
         end
@@ -126,10 +126,10 @@ function plot_map(geo_cube::GeoCube)
     return fig
 end
 
-function map_reduce_geo_to_cells(xout, current_geo_matrix; cell_ids, aggregate_function::Function)
-    cell_values = Vector{eltype(current_geo_matrix)}(undef, length(grid))
-    for cell_id in unique(cell_ids)
-        cell_coords = findall(isequal(cell_id), cell_ids)
+function map_reduce_geo_to_cells(xout, current_geo_matrix; cell_ids_matrix, cell_ids::Vector, aggregate_function::Function)
+    cell_values = Vector{eltype(current_geo_matrix)}(undef, length(cell_ids))
+    for cell_id in cell_ids
+        cell_coords = findall(isequal(cell_id), cell_ids_matrix)
         if isempty(cell_coords)
             continue
         end
@@ -146,12 +146,14 @@ into a data cube with the cell id as a single spatial index dimension.
 Re-gridding is done using the average value of all geographical coordinates belonging to a particular cell defined by the grid specification `grid_spec`.
 """
 function CellCube(geo_cube::GeoCube, grid::AbstractGrid; aggregate_function::Function=mean)
-    cell_ids = get_cell_ids(grid, geo_cube.latitudes, geo_cube.longitudes)
+    cell_ids_matrix = get_cell_ids(grid, geo_cube.latitudes, geo_cube.longitudes)
+    cell_ids = unique(cell_ids_matrix) |> unique |> sort
 
     # Reduce spatial dimensions
     cell_array = mapCube(map_reduce_geo_to_cells, geo_cube.data,
         indims=InDims(:lat, :lon),
         outdims=OutDims(RangeAxis(:cell_id, 1:length(grid)));
+        cell_ids_matrix=cell_ids_matrix,
         cell_ids=cell_ids,
         aggregate_function=aggregate_function
     )
