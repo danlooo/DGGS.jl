@@ -4,11 +4,12 @@ import Statistics: mean
 using Makie
 using GeoMakie
 
+"Subtypes must have field data::YAXArray"
 abstract type AbstractCube end
-
 cubesize(cube::AbstractCube) = YAXArrays.Cubes.cubesize(cube.data)
 Base.size(cube::AbstractCube) = YAXArrays.Cubes.size(cube.data)
 Base.getindex(cube::AbstractCube, i...) = cube.data[i...]
+Base.eltype(cube::AbstractCube) = eltype(cube.data)
 
 struct CellCube <: AbstractCube
     data::YAXArray
@@ -52,8 +53,6 @@ function Base.show(io::IO, ::MIME"text/plain", cube::AbstractCube)
         end
     end
 end
-
-Base.eltype(geo_cube::GeoCube) = eltype(geo_cube.data)
 
 function GeoCube(array::YAXArray, latitude_name, longitude_name)
     latitude_symbol = Symbol(latitude_name)
@@ -191,11 +190,7 @@ function plot_map(cell_cube::CellCube)
     plot_map(geo_cube)
 end
 
-# Would it be better to make CellCube <: YAXArray ?
-# pro: we do not need to forward implementations like this
-# Cons: No abstraction layer, difficult to switch backends in the future
-Base.getindex(cell_cube::CellCube, i...) = cell_cube.data[i...]
+
 Base.firstindex(cell_cube::CellCube) = first(cell_cube.cell_ids)
 Base.lastindex(cell_cube::CellCube) = last(cell_cube.cell_ids)
 Base.length(cell_cube::CellCube) = length(cell_cube.cell_ids)
-Base.eltype(cell_cube::CellCube) = eltype(cell_cube.data)
