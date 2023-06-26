@@ -7,6 +7,8 @@ using GeoMakie
 abstract type AbstractCube end
 
 cubesize(cube::AbstractCube) = YAXArrays.Cubes.cubesize(cube.data)
+Base.size(cube::AbstractCube) = YAXArrays.Cubes.size(cube.data)
+Base.getindex(cube::AbstractCube, i...) = cube.data[i...]
 
 struct CellCube <: AbstractCube
     data::YAXArray

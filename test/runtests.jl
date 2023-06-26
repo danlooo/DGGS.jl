@@ -57,10 +57,12 @@ using Test
         geo_cube = GeoCube(data, lat_range, lon_range)
         @test isdefined(geo_cube, :data)
         @test eltype(geo_cube) <: Real
+        @test geo_cube[1:5] |> length == 5
 
         grid = create_toy_grid()
         cell_cube = CellCube(geo_cube, grid)
         @test length(cell_cube) == 642
+        @test cell_cube[1:5] |> length == 5
         geo_cube2 = GeoCube(cell_cube)
         @test isdefined(geo_cube2, :data)
 
