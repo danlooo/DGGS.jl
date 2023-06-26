@@ -63,6 +63,19 @@ using Test
         @test length(cell_cube) == 642
         geo_cube2 = GeoCube(cell_cube)
         @test isdefined(geo_cube2, :data)
+
+        # test non spatial index dimension, e.g. time
+        using YAXArrays
+        using NetCDF
+        cube_3 = Cube("tos_O1_2001-2002.nc")
+        geo_cube3 = GeoCube(cube_3)
+        @test size(geo_cube3.data) == (180, 170, 24)
+        cell_cube3 = CellCube(geo_cube3, grid)
+        @test size(cell_cube3.data) == (329, 24)
+
+        # test conversion back to geoCube again
+        geo_cube3 = GeoCube(cell_cube3)
+        @test size(geo_cube3.data) == size(geo_cube3.data)
     end
 
     @testset "GridSystems" begin
@@ -79,25 +92,5 @@ using Test
 
         dggs2 = DgGlobalGridSystem(geo_cube, :superfund, 3)
         @test length(dggs2[1]) == 42
-    end
-
-    @testset "Import NetCDF" begin
-        using YAXArrays
-        using NetCDF
-        using Downloads
-
-        url = "https://www.unidata.ucar.edu/software/netcdf/examples/tos_O1_2001-2002.nc"
-        file_path = tempname()
-        filename = Downloads.download(url, file_path)
-        geo_cube_raw = YAXArrays.Cube(file_path)
-
-        data = circshift(geo_cube_raw[:, :, 1], 90)
-        latitudes = geo_cube_raw.Y
-        longitudes = geo_cube_raw.X .- 180
-        geo_cube = GeoCube(data, latitudes, longitudes)
-        @test size(geo_cube.data) == (180, 170)
-        dggs = DgGlobalGridSystem(geo_cube, 3, :isea, 4, :hexagon)
-        @test length(dggs[1]) == 12
-        rm(file_path)
     end
 end

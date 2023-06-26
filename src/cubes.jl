@@ -86,6 +86,19 @@ function GeoCube(data::Matrix, latitudes::AbstractVector, longitudes::AbstractVe
     return geo_cube
 end
 
+function map_reduce_cells_to_geo(xout, cell_values::AbstractVector, cell_cube::CellCube, longitudes, latitudes)
+    values_matrix = Matrix{eltype(cell_values)}(undef, length(longitudes), length(latitudes))
+
+    for (lon_i, lon) in enumerate(longitudes)
+        for (lat_i, lat) in enumerate(latitudes)
+            cur_cell_id = get_cell_ids(cell_cube.grid, lat, lon)
+            values_matrix[lon_i, lat_i] = cell_cube.data[cur_cell_id]
+        end
+    end
+
+    xout .= values_matrix
+end
+
 """
 Export cell data cube into a traditional geographical one
 
@@ -97,21 +110,17 @@ function GeoCube(cell_cube::CellCube)
     longitudes = -180:180
     latitudes = -90:90
 
-    regridded_matrix = Matrix{eltype(cell_cube)}(undef, length(longitudes), length(latitudes))
-
-    for (lon_i, lon) in enumerate(longitudes)
-        for (lat_i, lat) in enumerate(latitudes)
-            cur_cell_id = get_cell_ids(cell_cube.grid, lat, lon)
-            regridded_matrix[lon_i, lat_i] = cell_cube.data[cur_cell_id]
-        end
-    end
-
-    axlist = [
-        RangeAxis("lon", longitudes),
-        RangeAxis("lat", latitudes)
-    ]
-
-    cube = YAXArray(axlist, regridded_matrix) |> GeoCube
+    # Expand spatial dimensions
+    geo_array = mapCube(
+        map_reduce_cells_to_geo,
+        cell_cube.data,
+        cell_cube,
+        longitudes,
+        latitudes,
+        indims=InDims(:cell_id),
+        outdims=OutDims(RangeAxis(:lon, longitudes), RangeAxis(:lat, latitudes))
+    )
+    cube = GeoCube(geo_array)
     return cube
 end
 
@@ -126,14 +135,15 @@ function plot_map(geo_cube::GeoCube)
     return fig
 end
 
-function map_reduce_geo_to_cells(xout, current_geo_matrix; cell_ids_matrix, cell_ids::Vector, aggregate_function::Function)
+function map_reduce_geo_to_cells(xout, current_geo_matrix; cell_ids_matrix, cell_ids::AbstractVector, aggregate_function::Function)
     cell_values = Vector{eltype(current_geo_matrix)}(undef, length(cell_ids))
-    for cell_id in cell_ids
+    # allow for missing cell ids
+    for (i, cell_id) in enumerate(cell_ids)
         cell_coords = findall(isequal(cell_id), cell_ids_matrix)
         if isempty(cell_coords)
             continue
         end
-        cell_values[cell_id] = current_geo_matrix[cell_coords] |> filter(!ismissing) |> aggregate_function
+        cell_values[i] = current_geo_matrix[cell_coords] |> filter(!ismissing) |> aggregate_function
     end
     xout .= cell_values
 end
@@ -147,12 +157,12 @@ Re-gridding is done using the average value of all geographical coordinates belo
 """
 function CellCube(geo_cube::GeoCube, grid::AbstractGrid; aggregate_function::Function=mean)
     cell_ids_matrix = get_cell_ids(grid, geo_cube.latitudes, geo_cube.longitudes)
-    cell_ids = unique(cell_ids_matrix) |> unique |> sort
+    cell_ids = cell_ids_matrix |> unique |> sort
 
     # Reduce spatial dimensions
     cell_array = mapCube(map_reduce_geo_to_cells, geo_cube.data,
         indims=InDims(:lat, :lon),
-        outdims=OutDims(RangeAxis(:cell_id, 1:length(grid)));
+        outdims=OutDims(RangeAxis(:cell_id, cell_ids));
         cell_ids_matrix=cell_ids_matrix,
         cell_ids=cell_ids,
         aggregate_function=aggregate_function
