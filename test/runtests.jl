@@ -67,7 +67,7 @@ using Test
         # test non spatial index dimension, e.g. time and Variable
         using EarthDataLab
         esdc_cube = esdc(res="low")
-        subset_cube = subsetcube(esdc_cube, time=2020:2021, Variable=["ndvi", "transpiration"])
+        subset_cube = subsetcube(esdc_cube, region="Europe", time=2020:2021, Variable=["ndvi", "transpiration"])
         geo_cube3 = GeoCube(subset_cube)
         grid = create_toy_grid()
         cell_cube3 = CellCube(geo_cube3, grid)
@@ -81,10 +81,10 @@ using Test
     end
 
     @testset "GridSystems" begin
-        lon_range = -180:180
-        lat_range = -90:90
-        data = [exp(cosd(lon)) + 3(lat / 90) for lon in lon_range, lat in lat_range]
-        geo_cube = GeoCube(data, lat_range, lon_range)
+        using EarthDataLab
+        esdc_cube = esdc(res="low")
+        subset_cube = subsetcube(esdc_cube, region="Europe", time=2020:2021, Variable=["ndvi", "transpiration"])
+        geo_cube = GeoCube(subset_cube)
 
         dggs = DgGlobalGridSystem(geo_cube, 3)
         @test length(dggs) == 3
