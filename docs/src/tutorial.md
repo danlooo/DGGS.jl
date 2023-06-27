@@ -113,7 +113,7 @@ Plot the first variable (NDVI) at the time point:
 
 ```@example esdc
 using CairoMakie
-sub_geo_cube = subsetcube(geo_cube, time = DateTime("2020-01-05T00:00:00"), Variable = "ndvi")
+sub_geo_cube = geo_cube[time = DateTime("2020-01-05T00:00:00"), Variable = "ndvi"]
 plot_map(sub_geo_cube)
 ```
 
