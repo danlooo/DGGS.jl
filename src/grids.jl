@@ -125,7 +125,7 @@ function DgGrid(preset::Symbol, resolution::Int)
 end
 
 function Base.show(io::IO, ::MIME"text/plain", grid::DgGrid)
-    print(io, "DgGrid $(grid.type) with $(grid.topology) topology, $(grid.projection) projection, aperture of $(grid.aperture), and $(length(grid)) cells")
+    print(io, "DgGrid $(grid.type) with $(grid.topology) topology, $(grid.projection) projection, aperture of $(grid.aperture), and $(length(grid)) cells at resolution $(grid.resolution)")
 end
 
 function get_cell_boundaries(grid::DgGrid)
