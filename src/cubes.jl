@@ -138,7 +138,7 @@ function plot_map(geo_cube::GeoCube)
 
     fig = Figure()
     ax = GeoAxis(fig[1, 1]; dest="+proj=wintri", coastlines=true)
-    plt = surface!(ax, geo_cube.longitudes, geo_cube.latitudes, geo_cube.data.data; colormap=:viridis, shading=false)
+    plt = surface!(ax, geo_cube.longitudes, geo_cube.latitudes, Matrix(geo_cube.data.data); colormap=:viridis, shading=false)
     cb1 = Colorbar(fig[1, 2], plt; label="Value", height=Relative(0.5))
     return fig
 end
