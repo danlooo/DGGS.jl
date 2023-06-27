@@ -37,6 +37,14 @@ function Base.show(io::IO, ::MIME"text/plain", grid::AbstractGrid)
 end
 
 """
+Get cell ids of k nearest neighbors arround a cell
+"""
+function knn(grid::AbstractGrid, lat::Real, lon::Real, k::Integer)
+    res = NearestNeighbors.knn(grid.data, [lat, lon], k)[1]
+    return res
+end
+
+"""
 Get cell ids given geographic corrdinates
 """
 function get_cell_ids(grid::AbstractGrid, lat_range::Union{AbstractVector,Number}, lon_range::Union{AbstractVector,Number})

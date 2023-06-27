@@ -51,25 +51,39 @@ struct DgGlobalGridSystem <: AbstractGlobalGridSystem
 end
 
 """
-Get id of parent cell
-"""
-function get_parent_cell_id(grids::Vector{<:AbstractGrid}, level::Int, cell_id::Int)
-    level > 1 || throw(ArgumentError("Lowest resolution can not have any further parents"))
+Get the cell ids of the children associated to each cell id of the parent level
 
-    parent_level = level - 1
-    geo_coord = get_geo_coords(grids[level], cell_id)
-    parent_cell_id = get_cell_ids(grids[parent_level], geo_coord[1], geo_coord[2])
-    return parent_cell_id
+Note that a child often has multiple parents.
+The cells at different resolutions are only in rectangular pyramids perfectly nested.
+Returns a Dict with parent cell id as keys and children cell ids as values
+"""
+function get_children_cell_ids(grids::Vector{<:AbstractGrid}, parent_level::Int, n_children::Int)
+    res = Dict{Int,Vector{Int}}()
+    parent_grid = grids[parent_level]
+    child_grid = grids[parent_level+1]
+    for parent_cell_id in 1:length(parent_grid)
+        parent_cell_coord = get_geo_coords(parent_grid, parent_cell_id)
+        child_cell_ids = DGGS.knn(child_grid, parent_cell_coord[1], parent_cell_coord[2], n_children)
+        res[parent_cell_id] = child_cell_ids
+    end
+    return res
 end
 
-"""
-Get ids of all child cells
-"""
-function get_children_cell_ids(grids::Vector{<:AbstractGrid}, level::Int, cell_id::Int)
-    level < length(grids) || throw(ArgumentError("Highest level can not have any further children"))
+function reduce_cells_to_lower_resolution(xout, xin, child_cell_cube, child_cell_ids, parent_cell_ids, aggregate_function)
+    coarsed_values = Vector{eltype(xin)}(undef, length(parent_cell_ids))
 
-    parent_cell_ids = get_parent_cell_id.(Ref(grids), level + 1, 1:length(grids[level+1].data.data))
-    findall(x -> x == cell_id, parent_cell_ids)
+    for parent_cell_id in parent_cell_ids
+        # allow non global cubes with missing cell ids
+        selected_child_ids = child_cell_ids[parent_cell_id]
+        selected_child_positions = findall(x -> x in selected_child_ids, child_cell_cube.cell_ids)
+
+        coarsed_values[parent_cell_id] =
+            xin[selected_child_positions] |>
+            x -> filter(!ismissing, x) |>
+                 aggregate_function
+    end
+
+    xout .= coarsed_values
 end
 
 """
@@ -83,23 +97,26 @@ function get_cube_pyramid(grids::Vector{<:AbstractGrid}, cell_cube::CellCube; ag
     res = Vector{CellCube}(undef, length(grids))
     res[length(grids)] = cell_cube
 
-    # Calculate lower level based on the previous one
-    for level in length(grids)-1:-1:1
-        # parent: has higher level, used for combining
-        # child: has lower level, to be calculated, stores the combined values
-        parent_cell_cube = res[level+1]
-        current_grid = grids[level]
-        child_cell_vector = Vector{eltype(cell_cube)}(undef, length(current_grid))
+    # Calculate parent layers by aggregating previous child layer
+    for parent_level in length(grids)-1:-1:1
+        parent_grid = grids[parent_level]
+        parent_cell_ids = 1:length(parent_grid)
+        child_level = parent_level + 1
+        child_cell_ids = get_children_cell_ids(grids, parent_level, 7)
+        child_cell_cube = res[child_level]
 
-        for cell_id in 1:length(current_grid)
-            # downscaling by combining corresponding values from parent
-            cell_ids = get_children_cell_ids(grids, level, cell_id)
-            values = parent_cell_cube[cell_ids]
-            filtered_values = filter(x -> !ismissing(x), values)
-            child_cell_vector[cell_id] = aggregate_function(filtered_values)
-        end
+        parent_cell_array = mapCube(
+            reduce_cells_to_lower_resolution,
+            child_cell_cube.data,
+            child_cell_cube,
+            child_cell_ids,
+            parent_cell_ids,
+            aggregate_function,
+            indims=InDims(:cell_id),
+            outdims=OutDims(RangeAxis(:cell_id, parent_cell_ids))
+        )
 
-        res[level] = CellCube(child_cell_vector, current_grid)
+        res[parent_level] = CellCube(parent_cell_array, parent_grid)
     end
 
     return res

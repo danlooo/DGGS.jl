@@ -21,5 +21,5 @@ export
     Grid,
     Level,
     plot_map,
-    subsetcube
+    knn
 end

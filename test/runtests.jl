@@ -57,19 +57,17 @@ using Test
         geo_cube = GeoCube(data, lat_range, lon_range)
         @test isdefined(geo_cube, :data)
         @test eltype(geo_cube) <: Real
-        @test geo_cube[1:5] |> length == 5
 
         grid = create_toy_grid()
         cell_cube = CellCube(geo_cube, grid)
         @test length(cell_cube) == 642
-        @test cell_cube[1:5] |> length == 5
         geo_cube2 = GeoCube(cell_cube)
         @test isdefined(geo_cube2, :data)
 
         # test non spatial index dimension, e.g. time and Variable
         using EarthDataLab
         esdc_cube = esdc(res="low")
-        subset_cube = subsetcube(esdc_cube, region="Europe", time=2020:2021, Variable=["ndvi", "transpiration"])
+        subset_cube = subsetcube(esdc_cube, time=2020:2021, Variable=["ndvi", "transpiration"])
         geo_cube3 = GeoCube(subset_cube)
         grid = create_toy_grid()
         cell_cube3 = CellCube(geo_cube3, grid)
@@ -77,6 +75,9 @@ using Test
         @test size(subset_cube) == size(geo_cube3)
         @test size(cell_cube3) == (22, 92, 2)
         @test size(geo_cube4) == (361, 181, 92, 2)
+
+        @test geo_cube4[Variable="ndvi", time=DateTime("2020-01-05T00:00:00")] |> size == (361, 181)
+        @test cell_cube3[Variable="ndvi", time=DateTime("2020-01-05T00:00:00")] |> length == 22
     end
 
     @testset "GridSystems" begin
@@ -89,7 +90,6 @@ using Test
         @test length(dggs) == 3
         @test [x for x in dggs] |> length == 3 # test iterator
         @test length(dggs[1]) == 12
-        @test length(dggs[1][1:10]) == 10
 
         dggs2 = DgGlobalGridSystem(geo_cube, :superfund, 3)
         @test length(dggs2[1]) == 42

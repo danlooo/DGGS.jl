@@ -8,7 +8,6 @@ using GeoMakie
 abstract type AbstractCube end
 cubesize(cube::AbstractCube) = YAXArrays.Cubes.cubesize(cube.data)
 Base.size(cube::AbstractCube) = YAXArrays.Cubes.size(cube.data)
-Base.getindex(cube::AbstractCube, i...) = cube.data[i...]
 Base.eltype(cube::AbstractCube) = eltype(cube.data)
 
 struct CellCube <: AbstractCube
@@ -52,6 +51,11 @@ function Base.show(io::IO, ::MIME"text/plain", cube::AbstractCube)
             println(io, p[1], ": ", p[2])
         end
     end
+end
+
+function Base.getindex(geo_cube::GeoCube; kwargs...)
+    subset_geo_cube = YAXArrays.Cubes.subsetcube(geo_cube.data; kwargs...)
+    GeoCube(subset_geo_cube)
 end
 
 function GeoCube(array::YAXArray, latitude_name, longitude_name)
@@ -192,7 +196,9 @@ function plot_map(cell_cube::CellCube)
     plot_map(geo_cube)
 end
 
+function Base.getindex(cell_cube::CellCube; kwargs...)
+    sub_cell_cube = YAXArrays.Cubes.subsetcube(cell_cube.data; kwargs...)
+    CellCube(sub_cell_cube, cell_cube.grid)
+end
 
-Base.firstindex(cell_cube::CellCube) = first(cell_cube.cell_ids)
-Base.lastindex(cell_cube::CellCube) = last(cell_cube.cell_ids)
 Base.length(cell_cube::CellCube) = length(cell_cube.cell_ids)
