@@ -23,6 +23,10 @@ By Justin Kunimune - Own work, Public Domain, https://commons.wikimedia.org/w/in
 
 ![](assets/hexagon-children-aperture.png)
 
+![](assets/horizontal-neighbors.drawio.svg)
+
 ![](assets/dggs-distortion.png)
 
 ![](assets/cube-shape.drawio.svg)
+
+![](assets/grid-levels.png)
