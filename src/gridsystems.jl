@@ -7,8 +7,13 @@ struct Level{G<:AbstractGrid}
 end
 
 Base.length(level::Level) = length(level.data)
-Base.getindex(level::Level, i...) = level.data[i...]
 Base.eltype(level::Level) = eltype(level.data)
+
+function Base.getindex(level::Level; kwargs...)
+    new_data = Base.getindex(level.data; kwargs...)
+    result = Level(new_data, level.grid, level.level)
+    return result
+end
 
 function Base.show(io::IO, ::MIME"text/plain", level::Level)
     println(io, "DGGS Level")
