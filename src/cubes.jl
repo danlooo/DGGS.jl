@@ -93,8 +93,8 @@ end
 
 subsetcube(cube::GeoCube; kwargs...) = YAXArrays.Cubes.subsetcube(cube.data; kwargs...) |> GeoCube
 
-function map_reduce_cells_to_geo(xout, cell_values::AbstractVector, cell_cube::CellCube, longitudes, latitudes)
-    values_matrix = Matrix{eltype(cell_values)}(undef, length(longitudes), length(latitudes))
+function map_reduce_cells_to_geo(xout, xin::AbstractVector, cell_cube::CellCube, longitudes, latitudes)
+    values_matrix = Matrix{eltype(xin)}(undef, length(longitudes), length(latitudes))
 
     for (lon_i, lon) in enumerate(longitudes)
         for (lat_i, lat) in enumerate(latitudes)
@@ -136,22 +136,27 @@ function plot_map(geo_cube::GeoCube)
     # see https://discourse.julialang.org/t/accessing-axis-in-makie-plot-recipes/66006
     geo_cube.data |> size |> length == 2 || throw(ArgumentError("GeoCube must have only spatial index dimensions"))
 
+    # (lon, lat) must by (x,y) for plotting
+    axnames = [YAXArrays.Axes.axname(a) for a in geo_cube.data.axes]
+    is_ordered = filter(x -> x in ["lon", "lat"], axnames) == ["lon", "lat"]
+    data = is_ordered ? Matrix(geo_cube.data.data) : Matrix(geo_cube.data.data)'
+
     fig = Figure()
     ax = GeoAxis(fig[1, 1]; dest="+proj=wintri", coastlines=true)
-    plt = surface!(ax, geo_cube.longitudes, geo_cube.latitudes, Matrix(geo_cube.data.data); colormap=:viridis, shading=false)
+    plt = surface!(ax, geo_cube.longitudes, geo_cube.latitudes, data; colormap=:viridis, shading=false)
     cb1 = Colorbar(fig[1, 2], plt; label="Value", height=Relative(0.5))
     return fig
 end
 
-function map_reduce_geo_to_cells(xout, current_geo_matrix; cell_ids_matrix, cell_ids::AbstractVector, aggregate_function::Function)
-    cell_values = Vector{eltype(current_geo_matrix)}(undef, length(cell_ids))
+function map_reduce_geo_to_cells(xout, xin; cell_ids_matrix, cell_ids::AbstractVector, aggregate_function::Function)
+    cell_values = Vector{eltype(xin)}(undef, length(cell_ids))
     # allow for missing cell ids
     for (i, cell_id) in enumerate(cell_ids)
         cell_coords = findall(isequal(cell_id), cell_ids_matrix)
         if isempty(cell_coords)
             continue
         end
-        cell_values[i] = current_geo_matrix[cell_coords] |> filter(!ismissing) |> aggregate_function
+        cell_values[i] = xin[cell_coords] |> filter(!ismissing) |> aggregate_function
     end
     xout .= cell_values
 end
