@@ -99,7 +99,9 @@ function map_reduce_cells_to_geo(xout, xin::AbstractVector, cell_cube::CellCube,
     for (lon_i, lon) in enumerate(longitudes)
         for (lat_i, lat) in enumerate(latitudes)
             cur_cell_id = get_cell_ids(cell_cube.grid, lat, lon)
-            values_matrix[lon_i, lat_i] = cell_cube.data[cur_cell_id]
+            cur_cell_id in cell_cube.cell_ids || continue
+            cur_cell_id_pos = findfirst(isequal(cur_cell_id), cell_cube.cell_ids)
+            values_matrix[lon_i, lat_i] = cell_cube.data[cur_cell_id_pos]
         end
     end
 
