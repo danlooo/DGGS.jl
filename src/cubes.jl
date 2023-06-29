@@ -134,12 +134,12 @@ function GeoCube(cell_cube::CellCube)
 end
 
 function plot_map(geo_cube::GeoCube)
-    # Can not use Makie plot recipies, because we need to specify the axis for GeoMakie
-    # see https://discourse.julialang.org/t/accessing-axis-in-makie-plot-recipes/66006
-    geo_cube.data |> size |> length == 2 || throw(ArgumentError("GeoCube must have only spatial index dimensions"))
-
-    # (lon, lat) must by (x,y) for plotting
     axnames = [YAXArrays.Axes.axname(a) for a in geo_cube.data.axes]
+
+    length(axnames) == 2 || throw(ArgumentError("Cube must have 2 axes lon and lat"))
+    "lon" in axnames || throw(ArgumentError("Axis lon must be present"))
+    "lat" in axnames || throw(ArgumentError("Axis lat must be present"))
+
     is_ordered = filter(x -> x in ["lon", "lat"], axnames) == ["lon", "lat"]
     data = is_ordered ? Matrix(geo_cube.data.data) : Matrix(geo_cube.data.data)'
 
@@ -198,6 +198,9 @@ function CellCube(data::AbstractVector, grid::AbstractGrid)
 end
 
 function plot_map(cell_cube::CellCube)
+    axnames = [YAXArrays.Axes.axname(a) for a in cell_cube.data.axes]
+    axnames == ["cell_id"] || throw(ArgumentError("Cube must have only cell_is as axis."))
+
     # raster cellcube, because geo coordinates needed for plotting
     geo_cube = GeoCube(cell_cube)
     plot_map(geo_cube)
