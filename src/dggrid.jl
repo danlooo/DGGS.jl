@@ -3,8 +3,13 @@ import CSV: read
 using GeoDataFrames
 using DataFrames
 
+"DGGRID projections"
 Projections = [:isea, :fuller]
+
+"DGGRID topologies"
 Topologies = [:hexagon, :triangle, :diamond]
+
+"DGGRID apertures"
 Apertures = [3, 4, 7]
 
 struct Preset
