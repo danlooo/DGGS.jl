@@ -68,21 +68,22 @@ function get_children_cell_ids(grids::Vector{<:AbstractGrid}, parent_level::Int,
     child_grid = grids[parent_level+1]
     for parent_cell_id in 1:length(parent_grid)
         parent_cell_coord = get_geo_coords(parent_grid, parent_cell_id)
-        child_cell_ids = DGGS.knn(child_grid, parent_cell_coord[1], parent_cell_coord[2], n_children)
+        child_cell_ids = DGGS.knn(child_grid, parent_cell_coord[2], parent_cell_coord[1], n_children)
         res[parent_cell_id] = child_cell_ids
     end
     return res
 end
 
-function reduce_cells_to_lower_resolution(xout, xin, child_cell_cube, child_cell_ids, parent_cell_ids, aggregate_function)
-    coarsed_values = Vector{eltype(xin)}(undef, length(parent_cell_ids))
+function reduce_cells_to_lower_resolution(xout, xin, child_cell_cube, child_cell_ids, cell_ids, aggregate_function)
+    coarsed_values = Vector{eltype(xin)}(undef, length(cell_ids))
 
-    for parent_cell_id in parent_cell_ids
+    # calculate values of parent cell cube    
+    for cell_id in cell_ids
         # allow non global cubes with missing cell ids
-        selected_child_ids = child_cell_ids[parent_cell_id]
-        selected_child_positions = findall(x -> x in selected_child_ids, child_cell_cube.cell_ids)
+        selected_child_ids = child_cell_ids[cell_id]
+        selected_child_positions = findall(in(selected_child_ids), child_cell_cube.cell_ids)
 
-        coarsed_values[parent_cell_id] =
+        coarsed_values[cell_id] =
             xin[selected_child_positions] |>
             x -> filter(!ismissing, x) |>
                  aggregate_function
@@ -99,15 +100,19 @@ based on the same data as provided by `cell_cube`.
 Cell values are combined according to the provided `aggregate_function`.
 """
 function get_cube_pyramid(grids::Vector{<:AbstractGrid}, cell_cube::CellCube; aggregate_function::Function=mean)
+    if any(Base.eltype(cell_cube) |> Base.uniontypes .<: Integer)
+        throw(ArgumentError("Cell cube must not have element type Integer. Aggregated values might be float."))
+    end
+
     res = Vector{CellCube}(undef, length(grids))
     res[length(grids)] = cell_cube
 
     # Calculate parent layers by aggregating previous child layer
-    for parent_level in length(grids)-1:-1:1
-        parent_grid = grids[parent_level]
-        parent_cell_ids = 1:length(parent_grid)
-        child_level = parent_level + 1
-        child_cell_ids = get_children_cell_ids(grids, parent_level, 7)
+    for level in length(grids)-1:-1:1
+        grid = grids[level]
+        cell_ids = 1:length(grid)
+        child_level = level + 1
+        child_cell_ids = get_children_cell_ids(grids, level, 7)
         child_cell_cube = res[child_level]
 
         parent_cell_array = mapCube(
@@ -115,13 +120,13 @@ function get_cube_pyramid(grids::Vector{<:AbstractGrid}, cell_cube::CellCube; ag
             child_cell_cube.data,
             child_cell_cube,
             child_cell_ids,
-            parent_cell_ids,
+            cell_ids,
             aggregate_function,
             indims=InDims(:cell_id),
-            outdims=OutDims(RangeAxis(:cell_id, parent_cell_ids))
+            outdims=OutDims(RangeAxis(:cell_id, cell_ids))
         )
 
-        res[parent_level] = CellCube(parent_cell_array, parent_grid)
+        res[level] = CellCube(parent_cell_array, grid)
     end
 
     return res

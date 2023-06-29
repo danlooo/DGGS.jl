@@ -83,7 +83,7 @@ using Test
     @testset "GridSystems" begin
         using EarthDataLab
         esdc_cube = esdc(res="low")
-        subset_cube = subsetcube(esdc_cube, region="Europe", time=2020:2021, Variable=["ndvi", "transpiration"])
+        subset_cube = subsetcube(esdc_cube, region="Europe", time=2020:2020, Variable=["ndvi", "air_temperature_2m"])
         geo_cube = GeoCube(subset_cube)
 
         dggs = DgGlobalGridSystem(geo_cube, 3)
