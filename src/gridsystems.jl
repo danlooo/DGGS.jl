@@ -132,21 +132,21 @@ function get_cube_pyramid(grids::Vector{<:AbstractGrid}, cell_cube::CellCube; ag
     return res
 end
 
-function DgGlobalGridSystem(geo_cube::GeoCube, preset::Symbol, n_levels::Int=5)
+function DgGlobalGridSystem(geo_cube::GeoCube, preset::Symbol, n_levels::Int=5; aggregation_function::Function=mean)
     grids = [DgGrid(preset, level) for level in 0:n_levels-1]
     finest_grid = grids[n_levels]
     finest_cell_cube = CellCube(geo_cube, finest_grid)
-    cell_cubes = get_cube_pyramid(grids, finest_cell_cube)
+    cell_cubes = get_cube_pyramid(grids, finest_cell_cube; aggregate_function=aggregation_function)
     levels = [Level(cell_cube, grid, level) for (cell_cube, grid, level) in zip(cell_cubes, grids, 1:length(grids))]
     dggs = DgGlobalGridSystem(levels, preset, missing, missing, missing)
     return dggs
 end
 
-function DgGlobalGridSystem(geo_cube::GeoCube, n_levels::Int=5, projection::Symbol=:isea, aperture::Int=4, topology::Symbol=:hexagon)
+function DgGlobalGridSystem(geo_cube::GeoCube, n_levels::Int=5, projection::Symbol=:isea, aperture::Int=4, topology::Symbol=:hexagon; aggregate_function::Function=mean)
     grids = [DgGrid(projection, aperture, topology, level) for level in 0:n_levels-1]
     finest_grid = grids[n_levels]
     finest_cell_cube = CellCube(geo_cube, finest_grid)
-    cell_cubes = get_cube_pyramid(grids, finest_cell_cube)
+    cell_cubes = get_cube_pyramid(grids, finest_cell_cube; aggregate_function=aggregate_function)
     levels = [Level(cell_cube, grid, level) for (cell_cube, grid, level) in zip(cell_cubes, grids, 1:length(grids))]
     dggs = DgGlobalGridSystem(levels, :custom, projection, aperture, topology)
     return dggs

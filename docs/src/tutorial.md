@@ -105,16 +105,49 @@ The data is stored online in the [Earth System Data Cube (ESDC)](https://deepesd
 ```@example esdc
 using DGGS
 using EarthDataLab
-using YAXArrays
 esdc_cube = esdc(res="low")
 geo_cube = GeoCube(esdc_cube)
 ```
-Plot the first variable (NDVI) at the time point:
+Let's create a subset containing vegetation data of Asia in the year 2020:
+
+```@example esdc
+sub_geo_cube =  geo_cube[region="Asia", time=2020:2020, Variable="ndvi"]
+```
+
+Note that one can only plot a cube if the only remaining axes are longitude and latitude.
+This we need to subset it to plot the first time point of the imported raster data:
 
 ```@example esdc
 using CairoMakie
-sub_geo_cube = geo_cube[time = DateTime("2020-01-05T00:00:00"), Variable = "ndvi"]
-plot_map(sub_geo_cube)
+plot_map(sub_geo_cube[time = DateTime("2020-01-05T00:00:00")])
+```
+
+Now we can create a DGGS from it:
+
+```@example esdc
+dggs = DgGlobalGridSystem(sub_geo_cube, :isea4h, 6)
+```
+
+And plot the DGGS at the first time point with different resolutions:
+
+```@example esdc
+plot_map(dggs[5][time=DateTime("2020-01-01T01:00:00")])
+```
+
+```@example esdc
+plot_map(dggs[4][time=DateTime("2020-01-01T01:00:00")])
+```
+
+Due to the nature of the vegetation index, areas in the oceans are undefined.
+Thus, parent cells having any undefined value are undefined as well, resulting in undefined coastal areas at lower resolution.
+We can prevent this by providing a custom aggregation function:
+
+```@example esdc
+using Statistics
+aggregate_skip_undef(value) = value |> filter(! isnan) |> mean
+
+dggs2 = DgGlobalGridSystem(sub_geo_cube, :isea4h, 6; aggregation_function = aggregate_skip_undef)
+plot_map(dggs2[4][time=DateTime("2020-01-01T01:00:00")])
 ```
 
 ## Import Zarr Arrays
