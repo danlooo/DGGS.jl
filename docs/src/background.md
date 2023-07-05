@@ -31,6 +31,11 @@ By Justin Kunimune - Own work, Public Domain, https://commons.wikimedia.org/w/in
 
 ![](assets/grid-levels.png)
 
+## Projections
+
+- ISEA: Icosahedral Snyder Equal Area projection [Snyder 1992](https://doi.org/10.3138/27H7-8K88-4882-1752). Distortions are low in area but high in shape.
+- FULLER: Icosahedral Dymaxion projection of Fuller in 1975. Distortions are moderate in both area and shape. More details at [Gregory et al. 2008](https://doi.org/10.1016/j.compenvurbsys.2007.11.003)
+
 ## Grid cells
 
 DGGS cells are optimized towards having equal area leading into an irregular grid in geographical lon/lat space
