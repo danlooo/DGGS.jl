@@ -15,7 +15,7 @@ This minimizes distortion and loading time of large geospatial datasets, which i
 1. Take a platonic solid (e.g. icosahedron)
 2. Blow it up so that it s size fits the radius of the earth
 3. Chose a rotation of the polyhedron relative to the  (e.g. those used in the [Dymaxion projection](https://en.wikipedia.org/wiki/Dymaxion_map) so that the evrtices of the polyhedrons with high distortions are in the oceans)
-4. Tessellate the faces of the polyhedron (e.g. triangles, diamonds, or hexagons). One must introduce 12 pentagons at the vertices of the polyhedron to enable a tesselation of the 3D surface with hexagons.
+4. Tessellate the faces of the polyhedron (e.g. triangles, diamonds, or hexagons). One must introduce 12 pentagons at the vertices of the polyhedron to enable a tesselation of the 3D surface with hexagons. Polygons are regular on the faces of the polyhedron but may be distorted after re-projection to the sphere.
 5. Redo the tessellation with increasing resolutions forming a grid system
 
 ![](https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Dymaxion_projection.png/1920px-Dymaxion_projection.png)
