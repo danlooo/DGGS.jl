@@ -10,7 +10,7 @@ This minimizes distortion and loading time of large geospatial datasets, which i
 - spherical properties
 - equal area
 
-## DGGS Creation
+## DGGS creation
 
 1. Take a platonic solid (e.g. icosahedron)
 2. Blow it up so that it s size fits the radius of the earth
@@ -30,3 +30,16 @@ By Justin Kunimune - Own work, Public Domain, https://commons.wikimedia.org/w/in
 ![](assets/cube-shape.drawio.svg)
 
 ![](assets/grid-levels.png)
+
+## Grid cells
+
+DGGS cells are optimized towards having equal area leading into an irregular grid in geographical lon/lat space
+Any grid, including those used in a DGGS, can be represented as a Voronoi partition of the cell center coordinates
+These coordinates are stored in a KD-Tree (Similar in python xarrys extension [Xoak](https://xoak.readthedocs.io/en/latest/index.html))
+
+It is important to give nearby cells a similar cell id.
+This allows faster indexing and loading times, because the chunking is based on cell id.
+The cell id encodes the 1D (memory address and cell id) curve to traverse the the 2D surface (geographical coordinates).
+These space-filling curves are often recursively defined fractals.
+Solutions for the 2-D plane are the Hilbert and Gosper curve for rectangular and hexagonal grids, respectively.
+The [Superfund grid](https://webpages.sou.edu/~sahrk/docs/superfund_500m_020719.pdf) is a solution for the sphere surface.
