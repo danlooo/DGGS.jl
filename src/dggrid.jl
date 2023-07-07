@@ -68,7 +68,7 @@ end
 """
 Get a DataFrame of cell center points
 """
-function get_dggrid_grid_table(topology::Symbol, projection::Symbol, level::Int)
+function get_grid_table(topology::Symbol, projection::Symbol, level::Int)
     meta = Dict(
         "dggrid_operation" => "GENERATE_GRID",
         "clip_subset_type" => "WHOLE_EARTH",
@@ -87,7 +87,7 @@ function get_dggrid_grid_table(topology::Symbol, projection::Symbol, level::Int)
     return df
 end
 
-function get_dggrid_grid_table(preset::Symbol, level::Int)
+function get_grid_table(preset::Symbol, level::Int)
     meta = Dict(
         "dggrid_operation" => "GENERATE_GRID",
         "clip_subset_type" => "WHOLE_EARTH",
@@ -107,7 +107,7 @@ end
 """
 Get a GeoDataFrame with boundary polygons for each cell
 """
-function get_dggrid_cell_boundaries(topology::Symbol, projection::Symbol, level::Int)
+function get_cell_boundaries(topology::Symbol, projection::Symbol, level::Int)
     meta = Dict(
         "dggrid_operation" => "GENERATE_GRID",
         "clip_subset_type" => "WHOLE_EARTH",

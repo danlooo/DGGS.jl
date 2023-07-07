@@ -108,7 +108,7 @@ function DgGrid(projection::Symbol, aperture::Union{Int,Nothing}, topology::Unio
     aperture in Apertures || throw(ArgumentError("aperture $aperture must be one of $Apertures"))
     topology in Topologies || throw(ArgumentError("topology :$(topology) must be one of $Topologies"))
 
-    grid_table = get_dggrid_grid_table(topology, projection, resolution)
+    grid_table = get_grid_table(topology, projection, resolution)
 
     # cell center points encode grid tpopology (e.g. hexagon or square) implicitly
     # Fast average search in O(log n) and efficient in batch processing
@@ -121,7 +121,7 @@ end
 function DgGrid(preset::Symbol, resolution::Int)
     preset in keys(Presets) || throw(ArgumentError("Symbol $(preset) must be one of $(Presets)"))
 
-    grid_table = get_dggrid_grid_table(preset, resolution)
+    grid_table = get_grid_table(preset, resolution)
 
     # cell center points encode grid tpopology (e.g. hexagon or square) implicitly
     # Fast average search in O(log n) and efficient in batch processing
@@ -137,7 +137,7 @@ function Base.show(io::IO, ::MIME"text/plain", grid::DgGrid)
 end
 
 function get_cell_boundaries(grid::DgGrid)
-    get_dggrid_cell_boundaries(grid.topology, grid.projection, grid.resolution)
+    get_cell_boundaries(grid.topology, grid.projection, grid.resolution)
 end
 
 create_toy_grid() = DgGrid(:isea, 4, :hexagon, 3)

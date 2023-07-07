@@ -15,7 +15,7 @@ using Test
         d = DGGS.call_dggrid(meta)
         @test isfile("$(d)/centers.txt")
 
-        @test DGGS.get_dggrid_grid_table(:isea4h, 3) |> size == (642, 3)
+        @test DGGS.get_grid_table(:isea4h, 3) |> size == (642, 3)
     end
 
     @testset "Grids" begin
