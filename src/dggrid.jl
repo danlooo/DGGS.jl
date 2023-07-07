@@ -128,3 +128,43 @@ function get_dggrid_cell_boundaries(topology::Symbol, projection::Symbol, level:
     rm(out_dir, recursive=true)
     return df
 end
+
+function get_cell_ids(grid::DgGrid, lat_range::Union{Number,AbstractVector}, lon_range::Union{Number,AbstractVector})
+    # Can not just use nearest neighbor, because the voronoi partition is defined on the
+    # icosahedron faces. Cells are irregular after ISEA projection to earth surface.
+    points_path = tempname()
+    points_string = ""
+    for lat in lat_range
+        for lon in lon_range
+            points_string *= "$(lon),$(lat)\n"
+        end
+    end
+    write(points_path, points_string)
+
+    meta = Dict(
+        "dggrid_operation" => "TRANSFORM_POINTS",
+        "dggs_type" => uppercase(string(grid.type)),
+        "dggs_topology" => uppercase(string(grid.topology)),
+        "dggs_proj" => uppercase(string(grid.projection)),
+        "dggs_res_spec" => uppercase(string(grid.resolution)),
+        "input_file_name" => points_path,
+        "input_address_type" => "GEO",
+        "input_delimiter" => "\",\"", "output_file_name" => "cell_ids.txt",
+        "output_address_type" => "SEQNUM",
+        "output_delimiter" => "\",\""
+    )
+
+    out_dir = call_dggrid(meta)
+    cell_ids = readlines("$(out_dir)/cell_ids.txt") |>
+               x -> parse.(Int, x) |>
+                    x -> reshape(x, length(lat_range), length(lon_range))
+
+    rm(out_dir, recursive=true)
+    rm(points_path)
+
+    if size(cell_ids) == (1, 1)
+        return cell_ids[1, 1]
+    else
+        return cell_ids
+    end
+end
