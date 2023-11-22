@@ -146,7 +146,7 @@ We can prevent this by providing a custom aggregation function:
 using Statistics
 aggregate_skip_undef(value) = value |> filter(! isnan) |> mean
 
-dggs2 = DgGlobalGridSystem(sub_geo_cube, :isea4h, 6; aggregation_function = aggregate_skip_undef)
+dggs2 = DgGlobalGridSystem(sub_geo_cube, :isea4h, 6; aggregate_function = aggregate_skip_undef)
 plot_map(dggs2[4][time=DateTime("2020-01-01T01:00:00")])
 ```
 
