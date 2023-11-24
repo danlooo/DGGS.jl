@@ -1,25 +1,17 @@
 module DGGS
 
+using DGGRID7_jll
+using DataFrames
+using CSV
+using Oxygen
+using ColorSchemes
+
 # must be sorted by dependency
-include("grids.jl")
-include("dggrid.jl")
 include("cubes.jl")
-include("gridsystems.jl")
+include("tiles.jl")
+include("webserver.jl")
 
 export
     CellCube,
-    DgGlobalGridSystem,
-    create_toy_grid,
-    DgGrid,
-    export_cell_boundaries,
-    export_cell_centers,
-    GeoCube,
-    get_cell_boundaries,
-    get_cell_centers,
-    get_cell_ids,
-    get_geo_coords,
-    Grid,
-    Level,
-    plot_map,
-    knn
+    GeoCube
 end
