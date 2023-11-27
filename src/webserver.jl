@@ -1,5 +1,4 @@
 module WebServer
-using Oxygen
 
 function run()
   @swagger """
