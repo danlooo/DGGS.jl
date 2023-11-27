@@ -2,7 +2,7 @@
 
 julia_version = "1.9.2"
 manifest_format = "2.0"
-project_hash = "e6bc1f2291181503ef5bb75ad2eca54a3f73665e"
+project_hash = "d3921b049bbc788dc539d7a50fc453e699b75f69"
 
 [[deps.AbstractTrees]]
 git-tree-sha1 = "faa260e4cb5aba097a73fab382dd4b5819d8ec8c"
@@ -462,11 +462,23 @@ git-tree-sha1 = "7e5d6779a1e09a36db2a7b6cff50942a0a7d0fca"
 uuid = "692b3bcd-3c85-4b1f-b108-f13ce0eb3210"
 version = "1.5.0"
 
+[[deps.JSON]]
+deps = ["Dates", "Mmap", "Parsers", "Unicode"]
+git-tree-sha1 = "31e996f0a15c7b280ba9f76636b3ff9e2ae58c9a"
+uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+version = "0.21.4"
+
 [[deps.JSON3]]
 deps = ["Dates", "Mmap", "Parsers", "PrecompileTools", "StructTypes", "UUIDs"]
 git-tree-sha1 = "95220473901735a0f4df9d1ca5b171b568b2daa3"
 uuid = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
 version = "1.13.2"
+
+[[deps.JSONSchema]]
+deps = ["Downloads", "JSON", "JSON3", "URIs"]
+git-tree-sha1 = "5f0bd0cd69df978fa64ccdcb5c152fbc705455a1"
+uuid = "7d188eb4-7ad8-530c-ae41-71a32a6d4692"
+version = "1.3.0"
 
 [[deps.JpegTurbo_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -1009,6 +1021,12 @@ version = "1.3.0"
     ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
     InverseFunctions = "3587e190-3f89-42d0-90ee-14403ec27112"
 
+[[deps.StringEncodings]]
+deps = ["Libiconv_jll"]
+git-tree-sha1 = "b765e46ba27ecf6b44faf70df40c57aa3a547dcb"
+uuid = "69024149-9ee7-55f6-a4c4-859efe599b68"
+version = "0.3.7"
+
 [[deps.StringManipulation]]
 deps = ["PrecompileTools"]
 git-tree-sha1 = "a04cabe79c5f01f4d723cc6704070ada0b9d46d5"
@@ -1029,6 +1047,12 @@ uuid = "4607b0f0-06f3-5cda-b6b1-a6196a1729e9"
 deps = ["Artifacts", "Libdl", "Pkg", "libblastrampoline_jll"]
 uuid = "bea87d4a-7f5b-5778-9afe-8cc45184846c"
 version = "5.10.1+6"
+
+[[deps.SwaggerMarkdown]]
+deps = ["JSON", "JSONSchema", "Test", "UUIDs", "YAML"]
+git-tree-sha1 = "ea2513768e67b5ca27bbbab19e34179714a78cab"
+uuid = "1b6eb727-ad4b-44eb-9669-b9596a6e760f"
+version = "0.2.1"
 
 [[deps.TOML]]
 deps = ["Dates"]
@@ -1134,6 +1158,12 @@ deps = ["Artifacts", "JLLWrappers", "Libdl"]
 git-tree-sha1 = "522b8414d40c4cbbab8dee346ac3a09f9768f25d"
 uuid = "ffd25f8a-64ca-5728-b0f7-c24cf3aae800"
 version = "5.4.5+0"
+
+[[deps.YAML]]
+deps = ["Base64", "Dates", "Printf", "StringEncodings"]
+git-tree-sha1 = "e6330e4b731a6af7959673621e91645eb1356884"
+uuid = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
+version = "0.4.9"
 
 [[deps.YAXArrayBase]]
 deps = ["DataStructures", "Dates", "Downloads", "Requires"]

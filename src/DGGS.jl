@@ -5,6 +5,7 @@ using DataFrames
 using CSV
 using ColorSchemes
 using Oxygen
+using SwaggerMarkdown
 
 # must be sorted by dependency
 include("sandbox.jl")
