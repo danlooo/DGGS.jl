@@ -4,18 +4,23 @@ authors = ["Daniel Loos"]
 version = "1.0.0-DEV"
 
 [deps]
+ArchGDAL = "c9ce4bd3-c3d5-55b8-8973-c0e20141b8c3"
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 ColorSchemes = "35d6a980-a343-548e-a6ea-1d62b119f2f4"
-ArchGDAL = "c9ce4bd3-c3d5-55b8-8973-c0e20141b8c3"
 DGGRID7_jll = "56fc471b-e449-5679-a438-44d065b4fb79"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 DimensionalData = "0703355e-b756-11e9-17c0-8b28908087d0"
+GDAL_jll = "a7073274-a066-55f0-b90d-d619367d196c"
 HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
 Infiltrator = "5903a43b-9cc3-4c30-8d17-598619ec4e9b"
 Oxygen = "df9a0d86-3283-4920-82dc-4555fc0d1d8b"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 SwaggerMarkdown = "1b6eb727-ad4b-44eb-9669-b9596a6e760f"
 YAXArrays = "c21b50f5-aa40-41ea-b809-c0f5e47bfa5c"
+
+[compat]
+julia = "v1.6.0"
+GDAL_jll = "v301.600.200"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
