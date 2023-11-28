@@ -8,6 +8,28 @@ using DataFrames
 using Statistics
 using ColorSchemes
 
+"Rectangular bounding box in geographical space"
+struct BBox{T<:Real}
+    lon_min::T
+    lon_max::T
+    lat_min::T
+    lat_max::T
+end
+
+"Geographical bounding box given a xyz tile"
+function BBox(x, y, z)
+    #@see https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
+
+    n = 2^z
+    lon_min = x / n * 360.0 - 180.0
+    lat_min = atan(sinh(π * (1 - 2 * (y + 1) / n))) |> rad2deg
+
+    lon_max = (x + 1) / n * 360.0 - 180.0
+    lat_max = atan(sinh(π * (1 - 2 * y / n))) |> rad2deg
+
+    return BBox(lon_min, lon_max, lat_min, lat_max)
+end
+
 struct ColorScale{T<:Real}
     schema::ColorScheme
     min_value::T
@@ -42,6 +64,7 @@ function Base.getindex(cell_cube::CellCube, selector...)
     cell_array = view(cell_cube.data, selector...)
     CellCube(cell_array, cell_cube.data)
 end
+
 
 """
 Execute sytem call of DGGRID binary
@@ -164,4 +187,63 @@ function GeoCube(cell_cube::CellCube; longitudes=-180:180, latitudes=-90:90)
         )
     )
     return GeoCube(geo_array)
+end
+
+"""
+(pre) calculate x,y,z to cell_ids for lookup cahce in tile server
+
+`max_z`: maximum z level of xyz tiles, result in `max_z` + 1 levels
+"""
+function calculate_cell_ids_of_tiles(; max_z=3, tile_length=256)
+    cell_ids = Vector{}(undef, max_z + 1)
+
+    for z in 0:max_z
+        cur_x_cell_ids = Vector{}(undef, 2^z)
+        for x in 0:2^z-1
+            cur_y_cell_ids = Vector{}(undef, 2^z)
+            for y in 0:2^z-1
+                bbox = BBox(x, y, z)
+                longitudes = range(bbox.lon_min, bbox.lon_max, tile_length)
+                latitudes = range(bbox.lat_min, bbox.lat_max, tile_length)
+                tile_cell_ids = transform_points(longitudes, latitudes, 4)
+                cur_y_cell_ids[y+1] = tile_cell_ids
+            end
+            cur_x_cell_ids[x+1] = cur_y_cell_ids
+        end
+        cell_ids[z+1] = cur_x_cell_ids
+    end
+end
+
+
+function color_value(value::Real, color_scale::ColorScale; null_color=RGBA{Float64}(0, 0, 0, 0))
+    isnan(value) && return null_color
+    ismissing(value) && return null_color
+    return color_scale.schema[value] |> RGBA
+end
+
+function calculate_tile(x, y, z; tile_length=256)
+    color_scale = ColorScale(ColorSchemes.viridis, -4, 4)
+
+    # z > length(dggs) && throw(ArgumentError("Zoom level too high"))
+    # level = z == 0 ? 1 : z
+    # tile_cell_ids = @view cell_ids[level][x+1, y+1, :, :]
+
+    bbox = BBox(x, y, z)
+    longitudes = range(bbox.lon_min, bbox.lon_max, tile_length)
+    latitudes = range(bbox.lat_min, bbox.lat_max, tile_length)
+    tile_cell_ids = transform_points(longitudes, latitudes, 6)
+
+    tile_values = map(tile_cell_ids) do cell_id
+        cell_cube.data[time=2, q2di_n=cell_id.n + 1, q2di_i=cell_id.i + 1, q2di_j=cell_id.j + 1].data[1]
+    end
+
+    scaled = (tile_values .- color_scale.min_value) / (color_scale.max_value - color_scale.min_value)
+    image = map(x -> color_value(x, color_scale), scaled)
+
+    trfm = LinearMap(RotMatrix2{Float64}(0, -1, 1, 0)) # rotation angle would result in rounding error
+    image = warp(image, trfm)
+
+    io = IOBuffer()
+    save(Stream(format"PNG", io), image)
+    return io.data
 end

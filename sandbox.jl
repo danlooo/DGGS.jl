@@ -3,6 +3,12 @@
 #
 # TODO: Gdal is only found in @v1.ß env
 
+
+using DGGS
+using YAXArrays
+using DimensionalData
+using Plots
+
 lon_range = -180:180
 lat_range = -90:90
 time_range = 0:10
@@ -14,7 +20,7 @@ axlist = (
 )
 geo_array = YAXArray(axlist, geo_data)
 geo_cube = GeoCube(geo_array)
-cell_cube = CellCube(geo_cube)
+cell_cube = CellCube(geo_cube, 6)
 geo_cube2 = GeoCube(cell_cube)
 
 geo_cube.data.data[:, :, 2] |> heatmap
