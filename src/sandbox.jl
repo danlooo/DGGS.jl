@@ -208,7 +208,8 @@ function calculate_cell_ids_of_tiles(; max_z=3, tile_length=256)
     # flatten tasks to increase multi CPU utilization and 
     tiles_keys = [IterTools.product(0:2^z-1, 0:2^z-1, z) for z in 0:max_z] |> Iterators.flatten |> collect
 
-    result = Dict()
+    # ensure thread saftey. Results might come in differnt order
+    result = ThreadSafeDict()
     p = Progress(length(tiles_keys))
     Threads.nthreads() == 1 && @warn "Multithreading is not active. Please consider to start julia with --threads auto"
     Threads.@threads for i in eachindex(tiles_keys)
