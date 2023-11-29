@@ -13,6 +13,15 @@ using ImageTransformations
 using CoordinateTransformations
 using Rotations
 using Serialization
+using Distributed
+using IterTools
+using ProgressMeter
+using Infiltrator
+
+# @everywhere begin
+#     using DGGS
+#     using ProgressMeter
+# end
 
 # must be sorted by dependency
 include("sandbox.jl")

@@ -81,14 +81,15 @@ function call_dggrid(meta::Dict; verbose=false)
     write(meta_path, meta_string)
 
     DGGRID7_jll.dggrid() do dggrid_path
-        old_pwd = pwd()
-        cd(tmp_dir)
         oldstd = stdout
         if !verbose
             redirect_stdout(devnull)
         end
-        run(`$dggrid_path $(meta_path)`)
-        cd(old_pwd)
+
+        # ensure thread safetey, e.g. don't use julia functions cd and pwd
+        cmd = "cd $tmp_dir && $dggrid_path $meta_path"
+        run(`sh -c $cmd`)
+
         redirect_stdout(oldstd)
     end
 
@@ -124,6 +125,14 @@ function transform_points(lon_range, lat_range, level)
     cell_ids_q2di = map((n, i, j) -> Q2DI(n, i, j), cell_ids.q2di_n, cell_ids.q2di_i, cell_ids.q2di_j) |>
                     x -> reshape(x, length(lon_range), length(lat_range))
     return cell_ids_q2di
+end
+
+function transform_points(x, y, z, level; tile_length=256)
+    bbox = BBox(x, y, z)
+    longitudes = range(bbox.lon_min, bbox.lon_max, tile_length)
+    latitudes = range(bbox.lat_min, bbox.lat_max, tile_length)
+    cell_ids = transform_points(longitudes, latitudes, level)
+    return cell_ids
 end
 
 "Apply function f after filtering of missing and NAN values"
@@ -189,29 +198,26 @@ function GeoCube(cell_cube::CellCube; longitudes=-180:180, latitudes=-90:90)
     return GeoCube(geo_array)
 end
 
+
 """
 (pre) calculate x,y,z to cell_ids for lookup cahce in tile server
 
 `max_z`: maximum z level of xyz tiles, result in `max_z` + 1 levels
 """
 function calculate_cell_ids_of_tiles(; max_z=3, tile_length=256)
-    cell_ids = Vector{}(undef, max_z + 1)
+    # flatten tasks to increase multi CPU utilization and 
+    tiles_keys = [IterTools.product(0:2^z-1, 0:2^z-1, z) for z in 0:max_z] |> Iterators.flatten |> collect
 
-    for z in 0:max_z
-        cur_x_cell_ids = Vector{}(undef, 2^z)
-        for x in 0:2^z-1
-            cur_y_cell_ids = Vector{}(undef, 2^z)
-            for y in 0:2^z-1
-                bbox = BBox(x, y, z)
-                longitudes = range(bbox.lon_min, bbox.lon_max, tile_length)
-                latitudes = range(bbox.lat_min, bbox.lat_max, tile_length)
-                tile_cell_ids = transform_points(longitudes, latitudes, 4)
-                cur_y_cell_ids[y+1] = tile_cell_ids
-            end
-            cur_x_cell_ids[x+1] = cur_y_cell_ids
-        end
-        cell_ids[z+1] = cur_x_cell_ids
+    result = Dict()
+    p = Progress(length(tiles_keys))
+    Threads.nthreads() == 1 && @warn "Multithreading is not active. Please consider to start julia with --threads auto"
+    Threads.@threads for i in eachindex(tiles_keys)
+        tile = tiles_keys[i]
+        result[tile...] = DGGS.transform_points(tile[1], tile[2], tile[3], 6)
+        next!(p)
     end
+    finish!(p)
+    return result
 end
 
 
@@ -221,18 +227,13 @@ function color_value(value::Real, color_scale::ColorScale; null_color=RGBA{Float
     return color_scale.schema[value] |> RGBA
 end
 
+
+cell_ids = deserialize("cell_ids.jl.dat")
+
 function calculate_tile(x, y, z; tile_length=256)
     color_scale = ColorScale(ColorSchemes.viridis, -4, 4)
 
-    # z > length(dggs) && throw(ArgumentError("Zoom level too high"))
-    # level = z == 0 ? 1 : z
-    # tile_cell_ids = @view cell_ids[level][x+1, y+1, :, :]
-
-    bbox = BBox(x, y, z)
-    longitudes = range(bbox.lon_min, bbox.lon_max, tile_length)
-    latitudes = range(bbox.lat_min, bbox.lat_max, tile_length)
-    tile_cell_ids = transform_points(longitudes, latitudes, 6)
-
+    tile_cell_ids = cell_ids[x, y, z]
     tile_values = map(tile_cell_ids) do cell_id
         cell_cube.data[time=2, q2di_n=cell_id.n + 1, q2di_i=cell_id.i + 1, q2di_j=cell_id.j + 1].data[1]
     end

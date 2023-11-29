@@ -2,7 +2,7 @@
 
 julia_version = "1.9.2"
 manifest_format = "2.0"
-project_hash = "a9bb1e7c3c300cce4cfc365d15481e1ca7266584"
+project_hash = "b37b2dc02c2d5ffe979238b67c781d73156f4cc7"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -263,7 +263,7 @@ version = "1.0.2"
 
 [[deps.DGGRID7_jll]]
 deps = ["Artifacts", "GDAL_jll", "JLLWrappers", "Libdl"]
-path = "/home/dloos/.julia/dev/DGGRID7_jll"
+git-tree-sha1 = "c6c67e4e2aa16820baa5e44fc298867c302b8ec4"
 uuid = "56fc471b-e449-5679-a438-44d065b4fb79"
 version = "0.9.1+0"
 
