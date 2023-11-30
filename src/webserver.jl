@@ -3,20 +3,30 @@ using SwaggerMarkdown
 using HTTP
 
 
-lon_range = -180:180
-lat_range = -90:90
-time_range = 0:10
-geo_data = [t * exp(cosd(lon + (t * 10))) + 3((lat - 50) / 90) for lon in lon_range, lat in lat_range, t in time_range]
-axlist = (
-  Dim{:lon}(lon_range),
-  Dim{:lat}(lat_range),
-  Dim{:time}(time_range)
-)
-geo_array = YAXArray(axlist, geo_data)
-geo_cube = GeoCube(geo_array)
-cell_cube = CellCube(geo_cube, 6)
+# lon_range = -180:180
+# lat_range = -90:90
+# time_range = 0:10
+# geo_data = [t * exp(cosd(lon + (t * 10))) + 3((lat - 50) / 90) for lon in lon_range, lat in lat_range, t in time_range]
+# axlist = (
+#   Dim{:lon}(lon_range),
+#   Dim{:lat}(lat_range),
+#   Dim{:time}(time_range)
+# )
+# geo_array = YAXArray(axlist, geo_data)
+# geo_cube = GeoCube(geo_array)
+# cell_cube = CellCube(geo_cube, 6)
+# savecube(cell_cube.data, "data/example.cube.zarr"; driver=:zarr)
 
 function run_webserver(; kwargs...)
+  cell_ids_cache = try
+    deserialize("data/xyz_to_q2di.cache.bin")
+  catch e
+    missing
+  end
+
+  cell_cube = CellCube("data/example.cube.zarr")
+  cell_array = cell_cube.data[time=2]
+
   @swagger """
   /tile/{z}/{x}/{y}/tile.png:
     get:
@@ -46,8 +56,7 @@ function run_webserver(; kwargs...)
   """
   @get "/tile/{z}/{x}/{y}/tile.png" function (req::HTTP.Request, z::Int, x::Int, y::Int)
     params = HTTP.queryparams(req)
-
-    tile = calculate_tile(x, y, z)
+    tile = calculate_tile(cell_array, x, y, z; cache=cell_ids_cache)
     response_headers = [
       "Content-Type" => "image/png",
       # "cache-control" => "max-age=23117, stale-while-revalidate=604800, stale-if-error=604800"
