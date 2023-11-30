@@ -204,6 +204,27 @@ function GeoCube(cell_cube::CellCube; longitudes=-180:180, latitudes=-90:90)
     return GeoCube(geo_array)
 end
 
+function GeoCube(cell_cube::CellCube; x, y, z, cache=missing, tile_length=256)
+    # precompute spatial mapping (can be reused e.g. for each time point)
+    cell_ids_mat = ismissing(cache) ? transform_points(x, y, z, 6) : cache[x, y, z]
+    bbox = BBox(x, y, z)
+    longitudes = range(bbox.lat_min, bbox.lat_max; length=tile_length)
+    latitudes = range(bbox.lat_min, bbox.lat_max; length=tile_length)
+    geo_array = mapCube(
+        map_cell_to_geo_cube,
+        cell_cube.data,
+        cell_ids_mat,
+        longitudes,
+        latitudes,
+        indims=InDims(:q2di_n, :q2di_i, :q2di_j),
+        outdims=OutDims(
+            Dim{:lon}(longitudes),
+            Dim{:lat}(latitudes)
+        )
+    )
+    return GeoCube(geo_array)
+end
+
 
 """
 (pre) calculate x,y,z to cell_ids for lookup cahce in tile server
@@ -234,21 +255,13 @@ function color_value(value::Real, color_scale::ColorScale; null_color=RGBA{Float
     return color_scale.schema[value] |> RGBA
 end
 
-function calculate_tile(cell_array::YAXArray, x, y, z; tile_length=256, cache=missing)
+function calculate_tile(cell_cube::CellCube, x, y, z; tile_length=256, cache=missing)
     color_scale = ColorScale(ColorSchemes.viridis, -4, 4)
-
-    tile_cell_ids = ismissing(cache) ? transform_points(x, y, z, 6) : cache[x, y, z]
-
-    tile_values = map(tile_cell_ids) do cell_id
-        cell_array[q2di_n=cell_id.n + 1, q2di_i=cell_id.i + 1, q2di_j=cell_id.j + 1].data[1]
-    end
-
+    tile_values = GeoCube(cell_cube; x=x, y=y, z=z, cache=cache).data.data
     scaled = (tile_values .- color_scale.min_value) / (color_scale.max_value - color_scale.min_value)
     image = map(x -> color_value(x, color_scale), scaled)
-
     trfm = LinearMap(RotMatrix2{Float64}(0, -1, 1, 0)) # rotation angle would result in rounding error
     image = warp(image, trfm)
-
     io = IOBuffer()
     save(Stream(format"PNG", io), image)
     return io.data
