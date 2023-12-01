@@ -3,6 +3,7 @@ module DGGS
 using DGGRID7_jll
 using DimensionalData
 using Zarr
+using NetCDF
 using YAXArrays
 using DataFrames
 using CSV

@@ -46,6 +46,10 @@ struct CellCube
     level::Int8
 end
 
+function Base.show(io::IO, ::MIME"text/plain", cube::CellCube)
+    println(io, "DGGS CellCube")
+    Base.show(io, "text/plain", cube.data.axes)
+end
 
 function CellCube(path::String)
     data = Cube(path)
@@ -53,8 +57,30 @@ function CellCube(path::String)
     CellCube(data, level)
 end
 
+function CellCube(path::String, lon_dim="lon", lat_dim="lat", level=6)
+    geo_cube = GeoCube(path::String, lon_dim, lat_dim)
+    CellCube(geo_cube, level)
+end
+
+
 struct GeoCube
     data::YAXArray
+end
+
+function GeoCube(path::String, lon_dim="lon", lat_dim="lat")
+    array = Cube(path)
+    array = renameaxis!(array, lon_dim => :lon)
+    array = renameaxis!(array, lat_dim => :lat)
+
+    -180 <= minimum(array.lon) < maximum(array.lon) <= 180 || error("Longitudes must be within [-180, 180]")
+    -90 <= minimum(array.lat) < maximum(array.lat) <= 90 || error("Longitudes must be within [-180, 180]")
+
+    GeoCube(array)
+end
+
+function Base.show(io::IO, ::MIME"text/plain", cube::GeoCube)
+    println(io, "DGGS GeoCube")
+    Base.show(io, "text/plain", cube.data.axes)
 end
 
 function Base.getindex(cell_cube::CellCube, i::Q2DI)
@@ -81,26 +107,20 @@ function call_dggrid(meta::Dict; verbose=false)
         meta_string *= "$(key) $(val)\n"
     end
 
-    tmp_dir = tempname()
-    mkdir(tmp_dir)
-    meta_path = tempname() # not inside tmp_dir to avoid name collision
+    meta_path = tempname()
     write(meta_path, meta_string)
 
-    DGGRID7_jll.dggrid() do dggrid_path
-        oldstd = stdout
-        if !verbose
-            redirect_stdout(devnull)
-        end
-
-        # ensure thread safetey, e.g. don't use julia functions cd and pwd
-        cmd = "cd $tmp_dir && $dggrid_path $meta_path"
-        run(`sh -c $cmd`)
-
-        redirect_stdout(oldstd)
+    oldstd = stdout
+    if !verbose
+        redirect_stdout(devnull)
     end
 
+    # ensure thread safetey
+    # see https://discourse.julialang.org/t/ioerror-could-not-spawn-argument-list-too-long/43728/18
+    run(`$(DGGRID7_jll.dggrid()) $meta_path`)
+
+    redirect_stdout(oldstd)
     rm(meta_path)
-    return (tmp_dir)
 end
 
 function transform_points(lon_range, lat_range, level)
@@ -113,21 +133,23 @@ function transform_points(lon_range, lat_range, level)
     end
     write(points_path, points_string)
 
+    out_points_path = tempname()
+
     meta = Dict(
         "dggrid_operation" => "TRANSFORM_POINTS",
         "dggs_type" => "ISEA4H",
         "dggs_res_spec" => level - 1,
         "input_file_name" => points_path,
         "input_address_type" => "GEO",
-        "input_delimiter" => "\",\"", "output_file_name" => "cell_ids.csv",
+        "input_delimiter" => "\",\"", "output_file_name" => out_points_path,
         "output_address_type" => "Q2DI",
         "output_delimiter" => "\",\"",
     )
 
-    out_dir = call_dggrid(meta)
-    cell_ids = CSV.read("$(out_dir)/cell_ids.csv", DataFrame; header=["q2di_n", "q2di_i", "q2di_j"])
-    rm(out_dir, recursive=true)
+    call_dggrid(meta)
+    cell_ids = CSV.read(out_points_path, DataFrame; header=["q2di_n", "q2di_i", "q2di_j"])
     rm(points_path)
+    rm(out_points_path)
     cell_ids_q2di = map((n, i, j) -> Q2DI(n, i, j), cell_ids.q2di_n, cell_ids.q2di_i, cell_ids.q2di_j) |>
                     x -> reshape(x, length(lon_range), length(lat_range))
     return cell_ids_q2di
@@ -152,13 +174,36 @@ function map_geo_to_cell_cube(xout, xin, cell_ids_unique, cell_ids_indexlist, ag
     end
 end
 
-function CellCube(geo_cube::GeoCube, level=6, agg_func=filter_null(mean))
+function CellCube(path::String, level; kwargs...)
+    geo_cube = GeoCube(path)
+    cell_cube = CellCube(geo_cube, 6; kwargs...)
+end
+
+function CellCube(geo_cube::GeoCube, level=6, agg_func=filter_null(mean); chunk_size=missing)
+    Threads.nthreads() == 1 && @warn "Multithreading is not active. Please consider to start julia with --threads auto"
+
+    @info "Step 1/2: Transform coordinates"
+
     # precompute spatial mapping (can be reused e.g. for each time point)
-    cell_ids_mat = transform_points(geo_cube.data.lon, geo_cube.data.lat, level)
+    ismissing(chunk_size) ? chunk_size = max(2, 512 / length(geo_cube.data.lat)) |> ceil |> Int : true
+
+    lon_chunks = Iterators.partition(geo_cube.data.lon, chunk_size) |> collect
+    cell_ids_dict = ThreadSafeDict()
+    p = Progress(length(lon_chunks))
+
+    Threads.@threads for (i, lons) in lon_chunks |> enumerate |> collect
+        cell_ids_dict[i] = transform_points(lons, geo_cube.data.lat, level)
+        next!(p)
+    end
+    finish!(p)
+    cell_ids_mat = vcat(values(cell_ids_dict)...)
+
     cell_ids_unique = unique(cell_ids_mat)
     cell_ids_indexlist = map(cell_ids_unique) do x
         findall(isequal(x), cell_ids_mat)
     end
+
+    @info "Step 2/2: Re-grid the data"
 
     cell_cube = mapCube(
         map_geo_to_cell_cube,
@@ -171,7 +216,8 @@ function CellCube(geo_cube::GeoCube, level=6, agg_func=filter_null(mean))
             Dim{:q2di_n}(0:11),
             Dim{:q2di_i}(range(0; step=16, length=32)),
             Dim{:q2di_j}(range(0; step=16, length=32)),
-        )
+        ),
+        showprog=true
     )
     return CellCube(cell_cube, level)
 end
