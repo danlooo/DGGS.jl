@@ -17,6 +17,8 @@ using HTTP
 # savecube(cell_cube.data, "data/example.cube.zarr"; driver=:zarr)
 
 function run_webserver(; kwargs...)
+  Threads.nthreads() == 1 || error("The web server must run in a single thread")
+
   cell_ids_cache = try
     deserialize("data/xyz_to_q2di.cache.bin")
   catch e
