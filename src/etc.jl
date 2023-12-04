@@ -57,7 +57,7 @@ function CellCube(path::String)
     CellCube(data, level)
 end
 
-function CellCube(path::String, lon_dim="lon", lat_dim="lat", level=6)
+function CellCube(path::String, lon_dim, lat_dim, level)
     geo_cube = GeoCube(path::String, lon_dim, lat_dim)
     CellCube(geo_cube, level)
 end
@@ -67,7 +67,7 @@ struct GeoCube
     data::YAXArray
 end
 
-function GeoCube(path::String, lon_dim="lon", lat_dim="lat")
+function GeoCube(path::String, lon_dim, lat_dim)
     array = Cube(path)
     array = renameaxis!(array, lon_dim => :lon)
     array = renameaxis!(array, lat_dim => :lat)
@@ -101,7 +101,7 @@ end
 """
 Execute sytem call of DGGRID binary
 """
-function call_dggrid(meta::Dict; verbose=false)
+function call_dggrid(meta::Dict)
     meta_string = ""
     for (key, val) in meta
         meta_string *= "$(key) $(val)\n"
@@ -110,16 +110,11 @@ function call_dggrid(meta::Dict; verbose=false)
     meta_path = tempname()
     write(meta_path, meta_string)
 
-    oldstd = stdout
-    if !verbose
-        redirect_stdout(devnull)
-    end
-
+    redirect_stdout(devnull)
     # ensure thread safetey
     # see https://discourse.julialang.org/t/ioerror-could-not-spawn-argument-list-too-long/43728/18
     run(`$(DGGRID7_jll.dggrid()) $meta_path`)
 
-    redirect_stdout(oldstd)
     rm(meta_path)
 end
 
@@ -182,10 +177,10 @@ end
 function CellCube(geo_cube::GeoCube, level=6, agg_func=filter_null(mean); chunk_size=missing)
     Threads.nthreads() == 1 && @warn "Multithreading is not active. Please consider to start julia with --threads auto"
 
-    @info "Step 1/2: Transform coordinates"
+    @info "Step 1/3: Transform coordinates"
 
     # precompute spatial mapping (can be reused e.g. for each time point)
-    ismissing(chunk_size) ? chunk_size = max(2, 512 / length(geo_cube.data.lat)) |> ceil |> Int : true
+    ismissing(chunk_size) ? chunk_size = max(2, 1024 / length(geo_cube.data.lat)) |> ceil |> Int : true
 
     lon_chunks = Iterators.partition(geo_cube.data.lon, chunk_size) |> collect
     cell_ids_dict = ThreadSafeDict()
@@ -196,15 +191,20 @@ function CellCube(geo_cube::GeoCube, level=6, agg_func=filter_null(mean); chunk_
         next!(p)
     end
     finish!(p)
-    cell_ids_mat = vcat(values(cell_ids_dict)...)
 
+    sorted_cell_ids_dict = cell_ids_dict |> Dict |> sort
+    cell_ids_mat = vcat(values(sorted_cell_ids_dict)...)
     cell_ids_unique = unique(cell_ids_mat)
-    cell_ids_indexlist = map(cell_ids_unique) do x
+
+    @info "Step 2/3: Create cell id masks"
+    p = Progress(length(cell_ids_unique))
+    cell_ids_indexlist = @threaded map(cell_ids_unique) do x
+        next!(p)
         findall(isequal(x), cell_ids_mat)
     end
+    finish!(p)
 
-    @info "Step 2/2: Re-grid the data"
-
+    @info "Step 3/3: Re-grid the data"
     cell_cube = mapCube(
         map_geo_to_cell_cube,
         geo_cube.data,
@@ -250,7 +250,7 @@ function GeoCube(cell_cube::CellCube; longitudes=-180:180, latitudes=-90:90)
     return GeoCube(geo_array)
 end
 
-function GeoCube(cell_cube::CellCube; x, y, z, cache=missing, tile_length=256)
+function GeoCube(cell_cube::CellCube, x, y, z; cache=missing, tile_length=256)
     # precompute spatial mapping (can be reused e.g. for each time point)
     cell_ids_mat = ismissing(cache) ? transform_points(x, y, z, 6) : cache[x, y, z]
     bbox = BBox(x, y, z)
@@ -302,8 +302,8 @@ function color_value(value::Real, color_scale::ColorScale; null_color=RGBA{Float
 end
 
 function calculate_tile(cell_cube::CellCube, x, y, z; tile_length=256, cache=missing)
-    color_scale = ColorScale(ColorSchemes.viridis, -4, 4)
-    tile_values = GeoCube(cell_cube; x=x, y=y, z=z, cache=cache).data.data
+    color_scale = ColorScale(ColorSchemes.viridis, 0, 1)
+    tile_values = GeoCube(cell_cube, x, y, z; cache=cache).data.data
     scaled = (tile_values .- color_scale.min_value) / (color_scale.max_value - color_scale.min_value)
     image = map(x -> color_value(x, color_scale), scaled)
     trfm = LinearMap(RotMatrix2{Float64}(0, -1, 1, 0)) # rotation angle would result in rounding error

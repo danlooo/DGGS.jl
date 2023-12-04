@@ -19,6 +19,7 @@ using IterTools
 using ProgressMeter
 using Infiltrator
 using ThreadSafeDicts
+using ThreadedIterables
 
 # must be sorted by dependency
 include("etc.jl")

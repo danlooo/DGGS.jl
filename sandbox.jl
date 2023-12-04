@@ -59,14 +59,12 @@ transform_points_cached((x, 0, 4, 6))
 
 
 
-# Load real modis data
+# 
 using YAXArrays
 using DimensionalData
 
-cell_cube = CellCube("/Net/Groups/BGI/data/DataStructureMDI/DATA/grid/Global/0d050_monthly/MODIS/MOD13C2.006/Data/NDVI/NDVI.7200.3600.2001.nc", "longitude", "latitude", 6)
-
-lon_range = -180:1.1:180
-lat_range = -90:0.9:90
+lon_range = -180:0.15:180
+lat_range = -90:0.15:90
 time_range = 1
 geo_data = [t * exp(cosd(lon + (t * 10))) + 3((lat - 50) / 90) for lon in lon_range, lat in lat_range, t in time_range]
 axlist = (
@@ -82,24 +80,19 @@ cell_cube = CellCube(geo_cube, 6)
 
 
 
-using DGGS
-using ProgressMeter
-using ThreadSafeDicts
-
-lons = -180:0.5:180
-lats = -90:90
-pixels = Iterators.product(lons, lats)
-chunks = Iterators.partition(pixels, 500) |> collect
-res = ThreadSafeDict()
-p = Progress(length(lon_chunks))
-Threads.@threads for i in eachindex(chunks)
-    @infiltrate
-    # DGGS.transform_points(pixels[], lats, 6)
-    next!(p)
-end
-finish!(p)
+@time cell_cube = CellCube("/Net/Groups/BGI/data/DataStructureMDI/DATA/grid/Global/0d050_monthly/MODIS/MOD13C2.006/Data/NDVI/NDVI.7200.3600.2001.nc", "longitude", "latitude", 6)
 
 
-Threads.@threads for i in 1:1e3
-    run(`ls`)
-end
+
+
+lon_range = -180:0.3:180
+lat_range = -90:0.3:90
+time_range = 1
+geo_data = [t * exp(cosd(lon + (t * 10))) + 3((lat - 50) / 90) for lon in lon_range, lat in lat_range, t in time_range]
+axlist = (
+    Dim{:lon}(lon_range),
+    Dim{:lat}(lat_range)
+)
+geo_array = YAXArray(axlist, geo_data)
+geo_cube = GeoCube(geo_array)
+cell_cube = CellCube(geo_cube, 6)

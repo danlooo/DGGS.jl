@@ -28,6 +28,7 @@ Serialization = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 SwaggerMarkdown = "1b6eb727-ad4b-44eb-9669-b9596a6e760f"
 ThreadSafeDicts = "4239201d-c60e-5e0a-9702-85d713665ba7"
+ThreadedIterables = "11d239b0-c0b9-11e8-1935-d5cfa53abb03"
 YAXArrays = "c21b50f5-aa40-41ea-b809-c0f5e47bfa5c"
 Zarr = "0a941bbe-ad1d-11e8-39d9-ab76183a1d99"
 

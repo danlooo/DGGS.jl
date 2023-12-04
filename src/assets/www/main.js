@@ -18,7 +18,7 @@ var map = L.map("map", {
   center: [0, 0],
   zoom: 3,
   minZoom: 0,
-  maxZoom: 7,
+  maxZoom: 3,
   layers: [base_layer, data_layer],
 });
 

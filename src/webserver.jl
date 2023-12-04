@@ -25,7 +25,7 @@ function run_webserver(; kwargs...)
     missing
   end
 
-  cell_cube = CellCube("data/example.cube.zarr")
+  cell_cube = CellCube("data/modis_ndvi_one_timepoint.dggs.zarr")
 
   @swagger """
   /tile/{z}/{x}/{y}/tile.png:
@@ -52,7 +52,7 @@ function run_webserver(; kwargs...)
             type : number
       responses:
         '200':
-          description: Successfully returned an number.
+          description: Successfully returned the tile
   """
   @get "/tile/{z}/{x}/{y}/tile.png" function (req::HTTP.Request, z::Int, x::Int, y::Int)
     params = HTTP.queryparams(req)
