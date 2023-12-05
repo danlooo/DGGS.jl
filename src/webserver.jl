@@ -2,20 +2,6 @@ using Oxygen
 using SwaggerMarkdown
 using HTTP
 
-
-# lon_range = -180:180
-# lat_range = -90:90
-# time_range = 1
-# geo_data = [t * exp(cosd(lon + (t * 10))) + 3((lat - 50) / 90) for lon in lon_range, lat in lat_range, t in time_range]
-# axlist = (
-#   Dim{:lon}(lon_range),
-#   Dim{:lat}(lat_range)
-# )
-# geo_array = YAXArray(axlist, geo_data)
-# geo_cube = GeoCube(geo_array)
-# cell_cube = CellCube(geo_cube, 6)
-# savecube(cell_cube.data, "data/example.cube.zarr"; driver=:zarr)
-
 function run_webserver(; kwargs...)
   Threads.nthreads() == 1 || error("The web server must run in a single thread")
 
@@ -25,7 +11,7 @@ function run_webserver(; kwargs...)
     missing
   end
 
-  cell_cube = CellCube("data/ocean_temp.dggs.zarr")
+  cell_cube = CellCube("data/modis_ndvi_one_timepoint.dggs.zarr")
   color_scale = ColorScale(ColorSchemes.viridis, filter_null(minimum)(cell_cube.data), filter_null(maximum)(cell_cube.data))
 
   @swagger """

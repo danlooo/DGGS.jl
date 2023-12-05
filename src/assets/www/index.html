@@ -6,20 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
-      integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
-      crossorigin=""
-    />
-    <script
-      src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
-      integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
-      crossorigin=""
-    ></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.6.2/proj4.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4leaflet/1.0.2/proj4leaflet.js"></script>
-
+    <script src="https://unpkg.com/deck.gl@latest/dist.min.js"></script>
     <link
       href="https://unpkg.com/tailwindcss@1.8.12/dist/tailwind.min.css"
       rel="stylesheet"
@@ -40,7 +27,10 @@
           <button onclick="window.location.href='docs';">API</button>
         </div>
       </div>
-      <div id="map" class="flex justify-center items-center flex-grow" />
+      <div
+        id="map"
+        class="flex justify-center items-center flex-grow bg-black"
+      />
     </div>
     <script src="main.js"></script>
   </body>
