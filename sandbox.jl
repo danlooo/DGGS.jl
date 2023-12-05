@@ -79,11 +79,12 @@ cell_cube = CellCube(geo_cube, 6)
 
 
 
+# MODIS land data
 
 @time cell_cube = CellCube("/Net/Groups/BGI/data/DataStructureMDI/DATA/grid/Global/0d050_monthly/MODIS/MOD13C2.006/Data/NDVI/NDVI.7200.3600.2001.nc", "longitude", "latitude", 6)
 
 
-
+# Synthetic data
 
 lon_range = -180:0.3:180
 lat_range = -90:0.3:90
@@ -96,3 +97,36 @@ axlist = (
 geo_array = YAXArray(axlist, geo_data)
 geo_cube = GeoCube(geo_array)
 cell_cube = CellCube(geo_cube, 6)
+
+
+# ocean data
+using YAXArrays
+using NetCDF
+using Downloads
+url = "https://www.unidata.ucar.edu/software/netcdf/examples/tos_O1_2001-2002.nc"
+filename = Downloads.download(url, "tos_O1_2001-2002.nc")
+geo_array = YAXArrays.Cube("tos_O1_2001-2002.nc")
+data = circshift(geo_array[:, :, 1].data, 90)
+axlist = (
+    Dim{:lon}(geo_array.lon .- 180),
+    Dim{:lat}(geo_array.lat.val)
+)
+geo_cube = YAXArray(axlist, data) |> GeoCube
+cell_cube = CellCube(geo_cube)
+
+# Skewed map: wrong projection
+lng2tile(lng, zoom) = floor((lng + 180) / 360 * 2^zoom)
+lat2tile(lat, zoom) = floor((1 - log(tan(lat * pi / 180) + 1 / cos(lat * pi / 180)) / pi) / 2 * 2^zoom)
+tile2lng(x, z) = (x / 2^z * 360) - 180
+tile2lat(y, z) = 180 / pi * atan(0.5 * (exp(pi - 2 * pi * y / 2^z) - exp(2 * pi * y / 2^z - pi)))
+
+tile2lat
+
+using IterTools
+using Plots
+
+mat = map(IterTools.product(range(0, 1; length=256), range(0, 1; length=256))) do (x, y)
+    x + y
+end
+
+heatmap(mat)

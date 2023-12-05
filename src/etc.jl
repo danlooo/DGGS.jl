@@ -29,6 +29,12 @@ function BBox(x, y, z)
     return BBox(lon_min, lon_max, lat_min, lat_max)
 end
 
+# @see https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Julia
+lng2tile(lng, zoom) = floor((lng + 180) / 360 * 2^zoom)
+lat2tile(lat, zoom) = floor((1 - log(tan(lat * pi / 180) + 1 / cos(lat * pi / 180)) / pi) / 2 * 2^zoom)
+tile2lng(x, z) = (x / 2^z * 360) - 180
+tile2lat(y, z) = 180 / pi * atan(0.5 * (exp(pi - 2 * pi * y / 2^z) - exp(2 * pi * y / 2^z - pi)))
+
 struct ColorScale{T<:Real}
     schema::ColorScheme
     min_value::T
@@ -65,6 +71,15 @@ end
 
 struct GeoCube
     data::YAXArray
+
+    function GeoCube(data)
+        :lon in propertynames(data) || error("Axis with name :lon must be present")
+        :lat in propertynames(data) || error("Axis with name :lat must be present")
+        -180 <= minimum(data.lon) <= maximum(data.lon) <= 180 || error("All longitudes must be within [-180, 180]")
+        -90 <= minimum(data.lat) <= maximum(data.lat) <= 90 || error("All latitudes must be within [-90, 90]")
+
+        new(data)
+    end
 end
 
 function GeoCube(path::String, lon_dim, lat_dim)
@@ -89,7 +104,7 @@ end
 
 function Base.getindex(cell_cube::CellCube, lon::Real, lat::Real)
     cell_id = transform_points(lon, lat, cell_cube.level)[1, 1]
-    cell_cube.data[q2di_n=At(cell_id.n), q2di_i=At(cell_id.i), q2di_j=At(cell_id.j)]
+    cell_cube.data[q2di_n=cell_id.n, q2di_i=At(cell_id.i), q2di_j=At(cell_id.j)]
 end
 
 function Base.getindex(cell_cube::CellCube, selector...)
@@ -121,8 +136,9 @@ end
 function transform_points(lon_range, lat_range, level)
     points_path = tempname()
     points_string = ""
-    for lat in lat_range
-        for lon in lon_range
+    # arrange points to match with pixels in png image
+    for lon in lon_range
+        for lat in lat_range
             points_string *= "$(lon),$(lat)\n"
         end
     end
@@ -146,14 +162,16 @@ function transform_points(lon_range, lat_range, level)
     rm(points_path)
     rm(out_points_path)
     cell_ids_q2di = map((n, i, j) -> Q2DI(n, i, j), cell_ids.q2di_n, cell_ids.q2di_i, cell_ids.q2di_j) |>
-                    x -> reshape(x, length(lon_range), length(lat_range))
+                    x -> reshape(x, length(lat_range), length(lon_range))
     return cell_ids_q2di
 end
 
 function transform_points(x, y, z, level; tile_length=256)
-    bbox = BBox(x, y, z)
-    longitudes = range(bbox.lon_min, bbox.lon_max, tile_length)
-    latitudes = range(bbox.lat_min, bbox.lat_max, tile_length)
+    # @see https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
+    # @see https://help.openstreetmap.org/questions/747/given-a-latlon-how-do-i-find-the-precise-position-on-the-tilew
+
+    longitudes = tile2lng.(range(x, x + 1; length=tile_length), z)
+    latitudes = tile2lat.(range(y, y + 1; length=tile_length), z)
     cell_ids = transform_points(longitudes, latitudes, level)
     return cell_ids
 end
@@ -183,9 +201,9 @@ function CellCube(geo_cube::GeoCube, level=6, agg_func=filter_null(mean); chunk_
     ismissing(chunk_size) ? chunk_size = max(2, 1024 / length(geo_cube.data.lat)) |> ceil |> Int : true
 
     lon_chunks = Iterators.partition(geo_cube.data.lon, chunk_size) |> collect
+    # TODO: rewrite to @threadded
     cell_ids_dict = ThreadSafeDict()
     p = Progress(length(lon_chunks))
-
     Threads.@threads for (i, lons) in lon_chunks |> enumerate |> collect
         cell_ids_dict[i] = transform_points(lons, geo_cube.data.lat, level)
         next!(p)
@@ -295,19 +313,16 @@ function calculate_cell_ids_of_tiles(; max_z=3, tile_length=256)
 end
 
 
-function color_value(value::Real, color_scale::ColorScale; null_color=RGBA{Float64}(0, 0, 0, 0))
-    isnan(value) && return null_color
+function color_value(value, color_scale::ColorScale; null_color=RGBA{Float64}(0, 0, 0, 0))
     ismissing(value) && return null_color
+    isnan(value) && return null_color
     return color_scale.schema[value] |> RGBA
 end
 
-function calculate_tile(cell_cube::CellCube, x, y, z; tile_length=256, cache=missing)
-    color_scale = ColorScale(ColorSchemes.viridis, 0, 1)
+function calculate_tile(cell_cube::CellCube, color_scale::ColorScale, x, y, z; tile_length=256, cache=missing)
     tile_values = GeoCube(cell_cube, x, y, z; cache=cache).data.data
     scaled = (tile_values .- color_scale.min_value) / (color_scale.max_value - color_scale.min_value)
     image = map(x -> color_value(x, color_scale), scaled)
-    trfm = LinearMap(RotMatrix2{Float64}(0, -1, 1, 0)) # rotation angle would result in rounding error
-    image = warp(image, trfm)
     io = IOBuffer()
     save(Stream(format"PNG", io), image)
     return io.data
