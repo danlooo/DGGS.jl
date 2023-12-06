@@ -7,8 +7,92 @@ const {
   TileLayer,
   BitmapLayer,
   GeoJsonLayer,
+  SolidPolygonLayer,
   COORDINATE_SYSTEM,
 } = deck;
+
+background_polygon_north = new SolidPolygonLayer({
+  id: "background_polygon_north_layer",
+  data: [
+    [
+      [-180, 90],
+      [0, 90],
+      [180, 90],
+      [180, 85],
+      [0, 85],
+      [-180, 85],
+    ],
+  ],
+  getPolygon: (d) => d,
+  stroked: false,
+  filled: true,
+  getFillColor: [38, 38, 38],
+});
+
+background_polygon_south = new SolidPolygonLayer({
+  id: "background_polygon_south_layer",
+  data: [
+    [
+      [-180, -85],
+      [0, -85],
+      [180, -85],
+      [180, -90],
+      [0, -90],
+      [-180, -90],
+    ],
+  ],
+  getPolygon: (d) => d,
+  stroked: false,
+  filled: true,
+  getFillColor: [9, 9, 9],
+});
+
+basemap_layer = new TileLayer({
+  id: "basemap_layer",
+  data: "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
+  minZoom: 0,
+  maxZoom: 19,
+  tileSize: 256,
+
+  renderSubLayers: (props) => {
+    const {
+      bbox: { west, south, east, north },
+    } = props.tile;
+
+    return new BitmapLayer(props, {
+      data: null,
+      image: props.data,
+      bounds: [west, south, east, north],
+    });
+  },
+});
+
+data_layer = new TileLayer({
+  id: "data_layer",
+  data: "tile/{z}/{x}/{y}/tile.png",
+  minZoom: 0,
+  maxZoom: 19,
+  tileSize: 256,
+
+  renderSubLayers: (props) => {
+    const {
+      bbox: { west, south, east, north },
+    } = props.tile;
+
+    return new BitmapLayer(props, {
+      data: null,
+      image: props.data,
+      _imageCoordinateSystem: COORDINATE_SYSTEM.CARTESIAN,
+      bounds: [west, south, east, north],
+    });
+  },
+});
+
+coastline_layer = new GeoJsonLayer({
+  id: "coastline_layer",
+  data: "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_coastline.geojson",
+  getLineWidth: 10,
+});
 
 new DeckGL({
   views: new _GlobeView({
@@ -22,51 +106,11 @@ new DeckGL({
     maxZoom: 20,
   },
   controller: true,
-
   layers: [
-    new TileLayer({
-      id: "basemap_layer",
-      data: "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-      minZoom: 0,
-      maxZoom: 19,
-      tileSize: 256,
-
-      renderSubLayers: (props) => {
-        const {
-          bbox: { west, south, east, north },
-        } = props.tile;
-
-        return new BitmapLayer(props, {
-          data: null,
-          image: props.data,
-          bounds: [west, south, east, north],
-        });
-      },
-    }),
-    new TileLayer({
-      id: "data_layer",
-      data: "tile/{z}/{x}/{y}/tile.png",
-      minZoom: 0,
-      maxZoom: 19,
-      tileSize: 256,
-
-      renderSubLayers: (props) => {
-        const {
-          bbox: { west, south, east, north },
-        } = props.tile;
-
-        return new BitmapLayer(props, {
-          data: null,
-          image: props.data,
-          _imageCoordinateSystem: COORDINATE_SYSTEM.CARTESIAN,
-          bounds: [west, south, east, north],
-        });
-      },
-    }),
-    new GeoJsonLayer({
-      id: "coastline_layer",
-      data: "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_coastline.geojson",
-      getLineWidth: 10,
-    }),
+    background_polygon_north,
+    background_polygon_south,
+    basemap_layer,
+    data_layer,
+    coastline_layer,
   ],
 });
