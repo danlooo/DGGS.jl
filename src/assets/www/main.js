@@ -49,7 +49,7 @@ background_polygon_south = new SolidPolygonLayer({
 
 basemap_layer = new TileLayer({
   id: "basemap_layer",
-  data: "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
+  data: "https://a.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}.png",
   minZoom: 0,
   maxZoom: 19,
   tileSize: 256,
