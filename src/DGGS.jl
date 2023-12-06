@@ -28,7 +28,7 @@ using HTTP
 # must be sorted by dependency
 include("types.jl")
 include("tiles.jl")
-include("etc.jl")
+include("cubes.jl")
 include("webserver.jl")
 
 export
