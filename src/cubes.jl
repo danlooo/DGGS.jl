@@ -38,7 +38,7 @@ end
 
 function Base.getindex(cell_cube::CellCube, lon::Real, lat::Real)
     cell_id = transform_points(lon, lat, cell_cube.level)[1, 1]
-    cell_cube.data[q2di_n=cell_id.n, q2di_i=At(cell_id.i), q2di_j=At(cell_id.j)]
+    cell_cube.data[q2di_n=At(cell_id.n), q2di_i=At(cell_id.i), q2di_j=At(cell_id.j)]
 end
 
 function Base.getindex(cell_cube::CellCube, selector...)
@@ -47,69 +47,6 @@ function Base.getindex(cell_cube::CellCube, selector...)
 end
 
 
-"""
-Execute sytem call of DGGRID binary
-"""
-function call_dggrid(meta::Dict)
-    meta_string = ""
-    for (key, val) in meta
-        meta_string *= "$(key) $(val)\n"
-    end
-
-    meta_path = tempname()
-    write(meta_path, meta_string)
-
-    redirect_stdout(devnull)
-    # ensure thread safetey
-    # see https://discourse.julialang.org/t/ioerror-could-not-spawn-argument-list-too-long/43728/18
-    run(`$(DGGRID7_jll.dggrid()) $meta_path`)
-
-    rm(meta_path)
-end
-
-function transform_points(lon_range, lat_range, level)
-    points_path = tempname()
-    points_string = ""
-    # arrange points to match with pixels in png image
-    for lon in lon_range
-        for lat in lat_range
-            points_string *= "$(lon),$(lat)\n"
-        end
-    end
-    write(points_path, points_string)
-
-    out_points_path = tempname()
-
-    meta = Dict(
-        "dggrid_operation" => "TRANSFORM_POINTS",
-        "dggs_type" => "ISEA4H",
-        "dggs_res_spec" => level - 1,
-        "input_file_name" => points_path,
-        "input_address_type" => "GEO",
-        "input_delimiter" => "\",\"", "output_file_name" => out_points_path,
-        "output_address_type" => "Q2DI",
-        "output_delimiter" => "\",\"",
-    )
-
-    call_dggrid(meta)
-    cell_ids = CSV.read(out_points_path, DataFrame; header=["q2di_n", "q2di_i", "q2di_j"])
-    rm(points_path)
-    rm(out_points_path)
-    cell_ids_q2di = map((n, i, j) -> Q2DI(n, i, j), cell_ids.q2di_n, cell_ids.q2di_i, cell_ids.q2di_j) |>
-                    x -> reshape(x, length(lat_range), length(lon_range))
-    return cell_ids_q2di
-end
-
-function transform_points(x, y, z, level; tile_length=256)
-    # @see https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
-    # @see https://help.openstreetmap.org/questions/747/given-a-latlon-how-do-i-find-the-precise-position-on-the-tilew
-
-    longitudes = tile2lng.(range(x, x + 1; length=tile_length), z)
-    latitudes = tile2lat.(range(y, y + 1; length=tile_length), z)
-    cell_ids = transform_points(longitudes, latitudes, level)
-    return cell_ids
-end
-
 "Apply function f after filtering of missing and NAN values"
 function filter_null(f)
     x -> x |> filter(!ismissing) |> filter(!isnan) |> f
@@ -117,14 +54,18 @@ end
 
 function map_geo_to_cell_cube(xout, xin, cell_ids_unique, cell_ids_indexlist, agg_func)
     for (cell_id, cell_indices) in zip(cell_ids_unique, cell_ids_indexlist)
+        # xout is not a YAXArray anymore
         xout[cell_id.n+1, cell_id.i+1, cell_id.j+1] = agg_func(view(xin, cell_indices))
     end
 end
 
 function CellCube(path::String, level; kwargs...)
     geo_cube = GeoCube(path)
-    cell_cube = CellCube(geo_cube, 6; kwargs...)
+    cell_cube = CellCube(geo_cube, level; kwargs...)
 end
+
+"maximial i or j value in Q2DI index given a level"
+max_ij(level) = level <= 3 ? level - 1 : 2^(level - 2)
 
 function CellCube(geo_cube::GeoCube, level=6, agg_func=filter_null(mean); chunk_size=missing)
     Threads.nthreads() == 1 && @warn "Multithreading is not active. Please consider to start julia with --threads auto"
@@ -163,8 +104,8 @@ function CellCube(geo_cube::GeoCube, level=6, agg_func=filter_null(mean); chunk_
         indims=InDims(:lon, :lat),
         outdims=OutDims(
             Dim{:q2di_n}(0:11),
-            Dim{:q2di_i}(range(0; step=16, length=32)),
-            Dim{:q2di_j}(range(0; step=16, length=32)),
+            Dim{:q2di_i}(range(0; step=1, length=2^(level - 1))),
+            Dim{:q2di_j}(range(0; step=1, length=2^(level - 1)))
         ),
         showprog=true
     )

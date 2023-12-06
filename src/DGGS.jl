@@ -28,6 +28,7 @@ using HTTP
 # must be sorted by dependency
 include("types.jl")
 include("tiles.jl")
+include("dggrid.jl")
 include("cubes.jl")
 include("webserver.jl")
 
