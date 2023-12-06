@@ -62,6 +62,7 @@ basemap_layer = new TileLayer({
     return new BitmapLayer(props, {
       data: null,
       image: props.data,
+      _imageCoordinateSystem: COORDINATE_SYSTEM.CARTESIAN,
       bounds: [west, south, east, north],
     });
   },
@@ -91,7 +92,9 @@ data_layer = new TileLayer({
 coastline_layer = new GeoJsonLayer({
   id: "coastline_layer",
   data: "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_coastline.geojson",
-  getLineWidth: 10,
+  getLineColor: [255, 255, 255],
+  lineWidthMinPixels: 1,
+  lineWidthMaxPixels: 1,
 });
 
 new DeckGL({
