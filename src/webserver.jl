@@ -1,7 +1,3 @@
-using Oxygen
-using SwaggerMarkdown
-using HTTP
-
 function run_webserver(; kwargs...)
   Threads.nthreads() == 1 || error("The web server must run in a single thread")
 

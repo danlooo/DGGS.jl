@@ -20,8 +20,14 @@ using ProgressMeter
 using Infiltrator
 using ThreadSafeDicts
 using ThreadedIterables
+using Statistics
+using Oxygen
+using SwaggerMarkdown
+using HTTP
 
 # must be sorted by dependency
+include("types.jl")
+include("tiles.jl")
 include("etc.jl")
 include("webserver.jl")
 
