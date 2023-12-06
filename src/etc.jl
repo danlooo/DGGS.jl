@@ -201,17 +201,14 @@ function CellCube(geo_cube::GeoCube, level=6, agg_func=filter_null(mean); chunk_
     ismissing(chunk_size) ? chunk_size = max(2, 1024 / length(geo_cube.data.lat)) |> ceil |> Int : true
 
     lon_chunks = Iterators.partition(geo_cube.data.lon, chunk_size) |> collect
-    # TODO: rewrite to @threadded
-    cell_ids_dict = ThreadSafeDict()
     p = Progress(length(lon_chunks))
-    Threads.@threads for (i, lons) in lon_chunks |> enumerate |> collect
-        cell_ids_dict[i] = transform_points(lons, geo_cube.data.lat, level)
+    cell_ids_mats = @threaded map(lon_chunks) do lons
         next!(p)
+        transform_points(lons, geo_cube.data.lat, level)
     end
     finish!(p)
 
-    sorted_cell_ids_dict = cell_ids_dict |> Dict |> sort
-    cell_ids_mat = vcat(values(sorted_cell_ids_dict)...)
+    cell_ids_mat = hcat(cell_ids_mats...) |> permutedims
     cell_ids_unique = unique(cell_ids_mat)
 
     @info "Step 2/3: Create cell id masks"
