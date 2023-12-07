@@ -1,7 +1,7 @@
 
 
 function Base.show(io::IO, ::MIME"text/plain", cube::CellCube)
-    println(io, "DGGS CellCube")
+    println(io, "DGGS CellCube at level $(cube.level)")
     Base.show(io, "text/plain", cube.data.axes)
 end
 
@@ -28,7 +28,7 @@ function GeoCube(path::String, lon_dim, lat_dim)
 end
 
 function Base.show(io::IO, ::MIME"text/plain", cube::GeoCube)
-    println(io, "DGGS GeoCube")
+    println(io, "DGGS GeoCube at level")
     Base.show(io, "text/plain", cube.data.axes)
 end
 

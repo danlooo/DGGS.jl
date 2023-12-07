@@ -33,7 +33,7 @@ function calculate_cell_ids_of_tiles(; max_z=3, tile_length=256)
     Threads.nthreads() == 1 && @warn "Multithreading is not active. Please consider to start julia with --threads auto"
     Threads.@threads for i in eachindex(tiles_keys)
         tile = tiles_keys[i]
-        result[tile...] = DGGS.transform_points(tile[1], tile[2], tile[3], 6)
+        result[tile...] = GridSystem.transform_points(tile[1], tile[2], tile[3], 6)
         next!(p)
     end
     finish!(p)

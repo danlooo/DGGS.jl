@@ -35,3 +35,7 @@ struct GeoCube
         new(data)
     end
 end
+
+struct GridSystem
+    data::Vector{CellCube}
+end

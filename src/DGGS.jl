@@ -30,11 +30,14 @@ include("types.jl")
 include("tiles.jl")
 include("dggrid.jl")
 include("cubes.jl")
+include("gridsystems.jl")
 include("webserver.jl")
 
 export
     CellCube,
     GeoCube,
     Q2DI,
-    transform_points
+    transform_points,
+    filter_null,
+    GridSystem
 end

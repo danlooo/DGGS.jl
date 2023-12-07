@@ -7,7 +7,7 @@ function run_webserver(; kwargs...)
     missing
   end
 
-  cell_cube = CellCube("data/ocean_temp.dggs.zarr")
+  cell_cube = CellCube("data/modis_ndvi_one_timepoint.dggs.zarr")
   color_scale = ColorScale(ColorSchemes.viridis, filter_null(minimum)(cell_cube.data), filter_null(maximum)(cell_cube.data))
 
   @swagger """
