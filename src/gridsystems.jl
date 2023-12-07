@@ -10,10 +10,10 @@ function aggregate_cell_cube(xout, xin; agg_func=filter_null(mean))
 end
 
 function GridSystem(cell_cube::CellCube)
-    pyramid = Vector{CellCube}(undef, cell_cube.level)
+    pyramid = Dict{Int,CellCube}()
     pyramid[cell_cube.level] = cell_cube
 
-    for coarser_level in cell_cube.level-1:-1:1
+    for coarser_level in cell_cube.level-1:-1:2
         coarser_cell_array = mapCube(
             aggregate_cell_cube,
             pyramid[coarser_level+1].data,
@@ -30,7 +30,31 @@ function GridSystem(cell_cube::CellCube)
     return GridSystem(pyramid)
 end
 
-function Base.show(io::IO, ::MIME"text/plain", dggs::GridSystem)
-    println(io, "DGGS GridSystem with $(length(dggs.data)) levels")
-    Base.show(io, "text/plain", dggs.data[1].data.axes)
+function GridSystem(path::String)
+    levels = readdir(path) |> x -> parse.(Int, x)
+    pyramid = Dict{Int,CellCube}()
+
+    for level in levels
+        cell_array = Cube("$path/$level")
+        pyramid[level] = CellCube(cell_array, level)
+    end
+
+    return GridSystem(pyramid)
 end
+
+function Base.show(io::IO, ::MIME"text/plain", dggs::GridSystem)
+    println(io, "DGGS GridSystem")
+    println(io, "Levels: $(join(dggs.data |> keys |> collect |> sort, ","))")
+    Base.show(io, "text/plain", dggs.data |> values |> first |> x -> x.data.axes)
+end
+
+function saveGridSystem(dggs::GridSystem, path::String)
+    # TODO: Use zarr groups instead
+    for cell_cube in values(dggs.data)
+        cell_cube_path = "$path/$(cell_cube.level)"
+        savecube(cell_cube.data, cell_cube_path)
+    end
+end
+
+Base.getindex(dggs::GridSystem, level::Int) = dggs.data[level]
+Base.setindex!(dggs::GridSystem, cell_cube::CellCube, level::Int) = dggs.data[level] = cell_cube

@@ -47,7 +47,9 @@ function color_value(value, color_scale::ColorScale; null_color=RGBA{Float64}(0,
     return color_scale.schema[value] |> RGBA
 end
 
-function calculate_tile(cell_cube::CellCube, color_scale::ColorScale, x, y, z; tile_length=256, cache=missing)
+function calculate_tile(dggs::GridSystem, color_scale::ColorScale, x, y, z; tile_length=256, cache=missing)
+    cell_cube = dggs.data |> last
+
     tile_values = GeoCube(cell_cube, x, y, z; cache=cache).data.data
     scaled = (tile_values .- color_scale.min_value) / (color_scale.max_value - color_scale.min_value)
     image = map(x -> color_value(x, color_scale), scaled)

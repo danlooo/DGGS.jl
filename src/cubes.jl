@@ -55,13 +55,14 @@ end
 function map_geo_to_cell_cube(xout, xin, cell_ids_unique, cell_ids_indexlist, agg_func)
     for (cell_id, cell_indices) in zip(cell_ids_unique, cell_ids_indexlist)
         # xout is not a YAXArray anymore
-        xout[cell_id.n+1, cell_id.i+1, cell_id.j+1] = agg_func(view(xin, cell_indices))
+        xout[cell_id.i+1, cell_id.j+1, cell_id.n+1] = agg_func(view(xin, cell_indices))
     end
 end
 
 function CellCube(path::String, level; kwargs...)
     geo_cube = GeoCube(path)
     cell_cube = CellCube(geo_cube, level; kwargs...)
+    return cell_cube
 end
 
 "maximial i or j value in Q2DI index given a level"
@@ -103,9 +104,9 @@ function CellCube(geo_cube::GeoCube, level=6, agg_func=filter_null(mean); chunk_
         agg_func,
         indims=InDims(:lon, :lat),
         outdims=OutDims(
-            Dim{:q2di_n}(0:11),
             Dim{:q2di_i}(range(0; step=1, length=2^(level - 1))),
-            Dim{:q2di_j}(range(0; step=1, length=2^(level - 1)))
+            Dim{:q2di_j}(range(0; step=1, length=2^(level - 1))),
+            Dim{:q2di_n}(0:11)
         ),
         showprog=true
     )
@@ -116,7 +117,7 @@ function map_cell_to_geo_cube(xout, xin, cell_ids_mat, longitudes, latitudes)
     for lon_i in 1:length(longitudes)
         for lat_i in 1:length(latitudes)
             cell_id = cell_ids_mat[lon_i, lat_i]
-            xout[lon_i, lat_i] = xin[cell_id.n+1, cell_id.i+1, cell_id.j+1]
+            xout[lon_i, lat_i] = xin[cell_id.i+1, cell_id.j+1, cell_id.n+1]
         end
     end
 end

@@ -8,6 +8,7 @@ function run_webserver(; kwargs...)
   end
 
   cell_cube = CellCube("data/modis_ndvi_one_timepoint.dggs.zarr")
+  dggs = GridSystem(cell_cube)
   color_scale = ColorScale(ColorSchemes.viridis, filter_null(minimum)(cell_cube.data), filter_null(maximum)(cell_cube.data))
 
   @swagger """
@@ -39,7 +40,7 @@ function run_webserver(; kwargs...)
   """
   @get "/tile/{z}/{x}/{y}/tile.png" function (req::HTTP.Request, z::Int, x::Int, y::Int)
     params = HTTP.queryparams(req)
-    tile = calculate_tile(cell_cube, color_scale, x, y, z; cache=cell_ids_cache)
+    tile = calculate_tile(dggs, color_scale, x, y, z; cache=cell_ids_cache)
     response_headers = [
       "Content-Type" => "image/png",
       # "cache-control" => "max-age=23117, stale-while-revalidate=604800, stale-if-error=604800"

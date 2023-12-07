@@ -37,5 +37,10 @@ struct GeoCube
 end
 
 struct GridSystem
-    data::Vector{CellCube}
+    data::Dict{Int,CellCube} # some levels might be skipped
+
+    function GridSystem(data)
+        map(x -> x.data |> propertynames |> sort, values(data)) |> allequal || error("Same axes must be used at all levels.")
+        new(data)
+    end
 end
