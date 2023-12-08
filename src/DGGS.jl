@@ -40,5 +40,6 @@ export
     transform_points,
     filter_null,
     GridSystem,
+    ColorScale,
     saveGridSystem
 end

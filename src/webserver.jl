@@ -7,9 +7,8 @@ function run_webserver(; kwargs...)
     missing
   end
 
-  cell_cube = CellCube("data/modis_ndvi_one_timepoint.dggs.zarr")
-  dggs = GridSystem(cell_cube)
-  color_scale = ColorScale(ColorSchemes.viridis, filter_null(minimum)(cell_cube.data), filter_null(maximum)(cell_cube.data))
+  dggs = GridSystem("data/example.dggs.zarr")
+  color_scale = ColorScale(ColorSchemes.viridis, filter_null(minimum)(dggs[2].data), filter_null(maximum)(dggs[2].data))
 
   @swagger """
   /tile/{z}/{x}/{y}/tile.png:

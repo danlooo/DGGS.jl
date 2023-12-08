@@ -5,12 +5,6 @@ function Base.show(io::IO, ::MIME"text/plain", cube::CellCube)
     Base.show(io, "text/plain", cube.data.axes)
 end
 
-function CellCube(path::String)
-    data = Cube(path)
-    level = 6
-    CellCube(data, level)
-end
-
 function CellCube(path::String, lon_dim, lat_dim, level)
     geo_cube = GeoCube(path::String, lon_dim, lat_dim)
     CellCube(geo_cube, level)
@@ -117,7 +111,7 @@ function map_cell_to_geo_cube(xout, xin, cell_ids_mat, longitudes, latitudes)
     for lon_i in 1:length(longitudes)
         for lat_i in 1:length(latitudes)
             cell_id = cell_ids_mat[lon_i, lat_i]
-            xout[lon_i, lat_i] = xin[cell_id.i+1, cell_id.j+1, cell_id.n+1]
+            xout[lon_i, lat_i] = xin[cell_id.n+1, cell_id.i+1, cell_id.j+1]
         end
     end
 end
@@ -141,15 +135,15 @@ function GeoCube(cell_cube::CellCube; longitudes=-180:180, latitudes=-90:90)
     return GeoCube(geo_array)
 end
 
-function GeoCube(cell_cube::CellCube, x, y, z; cache=missing, tile_length=256)
+function GeoCube(dggs::GridSystem, x, y, z; cache=missing, tile_length=256)
     # precompute spatial mapping (can be reused e.g. for each time point)
-    cell_ids_mat = ismissing(cache) ? transform_points(x, y, z, 6) : cache[x, y, z]
+    cell_ids_mat = ismissing(cache) ? transform_points(x, y, z, get_level(z)) : cache[x, y, z]
     bbox = BBox(x, y, z)
     longitudes = range(bbox.lat_min, bbox.lat_max; length=tile_length)
     latitudes = range(bbox.lat_min, bbox.lat_max; length=tile_length)
     geo_array = mapCube(
         map_cell_to_geo_cube,
-        cell_cube.data,
+        dggs[get_level(z)].data,
         cell_ids_mat,
         longitudes,
         latitudes,

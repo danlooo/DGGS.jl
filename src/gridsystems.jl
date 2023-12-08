@@ -49,7 +49,7 @@ function Base.show(io::IO, ::MIME"text/plain", dggs::GridSystem)
 end
 
 function saveGridSystem(dggs::GridSystem, path::String)
-    # TODO: Use zarr groups instead
+    # TODO: Use zarr groups instead once implemented
     for cell_cube in values(dggs.data)
         cell_cube_path = "$path/$(cell_cube.level)"
         savecube(cell_cube.data, cell_cube_path)
