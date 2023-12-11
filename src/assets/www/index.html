@@ -15,8 +15,10 @@
   </head>
 
   <body>
-    <div class="flex flex-col h-screen bg-teal-700 text-white">
-      <div class="p-2 pr-4 flex items-stretch justify-between content-between">
+    <div class="flex flex-col h-screen">
+      <div
+        class="p-2 pr-4 flex items-stretch justify-between content-between bg-teal-700 text-white z-10"
+      >
         <div>
           <div class="flex items-center">
             <img src="icon.drawio.svg" style="height: 3em" />
@@ -29,7 +31,7 @@
       </div>
       <div
         id="map"
-        class="flex justify-center items-center flex-grow bg-black"
+        class="flex justify-center items-center flex-grow bg-black z-5"
       />
     </div>
     <script src="main.js"></script>
