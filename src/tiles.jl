@@ -18,31 +18,36 @@ lat2tile(lat, zoom) = floor((1 - log(tan(lat * pi / 180) + 1 / cos(lat * pi / 18
 tile2lng(x, z) = (x / 2^z * 360) - 180
 tile2lat(y, z) = 180 / pi * atan(0.5 * (exp(pi - 2 * pi * y / 2^z) - exp(2 * pi * y / 2^z - pi)))
 
-get_level(z) = z + 2
+get_level(z) = z + 7 # level that has a similar number of cells than pixeles of the tile at zoom 0 (256^2)
 
 """
 (pre) calculate x,y,z to cell_ids for lookup cahce in tile server
 
 `max_z`: maximum z level of xyz tiles, result in `max_z` + 1 levels
 """
-function calculate_cell_ids_of_tiles(; max_z=3, tile_length=256)
+function cache_xyz_to_q2di(dir::String; max_z=3, tile_length=256)
+    isdir(dir) || mkdir(dir)
+
     # flatten tasks to increase multi CPU utilization
     tiles_keys = [IterTools.product(0:2^z-1, 0:2^z-1, z) for z in 0:max_z] |> Iterators.flatten |> collect
 
     # ensure thread saftey. Results might come in differnt order
-    result = ThreadSafeDict()
+    # result = ThreadSafeDict()
     p = Progress(length(tiles_keys))
     Threads.nthreads() == 1 && @warn "Multithreading is not active. Please consider to start julia with --threads auto"
     Threads.@threads for i in eachindex(tiles_keys)
         x, y, z = tiles_keys[i]
+        result_path = "$dir/$x.$y.$z.dat"
+        isfile(result_path) && continue
+
         level = get_level(z)
-        result[x, y, z] = transform_points(x, y, z, level)
+        result = transform_points(x, y, z, level)
+        # directly serialize to prevent OOM kill
+        serialize(result_path, result)
         next!(p)
     end
     finish!(p)
-    return result
 end
-
 
 function color_value(value, color_scale::ColorScale; null_color=RGBA{Float64}(0, 0, 0, 0))
     ismissing(value) && return null_color

@@ -48,11 +48,11 @@ function Base.show(io::IO, ::MIME"text/plain", dggs::GridSystem)
     Base.show(io, "text/plain", dggs.data |> values |> first |> x -> x.data.axes)
 end
 
-function saveGridSystem(dggs::GridSystem, path::String)
+function saveGridSystem(dggs::GridSystem, path::String; kwargs...)
     # TODO: Use zarr groups instead once implemented
     for cell_cube in values(dggs.data)
         cell_cube_path = "$path/$(cell_cube.level)"
-        savecube(cell_cube.data, cell_cube_path)
+        savecube(cell_cube.data, cell_cube_path; kwargs...)
     end
 end
 

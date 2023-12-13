@@ -65,7 +65,7 @@ max_ij(level) = level <= 3 ? level - 1 : 2^(level - 2)
 function CellCube(geo_cube::GeoCube, level=6, agg_func=filter_null(mean); chunk_size=missing)
     Threads.nthreads() == 1 && @warn "Multithreading is not active. Please consider to start julia with --threads auto"
 
-    @info "Step 1/3: Transform coordinates"
+    @info "Step 1/2: Transform coordinates"
 
     # precompute spatial mapping (can be reused e.g. for each time point)
     ismissing(chunk_size) ? chunk_size = max(2, 1024 / length(geo_cube.data.lat)) |> ceil |> Int : true
@@ -79,22 +79,25 @@ function CellCube(geo_cube::GeoCube, level=6, agg_func=filter_null(mean); chunk_
     finish!(p)
 
     cell_ids_mat = hcat(cell_ids_mats...) |> permutedims
-    cell_ids_unique = unique(cell_ids_mat)
 
-    @info "Step 2/3: Create cell id masks"
-    p = Progress(length(cell_ids_unique))
-    cell_ids_indexlist = @threaded map(cell_ids_unique) do x
-        next!(p)
-        findall(isequal(x), cell_ids_mat)
+    cell_ids_indexlist = Dict()
+    for c in 1:size(cell_ids_mat, 2)
+        for r in 1:size(cell_ids_mat, 1)
+            cell_id = cell_ids_mat[r, c]
+            if cell_id in keys(cell_ids_indexlist)
+                push!(cell_ids_indexlist[cell_id], CartesianIndex(r, c))
+            else
+                cell_ids_indexlist[cell_id] = [CartesianIndex(r, c)]
+            end
+        end
     end
-    finish!(p)
 
-    @info "Step 3/3: Re-grid the data"
+    @info "Step 2/2: Re-grid the data"
     cell_cube = mapCube(
         map_geo_to_cell_cube,
         geo_cube.data,
-        cell_ids_unique,
-        cell_ids_indexlist,
+        keys(cell_ids_indexlist),
+        values(cell_ids_indexlist),
         agg_func,
         indims=InDims(:lon, :lat),
         outdims=OutDims(
@@ -111,7 +114,7 @@ function map_cell_to_geo_cube(xout, xin, cell_ids_mat, longitudes, latitudes)
     for lon_i in 1:length(longitudes)
         for lat_i in 1:length(latitudes)
             cell_id = cell_ids_mat[lon_i, lat_i]
-            xout[lon_i, lat_i] = xin[cell_id.n+1, cell_id.i+1, cell_id.j+1]
+            xout[lon_i, lat_i] = xin[cell_id.i+1, cell_id.j+1, cell_id.n+1]
         end
     end
 end
@@ -147,7 +150,7 @@ function GeoCube(dggs::GridSystem, x, y, z; cache=missing, tile_length=256)
         cell_ids_mat,
         longitudes,
         latitudes,
-        indims=InDims(:q2di_n, :q2di_i, :q2di_j),
+        indims=InDims(:q2di_i, :q2di_j, :q2di_n),
         outdims=OutDims(
             Dim{:lon}(longitudes),
             Dim{:lat}(latitudes)
