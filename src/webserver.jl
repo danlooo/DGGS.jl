@@ -1,5 +1,5 @@
 function run_webserver(; kwargs...)
-  Threads.nthreads() == 1 || error("The web server must run in a single thread")
+  # Threads.nthreads() == 1 || error("The web server must run in a single thread")
 
   cell_ids_cache = try
     deserialize("data/xyz_to_q2di.cache.bin")
@@ -7,7 +7,7 @@ function run_webserver(; kwargs...)
     missing
   end
 
-  dggs = GridSystem("data/example.dggs.zarr")
+  dggs = GridSystem("data/modis-ndvi.dggs.zarr")
   color_scale = ColorScale(ColorSchemes.viridis, filter_null(minimum)(dggs[2].data), filter_null(maximum)(dggs[2].data))
 
   @swagger """
@@ -48,6 +48,12 @@ function run_webserver(; kwargs...)
     return response
   end
 
+  @get "/dggs/zooms/{z}" function (req::HTTP.Request, z::Int)
+    Dict(
+      :level => get_level(z)
+    )
+  end
+
   # TODO: Use Artifacts, see https://github.com/JuliaPackaging/ArtifactUtils.jl to upload directory to github
   dynamicfiles("/home/dloos/prj/DGGS.jl/src/assets/www", "/")
 
@@ -56,5 +62,5 @@ function run_webserver(; kwargs...)
   swagger_document = build(openApi)
   mergeschema(swagger_document)
 
-  serve(; kwargs...)
+  serveparallel(; kwargs...)
 end

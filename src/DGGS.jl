@@ -24,6 +24,7 @@ using Statistics
 using Oxygen
 using SwaggerMarkdown
 using HTTP
+using JSON3
 
 # must be sorted by dependency
 include("types.jl")

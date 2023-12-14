@@ -1,5 +1,3 @@
-
-
 function Base.show(io::IO, ::MIME"text/plain", cube::CellCube)
     println(io, "DGGS CellCube at level $(cube.level)")
     Base.show(io, "text/plain", cube.data.axes)
@@ -46,8 +44,8 @@ function filter_null(f)
     x -> x |> filter(!ismissing) |> filter(!isnan) |> f
 end
 
-function map_geo_to_cell_cube(xout, xin, cell_ids_unique, cell_ids_indexlist, agg_func)
-    for (cell_id, cell_indices) in zip(cell_ids_unique, cell_ids_indexlist)
+function map_geo_to_cell_cube(xout, xin, cell_ids_indexlist, agg_func)
+    for (cell_id, cell_indices) in cell_ids_indexlist
         # xout is not a YAXArray anymore
         xout[cell_id.i+1, cell_id.j+1, cell_id.n+1] = agg_func(view(xin, cell_indices))
     end
@@ -96,8 +94,7 @@ function CellCube(geo_cube::GeoCube, level=6, agg_func=filter_null(mean); chunk_
     cell_cube = mapCube(
         map_geo_to_cell_cube,
         geo_cube.data,
-        keys(cell_ids_indexlist),
-        values(cell_ids_indexlist),
+        cell_ids_indexlist,
         agg_func,
         indims=InDims(:lon, :lat),
         outdims=OutDims(
@@ -140,7 +137,14 @@ end
 
 function GeoCube(dggs::GridSystem, x, y, z; cache=missing, tile_length=256)
     # precompute spatial mapping (can be reused e.g. for each time point)
-    cell_ids_mat = ismissing(cache) ? transform_points(x, y, z, get_level(z)) : cache[x, y, z]
+    if !ismissing(cache)
+        cell_ids_mat = transform_points(x, y, z, get_level(z))
+    elseif !(x, y, z) in keys(cache)
+        cell_ids_mat = transform_points(x, y, z, get_level(z))
+    else
+        cell_ids_mat = cache[x, y, z]
+    end
+
     bbox = BBox(x, y, z)
     longitudes = range(bbox.lat_min, bbox.lat_max; length=tile_length)
     latitudes = range(bbox.lat_min, bbox.lat_max; length=tile_length)

@@ -1,3 +1,5 @@
+const infobox = document.getElementById("infobox");
+
 /*
  * https://deck.gl/docs/api-reference/core/globe-view
  */
@@ -74,6 +76,7 @@ data_layer = new TileLayer({
   minZoom: 0,
   maxZoom: 19,
   tileSize: 256,
+  maxRequests: 12,
 
   renderSubLayers: (props) => {
     const {
@@ -86,6 +89,10 @@ data_layer = new TileLayer({
       _imageCoordinateSystem: COORDINATE_SYSTEM.CARTESIAN,
       bounds: [west, south, east, north],
     });
+  },
+
+  onViewStateChange: ({ viewState }) => {
+    infobox.innerHTML = viewState.zoom;
   },
 });
 
