@@ -2,18 +2,12 @@ function run_webserver(; kwargs...)
   @swagger """
   /collections/{path}/{query_str}/tiles/{z}/{x}/{y}:
     get:
-      description: Calculate a XYZ tile
+      description: Calculate a XYZ tile. DGGS datacube my be filtered using URL query parameters
       parameters:
         - name: path
           in: path
           required: true
           description: URL encoded path of the DGGS data cube
-          schema:
-            type : string
-        - name: query_str
-          in: path
-          required: true
-          description: URL encoded query string to filter the DGGS data cube. Only spatial dimensions must be left after filtering. Other dimensions can not be displayed and must be aggregated or filtered (E.g. only one time point).
           schema:
             type : string
         - name: x
@@ -50,13 +44,18 @@ function run_webserver(; kwargs...)
         '200':
           description: Successfully returned the tile
   """
-  @get "/collections/{path}/{query_str}/tiles/{z}/{x}/{y}" function (req::HTTP.Request, path::String, query_str::String, z::Int, x::Int, y::Int)
-    path = HTTP.unescapeuri(path)
-    query_str = HTTP.unescapeuri(query_str)
-    dggs = GridSystem(path)
+  @get "/collections/{path}/tiles/{z}/{x}/{y}" function (req::HTTP.Request, path::String, z::Int, x::Int, y::Int)
+    dggs = path |> HTTP.unescapeuri |> HTTP.unescapeuri |> GridSystem
+
     params = HTTP.queryparams(req)
     min_val = get(params, "min_val", "0") |> x -> parse(Float64, x)
     max_val = get(params, "max_val", "1") |> x -> parse(Float64, x)
+
+    query_d = filter(((k, v),) -> k ∉ ["min_val", "max_val"], params)
+    query_str = ""
+    for (k, v) in query_d
+      query_str *= "$k=$v"
+    end
 
     color_scale = ColorScale(ColorSchemes.viridis, min_val, max_val)
     tile = calculate_tile(dggs, color_scale, x, y, z; query_str=query_str, cache_path="data/cache_xyz_to_q2di")

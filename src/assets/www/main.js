@@ -72,11 +72,12 @@ basemap_layer = new TileLayer({
 
 data_layer = new TileLayer({
   id: "data_layer",
-  data: "collections/data%252Fmodis-ndvi.dggs/Time%253D2001-01-01/tiles/{z}/{x}/{y}/tile.png",
+  data: "collections/data%252Fmodis-ndvi.dggs/tiles/{z}/{x}/{y}?Time=2001-01-01",
   minZoom: 0,
   maxZoom: 19,
   tileSize: 256,
-  maxRequests: 12,
+  maxRequests: -1,
+  maxOngoingRequests: 4,
 
   renderSubLayers: (props) => {
     const {
