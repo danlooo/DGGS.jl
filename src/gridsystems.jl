@@ -53,6 +53,7 @@ function Base.show(io::IO, ::MIME"text/plain", dggs::GridSystem)
 end
 
 function saveGridSystem(dggs::GridSystem, path::String; kwargs...)
+    mkdir(path)
     attrs = Dict(
         :Conventions => "Attribute Convention for Data Discovery 1-3, CF Conventions v1.8, DGGS data spec",
         :keywords => ["DGGS", "MODIS", "NDVI"],

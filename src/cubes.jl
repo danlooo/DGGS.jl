@@ -33,12 +33,6 @@ function Base.getindex(cell_cube::CellCube, lon::Real, lat::Real)
     cell_cube.data[q2di_n=At(cell_id.n), q2di_i=At(cell_id.i), q2di_j=At(cell_id.j)]
 end
 
-function Base.getindex(cell_cube::CellCube, selector...)
-    cell_array = view(cell_cube.data, selector...)
-    CellCube(cell_array, cell_cube.data)
-end
-
-
 "Apply function f after filtering of missing and NAN values"
 function filter_null(f)
     x -> x |> filter(!ismissing) |> filter(!isnan) |> f
@@ -55,6 +49,39 @@ function CellCube(path::String, level; kwargs...)
     geo_cube = GeoCube(path)
     cell_cube = CellCube(geo_cube, level; kwargs...)
     return cell_cube
+end
+
+"""
+Filter CellCube using a query string
+
+Name and value of the dimension to be filtered are seperated by `=`.
+Multiple filters may be provided. They must be separated by `,`.
+All elements of the resulting CellCube passed all given filters.
+
+Examples: `all`, `time=2023-11-04T00:00:00,band=4`
+"""
+function query(cell_cube::CellCube, query_str::String="all")
+    query_str == "all" && return cell_cube
+
+    query_d = Dict()
+    # Try parsing these types with descending priority
+    prefered_types = [DateTime, Float64, Int64, Bool, String]
+
+    for dim_query in split(query_str, ",")
+        k, v = split(dim_query, "=")
+
+        for t in prefered_types
+            try
+                v = parse(t, v)
+                query_d[Symbol(k)] = At(v)
+                break
+            catch
+            end
+        end
+    end
+
+    data = Base.getindex(cell_cube.data; NamedTuple(query_d)...)
+    return CellCube(data, cell_cube.level)
 end
 
 "maximial i or j value in Q2DI index given a level"
@@ -126,7 +153,7 @@ function GeoCube(cell_cube::CellCube; longitudes=-180:180, latitudes=-90:90)
         cell_ids_mat,
         longitudes,
         latitudes,
-        indims=InDims(:q2di_n, :q2di_i, :q2di_j),
+        indims=InDims(:q2di_i, :q2di_j, :q2di_n),
         outdims=OutDims(
             Dim{:lon}(longitudes),
             Dim{:lat}(latitudes)
@@ -135,14 +162,15 @@ function GeoCube(cell_cube::CellCube; longitudes=-180:180, latitudes=-90:90)
     return GeoCube(geo_array)
 end
 
-function GeoCube(dggs::GridSystem, x, y, z; cache=missing, tile_length=256)
+function GeoCube(cell_cube::CellCube, x, y, z; cache_path=nothing, tile_length=256)
+    cell_cube.level == get_level(z) || error("Level of cell cube must be $(get_level(z))")
+
     # precompute spatial mapping (can be reused e.g. for each time point)
-    if !ismissing(cache)
-        cell_ids_mat = transform_points(x, y, z, get_level(z))
-    elseif !(x, y, z) in keys(cache)
-        cell_ids_mat = transform_points(x, y, z, get_level(z))
+    cache_file = "$cache_path/$x.$y.$z.dat"
+    if isfile(cache_file)
+        cell_ids_mat = deserialize(cache_file)
     else
-        cell_ids_mat = cache[x, y, z]
+        cell_ids_mat = transform_points(x, y, z, get_level(z))
     end
 
     bbox = BBox(x, y, z)
@@ -150,7 +178,7 @@ function GeoCube(dggs::GridSystem, x, y, z; cache=missing, tile_length=256)
     latitudes = range(bbox.lat_min, bbox.lat_max; length=tile_length)
     geo_array = mapCube(
         map_cell_to_geo_cube,
-        dggs[get_level(z)].data,
+        cell_cube.data,
         cell_ids_mat,
         longitudes,
         latitudes,

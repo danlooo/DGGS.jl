@@ -32,13 +32,15 @@ function cache_xyz_to_q2di(dir::String; max_z=3, tile_length=256)
     tiles_keys = [IterTools.product(0:2^z-1, 0:2^z-1, z) for z in 0:max_z] |> Iterators.flatten |> collect
 
     # ensure thread saftey. Results might come in differnt order
-    # result = ThreadSafeDict()
     p = Progress(length(tiles_keys))
     Threads.nthreads() == 1 && @warn "Multithreading is not active. Please consider to start julia with --threads auto"
     Threads.@threads for i in eachindex(tiles_keys)
         x, y, z = tiles_keys[i]
         result_path = "$dir/$x.$y.$z.dat"
-        isfile(result_path) && continue
+        if isfile(result_path)
+            next!(p)
+            continue
+        end
 
         level = get_level(z)
         result = transform_points(x, y, z, level)
@@ -55,8 +57,11 @@ function color_value(value, color_scale::ColorScale; null_color=RGBA{Float64}(0,
     return color_scale.schema[value] |> RGBA
 end
 
-function calculate_tile(dggs::GridSystem, color_scale::ColorScale, x, y, z; tile_length=256, cache=missing)
-    tile_values = GeoCube(dggs, x, y, z; cache=cache).data.data
+function calculate_tile(dggs::GridSystem, color_scale::ColorScale, x, y, z; query_str="all", tile_length=256, cache_path=missing)
+    cell_cube = dggs[get_level(z)]
+    cell_cube = query(cell_cube, query_str)
+    # TODO: Check if only spatial dimensions left
+    tile_values = GeoCube(cell_cube, x, y, z; cache_path=cache_path).data.data
     scaled = (tile_values .- color_scale.min_value) / (color_scale.max_value - color_scale.min_value)
     image = map(x -> color_value(x, color_scale), scaled)
     io = IOBuffer()

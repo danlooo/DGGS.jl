@@ -1,20 +1,15 @@
 function run_webserver(; kwargs...)
-  # Threads.nthreads() == 1 || error("The web server must run in a single thread")
-
-  cell_ids_cache = try
-    deserialize("data/xyz_to_q2di.cache.bin")
-  catch e
-    missing
-  end
-
-  dggs = GridSystem("data/modis-ndvi.dggs.zarr")
-  color_scale = ColorScale(ColorSchemes.viridis, filter_null(minimum)(dggs[2].data), filter_null(maximum)(dggs[2].data))
-
   @swagger """
-  /tile/{z}/{x}/{y}/tile.png:
+  /collections/{path}/{query_str}/tiles/{z}/{x}/{y}:
     get:
       description: Calculate a XYZ tile
       parameters:
+        - name: path
+          in: path
+          required: true
+          description: dffdf
+          schema:
+            type : string
         - name: x
           in: path
           required: true
@@ -37,9 +32,16 @@ function run_webserver(; kwargs...)
         '200':
           description: Successfully returned the tile
   """
-  @get "/tile/{z}/{x}/{y}/tile.png" function (req::HTTP.Request, z::Int, x::Int, y::Int)
+  @get "/collections/{path}/{query_str}/tiles/{z}/{x}/{y}" function (req::HTTP.Request, path::String, query_str::String, z::Int, x::Int, y::Int)
+    path = HTTP.unescapeuri(path)
+    query_str = HTTP.unescapeuri(query_str)
+    dggs = GridSystem(path)
     params = HTTP.queryparams(req)
-    tile = calculate_tile(dggs, color_scale, x, y, z; cache=cell_ids_cache)
+    min_val = get(params, "min_val", "0") |> x -> parse(Float64, x)
+    max_val = get(params, "max_val", "1") |> x -> parse(Float64, x)
+
+    color_scale = ColorScale(ColorSchemes.viridis, min_val, max_val)
+    tile = calculate_tile(dggs, color_scale, x, y, z; query_str=query_str, cache_path="data/cache_xyz_to_q2di")
     response_headers = [
       "Content-Type" => "image/png",
       # "cache-control" => "max-age=23117, stale-while-revalidate=604800, stale-if-error=604800"
@@ -48,11 +50,11 @@ function run_webserver(; kwargs...)
     return response
   end
 
-  @get "/dggs/zooms/{z}" function (req::HTTP.Request, z::Int)
-    Dict(
-      :level => get_level(z)
-    )
+  @get "/collections/{path}" function (req::HTTP.Request, path::String)
+    path = HTTP.unescapeuri(path)
+    JSON3.read("$(path)/.zattrs")
   end
+
 
   # TODO: Use Artifacts, see https://github.com/JuliaPackaging/ArtifactUtils.jl to upload directory to github
   dynamicfiles("/home/dloos/prj/DGGS.jl/src/assets/www", "/")

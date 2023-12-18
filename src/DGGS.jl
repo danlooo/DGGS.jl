@@ -42,5 +42,6 @@ export
     filter_null,
     GridSystem,
     ColorScale,
-    saveGridSystem
+    saveGridSystem,
+    query
 end
