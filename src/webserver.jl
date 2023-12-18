@@ -7,7 +7,13 @@ function run_webserver(; kwargs...)
         - name: path
           in: path
           required: true
-          description: dffdf
+          description: URL encoded path of the DGGS data cube
+          schema:
+            type : string
+        - name: query_str
+          in: path
+          required: true
+          description: URL encoded query string to filter the DGGS data cube. Only spatial dimensions must be left after filtering. Other dimensions can not be displayed and must be aggregated or filtered (E.g. only one time point).
           schema:
             type : string
         - name: x
@@ -26,6 +32,18 @@ function run_webserver(; kwargs...)
           in: path
           required: true
           description: Zoom level see [OSM](https://wiki.openstreetmap.org/wiki/Zoom_levels)
+          schema:
+            type : number
+        - name: min_val
+          in: query
+          required: false
+          description: Lowest value used as the lower bound for the color scale.
+          schema:
+            type : number
+        - name: max_val
+          in: query
+          required: false
+          description: Highest value used as the upper bound for the color scale.
           schema:
             type : number
       responses:
