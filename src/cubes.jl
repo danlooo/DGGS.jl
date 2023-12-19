@@ -65,18 +65,18 @@ function query(cell_cube::CellCube, query_str::String="all")
 
     query_d = Dict()
     # Try parsing these types with descending priority
-    prefered_types = [DateTime, Float64, Int64, Bool, String]
+    prefered_types = [DateTime, Int64, Float64, Bool, String]
 
     for dim_query in split(query_str, ",")
         k, v = split(dim_query, "=")
 
         for t in prefered_types
-            try
-                v = parse(t, v)
-                query_d[Symbol(k)] = At(v)
-                break
-            catch
+            v = tryparse(t, v)
+            if isnothing(v)
+                continue
             end
+            query_d[Symbol(k)] = At(v)
+            break
         end
     end
 

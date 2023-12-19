@@ -53,8 +53,6 @@ end
 serialize("data/xyz_to_q2di.cache.bin", db)
 
 
-# Query
-# "{host}/{path}/{query}/tile/{z}/{x}/{y}/tile.png"
 
 dggs = GridSystem("data/modis-ndvi.dggs")
 query(dggs[2], "all")

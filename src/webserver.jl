@@ -1,6 +1,6 @@
 function run_webserver(; kwargs...)
   @swagger """
-  /collections/{path}/{query_str}/tiles/{z}/{x}/{y}:
+  /collections/{path}/tiles/{z}/{x}/{y}:
     get:
       description: Calculate a XYZ tile. DGGS datacube my be filtered using URL query parameters
       parameters:
