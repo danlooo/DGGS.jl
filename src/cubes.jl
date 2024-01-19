@@ -19,8 +19,18 @@ function GeoCube(path::String, lon_dim, lat_dim)
     GeoCube(array)
 end
 
+function GeoCube(data::AbstractMatrix{<:Number}, lon_range::AbstractRange{<:Real}, lat_range::AbstractRange{<:Real})
+    axlist = (
+        Dim{:lon}(lon_range),
+        Dim{:lat}(lat_range)
+    )
+    geo_array = YAXArray(axlist, data)
+    geo_cube = GeoCube(geo_array)
+    return geo_cube
+end
+
 function Base.show(io::IO, ::MIME"text/plain", cube::GeoCube)
-    println(io, "DGGS GeoCube at level")
+    println(io, "DGGS GeoCube")
     Base.show(io, "text/plain", cube.data.axes)
 end
 
@@ -61,7 +71,7 @@ All elements of the resulting CellCube passed all given filters.
 Examples: `all`, `time=2023-11-04T00:00:00,band=4`
 """
 function query(cell_cube::CellCube, query_str::String="all")
-    query_str == "all" && return cell_cube
+    query_str in ["all", ""] && return cell_cube
 
     query_d = Dict()
     # Try parsing these types with descending priority
@@ -83,6 +93,7 @@ function query(cell_cube::CellCube, query_str::String="all")
     data = Base.getindex(cell_cube.data; NamedTuple(query_d)...)
     return CellCube(data, cell_cube.level)
 end
+
 
 "maximial i or j value in Q2DI index given a level"
 max_ij(level) = level <= 3 ? level - 1 : 2^(level - 2)
@@ -135,11 +146,8 @@ function CellCube(geo_cube::GeoCube, level=6, agg_func=filter_null(mean); chunk_
 end
 
 function map_cell_to_geo_cube(xout, xin, cell_ids_mat, longitudes, latitudes)
-    for lon_i in 1:length(longitudes)
-        for lat_i in 1:length(latitudes)
-            cell_id = cell_ids_mat[lon_i, lat_i]
-            xout[lon_i, lat_i] = xin[cell_id.i+1, cell_id.j+1, cell_id.n+1]
-        end
+    for (i, cell_id) in enumerate(cell_ids_mat)
+        xout[i] = xin[cell_id.i+1, cell_id.j+1, cell_id.n+1]
     end
 end
 
@@ -155,8 +163,8 @@ function GeoCube(cell_cube::CellCube; longitudes=-180:180, latitudes=-90:90)
         latitudes,
         indims=InDims(:q2di_i, :q2di_j, :q2di_n),
         outdims=OutDims(
-            Dim{:lon}(longitudes),
-            Dim{:lat}(latitudes)
+            Dim{:lat}(latitudes),
+            Dim{:lon}(longitudes)
         )
     )
     return GeoCube(geo_array)

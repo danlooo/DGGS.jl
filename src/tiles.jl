@@ -18,7 +18,7 @@ lat2tile(lat, zoom) = floor((1 - log(tan(lat * pi / 180) + 1 / cos(lat * pi / 18
 tile2lng(x, z) = (x / 2^z * 360) - 180
 tile2lat(y, z) = 180 / pi * atan(0.5 * (exp(pi - 2 * pi * y / 2^z) - exp(2 * pi * y / 2^z - pi)))
 
-get_level(z) = z + 7 # level that has a similar number of cells than pixeles of the tile at zoom 0 (256^2)
+get_level(z) = z + 2 # 7 # level that has a similar number of cells than pixeles of the tile at zoom 0 (256^2)
 
 """
 (pre) calculate x,y,z to cell_ids for lookup cahce in tile server

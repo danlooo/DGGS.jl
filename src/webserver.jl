@@ -1,4 +1,4 @@
-function run_webserver(; kwargs...)
+function serve_dggs_explorer(; kwargs...)
   @swagger """
   /collections/{path}/tiles/{z}/{x}/{y}:
     get:
@@ -81,5 +81,5 @@ function run_webserver(; kwargs...)
   swagger_document = build(openApi)
   mergeschema(swagger_document)
 
-  serveparallel(; kwargs...)
+  serve(; kwargs...)
 end

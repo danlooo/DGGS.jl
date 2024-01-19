@@ -5,6 +5,7 @@ const infobox = document.getElementById("infobox");
  */
 const {
   DeckGL,
+  MapView,
   _GlobeView,
   TileLayer,
   BitmapLayer,
@@ -72,11 +73,13 @@ basemap_layer = new TileLayer({
 
 data_layer = new TileLayer({
   id: "data_layer",
-  data: "collections/data%252Fmodis-ndvi.dggs/tiles/{z}/{x}/{y}?Time=2001-01-01",
+  data: "collections/data%252Fmodis-ndvi.dggs/tiles/{z}/{x}/{y}",
   minZoom: 0,
   maxZoom: 19,
   tileSize: 256,
-  maxRequests: -1,
+  // only one scheduling queue to allow aborting not required tiles after pan and zoom
+  // see https://github.com/visgl/deck.gl/issues/4429
+  maxRequests: 1,
   maxOngoingRequests: 4,
 
   renderSubLayers: (props) => {
@@ -106,9 +109,10 @@ coastline_layer = new GeoJsonLayer({
 });
 
 new DeckGL({
-  views: new _GlobeView({
-    resolution: 10,
-  }),
+  // views: new _GlobeView({
+  //   resolution: 10,
+  // }),
+  views: new MapView(),
   initialViewState: {
     longitude: 0,
     latitude: 0,

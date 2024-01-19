@@ -39,9 +39,9 @@ export
     GeoCube,
     Q2DI,
     transform_points,
-    filter_null,
     GridSystem,
     ColorScale,
     saveGridSystem,
-    query
+    query,
+    serve_dggs_explorer
 end

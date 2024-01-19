@@ -27,33 +27,33 @@ using Pkg
 Pkg.add(url="https://github.com/danlooo/DGGS.jl.git")
 ```
 
-Create a data cube based on a geographical grid:
+Create a DGGS based on a synthetic data in a geographical grid:
 
 ```julia
 using DGGS
 lon_range = -180:180
 lat_range = -90:90
+level = 8
 data = [exp(cosd(lon)) + 3(lat / 90) for lon in lon_range, lat in lat_range]
-geo_cube = GeoCube(data, lat_range, lon_range)
+dggs = GridSystem(data, lon_range, lat_range, level)
 ```
 ```
-DGGS GeoCube
-Element type: Float64
-Latitude:     RangeAxis with 181 elements from -90 to 90
-Longituide:   RangeAxis with 361 elements from -180 to 180
-Size:         510.48 KB
+dggs = GridSystem(data, lon_range, lat_range, 8)
+[ Info: Step 1/2: Transform coordinates
+Progress: 100%|██████████████████████████████████| Time: 0:00:00
+[ Info: Step 2/2: Re-grid the data
+DGGS GridSystem
+Levels: 2,3,4,5,6,7,8
+Dim{:q2di_i} Sampled{Int64} 0:1:15 ForwardOrdered Regular Points,
+Dim{:q2di_j} Sampled{Int64} 0:1:15 ForwardOrdered Regular Points,
+Dim{:q2di_n} Sampled{Int64} 0:11 ForwardOrdered Regular Points
 ```
 
-Create a DGGS from it:
+Write DGGS data to disk and load them back:
 
-```julia
-dggs = DgGlobalGridSystem(geo_cube, 3, :isea, 4, :hexagon)
 ```
-```
-DGGS DgGlobalGridSystem
-Cells:   3 levels with up to 162 cells of type Float64
-Grid:    DgGrid with hexagon topology, isea projection, and aperture of 4
-Size:    1.69 KB
+write("example.dggs", dggs)
+dggs2 = GridSystem("example.dggs")
 ```
 
 Checkout the [tutorial](https://danlooo.github.io/DGGS.jl/dev/tutorial/) for further examples.
@@ -74,4 +74,4 @@ This project is based on [DGGRID](https://github.com/sahrk/DGGRID).
 </a>
 </p>
 
-This project has received funding from the from [Open-Earth-Monitor Cyberinfrastructure](https://earthmonitor.org/) project which is part of the European Union's Horizon Europe research and innovation programme under grant agreement No. [101059548](https://cordis.europa.eu/project/id/101059548).
+This project has received funding from the [Open-Earth-Monitor Cyberinfrastructure](https://earthmonitor.org/) project that is part of European Union's Horizon Europe research and innovation programme under grant agreement No. [101059548](https://cordis.europa.eu/project/id/101059548).

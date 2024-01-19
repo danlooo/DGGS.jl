@@ -30,9 +30,14 @@ function GridSystem(cell_cube::CellCube)
     return GridSystem(pyramid)
 end
 
+GridSystem(geo_cube::GeoCube, level::Integer) = CellCube(geo_cube, level) |> GridSystem
+
+GridSystem(data::AbstractMatrix{<:Number}, lon_range::AbstractRange{<:Real}, lat_range::AbstractRange{<:Real}, level::Integer) = GeoCube(data, lon_range, lat_range) |> x -> GridSystem(x, level)
+
 function GridSystem(path::String)
+    levels = []
     for (root, dirs, files) in walkdir(path)
-        global levels = dirs |> x -> parse.(Int, x) |> sort
+        levels = dirs |> x -> parse.(Int, x) |> sort
         break
     end
 
@@ -52,7 +57,7 @@ function Base.show(io::IO, ::MIME"text/plain", dggs::GridSystem)
     Base.show(io, "text/plain", dggs.data |> values |> first |> x -> x.data.axes)
 end
 
-function saveGridSystem(dggs::GridSystem, path::String; kwargs...)
+function Base.write(path::String, dggs::GridSystem; kwargs...)
     mkdir(path)
     attrs = Dict(
         :Conventions => "Attribute Convention for Data Discovery 1-3, CF Conventions v1.8, DGGS data spec",
