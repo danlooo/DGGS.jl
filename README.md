@@ -33,17 +33,15 @@ Create a DGGS based on a synthetic data in a geographical grid:
 using DGGS
 lon_range = -180:180
 lat_range = -90:90
-level = 8
-data = [exp(cosd(lon)) + 3(lat / 90) for lon in lon_range, lat in lat_range]
+level = 6
+data = [exp(cosd(lon)) + 3(lat / 90) for lat in lat_range, lon in lon_range]
 dggs = GridSystem(data, lon_range, lat_range, level)
 ```
 ```
-dggs = GridSystem(data, lon_range, lat_range, 8)
 [ Info: Step 1/2: Transform coordinates
-Progress: 100%|██████████████████████████████████| Time: 0:00:00
 [ Info: Step 2/2: Re-grid the data
 DGGS GridSystem
-Levels: 2,3,4,5,6,7,8
+Levels: 2,3,4,5,6
 Dim{:q2di_i} Sampled{Int64} 0:1:15 ForwardOrdered Regular Points,
 Dim{:q2di_j} Sampled{Int64} 0:1:15 ForwardOrdered Regular Points,
 Dim{:q2di_n} Sampled{Int64} 0:11 ForwardOrdered Regular Points

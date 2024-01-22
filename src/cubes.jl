@@ -21,8 +21,8 @@ end
 
 function GeoCube(data::AbstractMatrix{<:Number}, lon_range::AbstractRange{<:Real}, lat_range::AbstractRange{<:Real})
     axlist = (
-        Dim{:lon}(lon_range),
-        Dim{:lat}(lat_range)
+        Dim{:lat}(lat_range),
+        Dim{:lon}(lon_range)
     )
     geo_array = YAXArray(axlist, data)
     geo_cube = GeoCube(geo_array)
@@ -145,7 +145,7 @@ function CellCube(geo_cube::GeoCube, level=6, agg_func=filter_null(mean); chunk_
     return CellCube(cell_cube, level)
 end
 
-function map_cell_to_geo_cube(xout, xin, cell_ids_mat, longitudes, latitudes)
+function map_cell_to_geo_cube(xout, xin, cell_ids_mat)
     for (i, cell_id) in enumerate(cell_ids_mat)
         xout[i] = xin[cell_id.i+1, cell_id.j+1, cell_id.n+1]
     end
@@ -159,12 +159,10 @@ function GeoCube(cell_cube::CellCube; longitudes=-180:180, latitudes=-90:90)
         map_cell_to_geo_cube,
         cell_cube.data,
         cell_ids_mat,
-        longitudes,
-        latitudes,
         indims=InDims(:q2di_i, :q2di_j, :q2di_n),
         outdims=OutDims(
-            Dim{:lat}(latitudes),
-            Dim{:lon}(longitudes)
+            Dim{:lon}(longitudes),
+            Dim{:lat}(latitudes)
         )
     )
     return GeoCube(geo_array)
@@ -188,8 +186,6 @@ function GeoCube(cell_cube::CellCube, x, y, z; cache_path=nothing, tile_length=2
         map_cell_to_geo_cube,
         cell_cube.data,
         cell_ids_mat,
-        longitudes,
-        latitudes,
         indims=InDims(:q2di_i, :q2di_j, :q2di_n),
         outdims=OutDims(
             Dim{:lon}(longitudes),

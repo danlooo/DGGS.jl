@@ -18,7 +18,7 @@ lat2tile(lat, zoom) = floor((1 - log(tan(lat * pi / 180) + 1 / cos(lat * pi / 18
 tile2lng(x, z) = (x / 2^z * 360) - 180
 tile2lat(y, z) = 180 / pi * atan(0.5 * (exp(pi - 2 * pi * y / 2^z) - exp(2 * pi * y / 2^z - pi)))
 
-get_level(z) = z + 2 # 7 # level that has a similar number of cells than pixeles of the tile at zoom 0 (256^2)
+get_level(z) = z + 7 # level that has a similar number of cells than pixeles of the tile at zoom 0 (256^2)
 
 """
 (pre) calculate x,y,z to cell_ids for lookup cahce in tile server
@@ -60,9 +60,10 @@ end
 function calculate_tile(dggs::GridSystem, color_scale::ColorScale, x, y, z; query_str="all", tile_length=256, cache_path=missing)
     cell_cube = dggs[get_level(z)]
     cell_cube = query(cell_cube, query_str)
+
     # TODO: Check if only spatial dimensions left
     tile_values = GeoCube(cell_cube, x, y, z; cache_path=cache_path).data.data
-    scaled = (tile_values .- color_scale.min_value) / (color_scale.max_value - color_scale.min_value)
+    scaled = (tile_values .- color_scale.min_value) / (color_scale.max_value - color_scale.min_value)'
     image = map(x -> color_value(x, color_scale), scaled)
     io = IOBuffer()
     save(Stream(format"PNG", io), image)

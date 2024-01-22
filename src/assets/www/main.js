@@ -5,7 +5,6 @@ const infobox = document.getElementById("infobox");
  */
 const {
   DeckGL,
-  MapView,
   _GlobeView,
   TileLayer,
   BitmapLayer,
@@ -73,7 +72,7 @@ basemap_layer = new TileLayer({
 
 data_layer = new TileLayer({
   id: "data_layer",
-  data: "collections/data%252Fmodis-ndvi.dggs/tiles/{z}/{x}/{y}",
+  data: "collections/data%252Fexample.dggs/tiles/{z}/{x}/{y}?min_val=-3&max_val=4.5",
   minZoom: 0,
   maxZoom: 19,
   tileSize: 256,
@@ -109,10 +108,9 @@ coastline_layer = new GeoJsonLayer({
 });
 
 new DeckGL({
-  // views: new _GlobeView({
-  //   resolution: 10,
-  // }),
-  views: new MapView(),
+  views: new _GlobeView({
+    resolution: 10,
+  }),
   initialViewState: {
     longitude: 0,
     latitude: 0,

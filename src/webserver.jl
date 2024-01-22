@@ -58,7 +58,7 @@ function serve_dggs_explorer(; kwargs...)
     end
 
     color_scale = ColorScale(ColorSchemes.viridis, min_val, max_val)
-    tile = calculate_tile(dggs, color_scale, x, y, z; query_str=query_str, cache_path="data/cache_xyz_to_q2di")
+    tile = calculate_tile(dggs, color_scale, x, y, z; query_str=query_str)
     response_headers = [
       "Content-Type" => "image/png",
       # "cache-control" => "max-age=23117, stale-while-revalidate=604800, stale-if-error=604800"

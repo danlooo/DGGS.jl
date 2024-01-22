@@ -2,7 +2,7 @@
 
 julia_version = "1.9.4"
 manifest_format = "2.0"
-project_hash = "f3bb0ef4d717d002ede7957bc8e7c4f2d6537ba0"
+project_hash = "f5821c2ed594871c9f0f6cd63ecf576b393afe13"
 
 [[deps.AWS]]
 deps = ["Base64", "Compat", "Dates", "Downloads", "GitHub", "HTTP", "IniFile", "JSON", "MbedTLS", "Mocking", "OrderedCollections", "Random", "SHA", "Sockets", "URIs", "UUIDs", "XMLDict"]
@@ -243,6 +243,12 @@ deps = ["ColorTypes", "FixedPointNumbers", "Reexport"]
 git-tree-sha1 = "fc08e5930ee9a4e03f84bfb5211cb54e7769758a"
 uuid = "5ae59095-9a9b-59fe-a467-6f913c188581"
 version = "0.12.10"
+
+[[deps.CommonDataModel]]
+deps = ["CFTime", "DataStructures", "Dates", "Preferences", "Printf", "Statistics"]
+git-tree-sha1 = "349d9b36250ec19a7da18f838434db7d76c2f131"
+uuid = "1fbeeb36-5f17-413c-809b-666fb144f157"
+version = "0.3.2"
 
 [[deps.CommonSubexpressions]]
 deps = ["MacroTools", "Test"]
@@ -557,6 +563,18 @@ deps = ["Artifacts", "JLLWrappers", "Libdl"]
 git-tree-sha1 = "818ab247de98d8848a022c7be084b1283d912326"
 uuid = "d604d12d-fa86-5845-992e-78dc15976526"
 version = "3.11.2+0"
+
+[[deps.GRIB]]
+deps = ["eccodes_jll"]
+git-tree-sha1 = "e4818470ebb3282e2c720fa4484e2b133cdef6d3"
+uuid = "b16dfd50-4035-11e9-28d4-9dfe17e6779b"
+version = "0.4.0"
+
+[[deps.GRIBDatasets]]
+deps = ["CommonDataModel", "DataStructures", "Dates", "DiskArrays", "GRIB"]
+git-tree-sha1 = "11ed757183a4d6651c6c494fe475b92a2ea64b2a"
+uuid = "82be9cdb-ee19-4151-bdb3-b400788d9abc"
+version = "0.3.1"
 
 [[deps.GeoFormatTypes]]
 git-tree-sha1 = "59107c179a586f0fe667024c5eb7033e81333271"
@@ -1825,6 +1843,18 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Zlib_jll"]
 git-tree-sha1 = "7a89efe0137720ca82f99e8daa526d23120d0d37"
 uuid = "28df3c45-c428-5900-9ff8-a3135698ca75"
 version = "1.76.0+1"
+
+[[deps.eccodes_jll]]
+deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "OpenJpeg_jll", "libaec_jll", "libpng_jll"]
+git-tree-sha1 = "8576a3e2cb1d72fc78158e60e73b2f9b9667c0bd"
+uuid = "b04048ba-5ccd-5610-b3f6-85129a548705"
+version = "2.28.0+0"
+
+[[deps.libaec_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl"]
+git-tree-sha1 = "eddd19a8dea6b139ea97bdc8a0e2667d4b661720"
+uuid = "477f73a3-ac25-53e9-8cc3-50b2fa2566f0"
+version = "1.0.6+1"
 
 [[deps.libblastrampoline_jll]]
 deps = ["Artifacts", "Libdl"]
