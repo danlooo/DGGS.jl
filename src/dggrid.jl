@@ -19,7 +19,8 @@ function call_dggrid(meta::Dict)
     rm(meta_path)
 end
 
-function transform_points(lon_range, lat_range, level)
+# single threaded version
+function _transform_points(lon_range, lat_range, level)
     points_path = tempname()
     points_string = ""
     # arrange points to match with pixels in png image
@@ -52,12 +53,46 @@ function transform_points(lon_range, lat_range, level)
     return cell_ids_q2di
 end
 
-function transform_points(x, y, z, level; tile_length=256)
+"""
+chunk_size_points: number of points (e.g. pixels) to transform in one block (task of a thread)
+"""
+function transform_points(lon_range, lat_range, level; show_progress=true, chunk_size_points=2048)
+    Threads.nthreads() == 1 && @warn "Multithreading is not active. Please consider to start julia with --threads auto"
+
+    chunk_size_lon = chunk_size_points / length(lat_range) |> ceil |> Int
+    lon_chunks = Iterators.partition(lon_range, chunk_size_lon) |> collect
+
+    # single thread is sufficient
+    if length(lon_chunks) == 1
+        cell_ids_mat = _transform_points(lon_range, lat_range, level)
+        return cell_ids_mat
+    end
+
+    cell_ids_mats = nothing
+    if show_progress
+        p = Progress(length(lon_chunks))
+        cell_ids_mats = @threaded map(lon_chunks) do lons
+            res = _transform_points(lons, lat_range, level)
+            next!(p)
+            res
+        end
+        finish!(p)
+    else
+        cell_ids_mats = @threaded map(lon_chunks) do lons
+            _transform_points(lons, lat_range, level)
+        end
+    end
+
+    cell_ids_mat = hcat(cell_ids_mats...) |> permutedims
+    return cell_ids_mat
+end
+
+function _transform_points(x, y, z, level; tile_length=256)
     # @see https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
     # @see https://help.openstreetmap.org/questions/747/given-a-latlon-how-do-i-find-the-precise-position-on-the-tilew
 
     longitudes = tile2lng.(range(x, x + 1; length=tile_length), z)
     latitudes = tile2lat.(range(y, y + 1; length=tile_length), z)
-    cell_ids = transform_points(longitudes, latitudes, level)
+    cell_ids = _transform_points(longitudes, latitudes, level)
     return cell_ids
 end

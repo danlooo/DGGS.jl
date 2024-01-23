@@ -25,6 +25,8 @@ using Oxygen
 using SwaggerMarkdown
 using HTTP
 using JSON3
+using GLMakie
+using GeometryBasics
 
 # must be sorted by dependency
 include("types.jl")
@@ -43,5 +45,6 @@ export
     ColorScale,
     saveGridSystem,
     query,
+    plot,
     serve_dggs_explorer
 end

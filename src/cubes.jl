@@ -39,7 +39,7 @@ function Base.getindex(cell_cube::CellCube, i::Q2DI)
 end
 
 function Base.getindex(cell_cube::CellCube, lon::Real, lat::Real)
-    cell_id = transform_points(lon, lat, cell_cube.level)[1, 1]
+    cell_id = _transform_points(lon, lat, cell_cube.level)[1, 1]
     cell_cube.data[q2di_n=At(cell_id.n), q2di_i=At(cell_id.i), q2di_j=At(cell_id.j)]
 end
 
@@ -98,23 +98,9 @@ end
 "maximial i or j value in Q2DI index given a level"
 max_ij(level) = level <= 3 ? level - 1 : 2^(level - 2)
 
-function CellCube(geo_cube::GeoCube, level=6, agg_func=filter_null(mean); chunk_size=missing)
-    Threads.nthreads() == 1 && @warn "Multithreading is not active. Please consider to start julia with --threads auto"
-
+function CellCube(geo_cube::GeoCube, level, agg_func=filter_null(mean))
     @info "Step 1/2: Transform coordinates"
-
-    # precompute spatial mapping (can be reused e.g. for each time point)
-    ismissing(chunk_size) ? chunk_size = max(2, 1024 / length(geo_cube.data.lat)) |> ceil |> Int : true
-
-    lon_chunks = Iterators.partition(geo_cube.data.lon, chunk_size) |> collect
-    p = Progress(length(lon_chunks))
-    cell_ids_mats = @threaded map(lon_chunks) do lons
-        next!(p)
-        transform_points(lons, geo_cube.data.lat, level)
-    end
-    finish!(p)
-
-    cell_ids_mat = hcat(cell_ids_mats...) |> permutedims
+    cell_ids_mat = transform_points(geo_cube.data.lon, geo_cube.data.lat, level)
 
     cell_ids_indexlist = Dict()
     for c in 1:size(cell_ids_mat, 2)
@@ -151,9 +137,12 @@ function map_cell_to_geo_cube(xout, xin, cell_ids_mat)
     end
 end
 
-function GeoCube(cell_cube::CellCube; longitudes=-180:180, latitudes=-90:90)
-    # precompute spatial mapping (can be reused e.g. for each time point)
-    cell_ids_mat = transform_points(longitudes, latitudes, cell_cube.level)
+function GeoCube(cell_cube::CellCube; longitudes=-180:180, latitudes=-90:90, cell_ids_mat=nothing)
+    # transforming points is the slowest step
+    # re-load from cache or re-use for all time points
+    if isnothing(cell_ids_mat)
+        cell_ids_mat = transform_points(longitudes, latitudes, cell_cube.level)
+    end
 
     geo_array = mapCube(
         map_cell_to_geo_cube,
@@ -176,7 +165,7 @@ function GeoCube(cell_cube::CellCube, x, y, z; cache_path=nothing, tile_length=2
     if isfile(cache_file)
         cell_ids_mat = deserialize(cache_file)
     else
-        cell_ids_mat = transform_points(x, y, z, get_level(z))
+        cell_ids_mat = _transform_points(x, y, z, get_level(z))
     end
 
     bbox = BBox(x, y, z)
@@ -195,3 +184,24 @@ function GeoCube(cell_cube::CellCube, x, y, z; cache_path=nothing, tile_length=2
     return GeoCube(geo_array)
 end
 
+function plot(cell_cube::CellCube; resolution::Int64=800)
+    cell_cube.data.axes .|> name |> sort == (:q2di_i, :q2di_j, :q2di_n) || error("cell_cube has Too many dimensions for plotting. Please consider function query to filter.")
+
+    longitudes = range(-180, 180, length=resolution * 2)
+    latitudes = range(-90, 90, length=resolution)
+
+    geo_cube = GeoCube(cell_cube; longitudes, latitudes)
+    color_scale = ColorScale(ColorSchemes.viridis, filter_null(minimum)(geo_cube.data.data), filter_null(maximum)(geo_cube.data.data))
+    texture = map(x -> color_value(x, color_scale), geo_cube.data.data[1:length(longitudes), length(latitudes):-1:1]')
+
+    scene = Scene(show_axis=false)
+    mesh!(
+        scene,
+        Sphere(Point3f0(0), 1.8),
+        color=texture,
+        shading=false
+    )
+    # point camera to center
+    cam3d_cad!(scene; fixed_axis=true)
+    return scene
+end

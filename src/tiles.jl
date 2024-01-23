@@ -43,7 +43,7 @@ function cache_xyz_to_q2di(dir::String; max_z=3, tile_length=256)
         end
 
         level = get_level(z)
-        result = transform_points(x, y, z, level)
+        result = _transform_points(x, y, z, level)
         # directly serialize to prevent OOM kill
         serialize(result_path, result)
         next!(p)
@@ -51,13 +51,15 @@ function cache_xyz_to_q2di(dir::String; max_z=3, tile_length=256)
     finish!(p)
 end
 
-function color_value(value, color_scale::ColorScale; null_color=RGBA{Float64}(0, 0, 0, 0))
+function color_value(value, color_scale::ColorScale; null_color=RGBA{Float64}(0.7, 0.7, 0.7, 1))
     ismissing(value) && return null_color
     isnan(value) && return null_color
     return color_scale.schema[value] |> RGBA
 end
 
 function calculate_tile(dggs::GridSystem, color_scale::ColorScale, x, y, z; query_str="all", tile_length=256, cache_path=missing)
+    @infiltrate
+
     cell_cube = dggs[get_level(z)]
     cell_cube = query(cell_cube, query_str)
 

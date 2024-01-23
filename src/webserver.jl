@@ -81,5 +81,5 @@ function serve_dggs_explorer(; kwargs...)
   swagger_document = build(openApi)
   mergeschema(swagger_document)
 
-  serve(; kwargs...)
+  serve_dggs_explorer(; kwargs...)
 end
