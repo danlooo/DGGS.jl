@@ -1,9 +1,7 @@
 [deps]
-CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 DGGS = "1b1208a4-f9dd-4606-8704-9f68bba98fd1"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 EarthDataLab = "359177bc-a543-11e8-11b7-bb015dba3358"
 GeoDataFrames = "62cb38b5-d8d2-4862-a48e-6a340996859f"
-GeoMakie = "db073c08-6b98-4ee5-b6a4-5efafb3259c6"
 NetCDF = "30363a11-5582-574a-97bb-aa9a979735b9"
 YAXArrays = "c21b50f5-aa40-41ea-b809-c0f5e47bfa5c"
