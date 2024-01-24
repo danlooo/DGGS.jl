@@ -43,7 +43,7 @@ jobs:
         run: |
           using Pkg;
           # dev mono repo versions
-          pkg"dev DGGS"
+          pkg"dev ."
       - name: Run the tests
         id: referencetests
         continue-on-error: true
