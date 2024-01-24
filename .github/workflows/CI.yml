@@ -39,7 +39,7 @@ jobs:
       # see https://github.com/MakieOrg/Makie.jl/blob/8504b27c28c45a522467c7c57f6953c3a680fa6a/.github/workflows/glmakie.yaml#L45-L57
       - run: sudo apt-get update && sudo apt-get install -y xorg-dev mesa-utils xvfb libgl1 freeglut3-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev
       - name: Install Julia dependencies
-        shell: julia --project=. -e '{0}'
+        shell: julia --project=. {0}
         run: |
           using Pkg;
           # dev mono repo versions
