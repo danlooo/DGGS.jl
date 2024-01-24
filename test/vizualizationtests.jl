@@ -10,3 +10,6 @@ cell_cube = CellCube(geo_cube, level)
 dggs = GridSystem(data, lon_range, lat_range, level)
 
 plot(dggs)
+
+dggs_modis = GridSystem("data/modis-ndvi.dggs")
+plot(dggs_modis)
