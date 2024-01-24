@@ -180,7 +180,7 @@ function plot(cell_cube::CellCube; resolution::Int64=800)
         Sphere(Point3f(0), 1.8),
         color=texture,
         interpolate=true,
-        shading=false
+        shading=NoShading
     )
     # point camera to center
     cam3d_cad!(scene; fixed_axis=true)
