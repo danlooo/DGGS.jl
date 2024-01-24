@@ -10,5 +10,5 @@ dggs = GridSystem(data, lon_range, lat_range, level)
 
 plot(dggs)
 
-dggs_modis = GridSystem("data/modis-ndvi.dggs")
-plot(dggs_modis)
+dggs_modis = GridSystem("data/modis-ndvi-2001.dggs")
+query(dggs_modis[10], "Ti=2001-04-01") |> plot

@@ -94,6 +94,8 @@ function query(cell_cube::CellCube, query_str::String="all")
     return CellCube(data, cell_cube.level)
 end
 
+function reduce(agg_func, cell_cube::CellCube; dims)
+end
 
 "maximial i or j value in Q2DI index given a level"
 max_ij(level) = level <= 3 ? level - 1 : 2^(level - 2)
