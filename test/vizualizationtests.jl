@@ -1,5 +1,4 @@
 using DGGS
-using GLMakie
 
 lon_range = -180:180
 lat_range = -90:90

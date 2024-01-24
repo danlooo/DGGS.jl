@@ -172,17 +172,19 @@ function plot(cell_cube::CellCube; resolution::Int64=800)
     geo_cube = GeoCube(cell_cube; longitudes, latitudes)
     color_scale = ColorScale(ColorSchemes.viridis, filter_null(minimum)(geo_cube.data.data), filter_null(maximum)(geo_cube.data.data))
     texture = map(x -> color_value(x, color_scale), geo_cube.data.data[1:length(longitudes), length(latitudes):-1:1]')
+    mesh = Sphere(Point3f(0), 1.8) |> x -> Tesselation(x, 128) |> uv_mesh
 
     set_theme!(backgroundcolor=:black)
     scene = Scene(show_axis=false)
     mesh!(
         scene,
-        Sphere(Point3f(0), 1.8),
+        mesh,
         color=texture,
         interpolate=true,
         shading=NoShading
     )
     # point camera to center
+    center!(scene)
     cam3d_cad!(scene; fixed_axis=true)
     return scene
 end
