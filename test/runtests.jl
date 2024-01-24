@@ -1,6 +1,7 @@
 using DGGS
 using Test
 
+
 @testset verbose = true "DGGS.jl" begin
     lon_range = -180:180
     lat_range = -90:90
@@ -17,8 +18,11 @@ using Test
     @test geo_cube |> x -> CellCube(x, 8) |> GeoCube |> typeof == GeoCube
     @test keys(dggs.data) |> maximum == 6
 
-    write("example.dggs", dggs)
+    dggs_path = tempname()
+    write(dggs_path, dggs)
+    dggs2 = GridSystem(dggs_path)
+    rm(dggs_path, recursive=true)
 
-    scence = plot(cell_cube)
-    @test typeof(scence) == Scene
+    scene1 = plot(cell_cube)
+    scene2 = plot(dggs)
 end

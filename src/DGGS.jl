@@ -21,20 +21,16 @@ using Infiltrator
 using ThreadSafeDicts
 using ThreadedIterables
 using Statistics
-using Oxygen
-using SwaggerMarkdown
-using HTTP
 using JSON3
 using GLMakie
 using GeometryBasics
+using OrderedCollections
 
 # must be sorted by dependency
 include("types.jl")
-include("tiles.jl")
 include("dggrid.jl")
 include("cubes.jl")
 include("gridsystems.jl")
-include("webserver.jl")
 
 export
     CellCube,
@@ -43,8 +39,6 @@ export
     transform_points,
     GridSystem,
     ColorScale,
-    saveGridSystem,
     query,
-    plot,
-    serve_dggs_explorer
+    plot
 end

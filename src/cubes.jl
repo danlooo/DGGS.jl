@@ -157,35 +157,14 @@ function GeoCube(cell_cube::CellCube; longitudes=-180:180, latitudes=-90:90, cel
     return GeoCube(geo_array)
 end
 
-function GeoCube(cell_cube::CellCube, x, y, z; cache_path=nothing, tile_length=256)
-    cell_cube.level == get_level(z) || error("Level of cell cube must be $(get_level(z))")
-
-    # precompute spatial mapping (can be reused e.g. for each time point)
-    cache_file = "$cache_path/$x.$y.$z.dat"
-    if isfile(cache_file)
-        cell_ids_mat = deserialize(cache_file)
-    else
-        cell_ids_mat = _transform_points(x, y, z, get_level(z))
-    end
-
-    bbox = BBox(x, y, z)
-    longitudes = range(bbox.lat_min, bbox.lat_max; length=tile_length)
-    latitudes = range(bbox.lat_min, bbox.lat_max; length=tile_length)
-    geo_array = mapCube(
-        map_cell_to_geo_cube,
-        cell_cube.data,
-        cell_ids_mat,
-        indims=InDims(:q2di_i, :q2di_j, :q2di_n),
-        outdims=OutDims(
-            Dim{:lon}(longitudes),
-            Dim{:lat}(latitudes)
-        )
-    )
-    return GeoCube(geo_array)
+function color_value(value, color_scale::ColorScale; null_color=RGBA{Float64}(0.15, 0.15, 0.15, 1))
+    ismissing(value) && return null_color
+    isnan(value) && return null_color
+    return color_scale.schema[value] |> RGBA
 end
 
 function plot(cell_cube::CellCube; resolution::Int64=800)
-    cell_cube.data.axes .|> name |> sort == (:q2di_i, :q2di_j, :q2di_n) || error("cell_cube has Too many dimensions for plotting. Please consider function query to filter.")
+    cell_cube.data.axes .|> name == (:q2di_i, :q2di_j, :q2di_n) || error("cell_cube has Too many dimensions for plotting. Please consider function query to filter.")
 
     longitudes = range(-180, 180, length=resolution * 2)
     latitudes = range(-90, 90, length=resolution)
@@ -194,11 +173,13 @@ function plot(cell_cube::CellCube; resolution::Int64=800)
     color_scale = ColorScale(ColorSchemes.viridis, filter_null(minimum)(geo_cube.data.data), filter_null(maximum)(geo_cube.data.data))
     texture = map(x -> color_value(x, color_scale), geo_cube.data.data[1:length(longitudes), length(latitudes):-1:1]')
 
+    set_theme!(backgroundcolor=:black)
     scene = Scene(show_axis=false)
     mesh!(
         scene,
-        Sphere(Point3f0(0), 1.8),
+        Sphere(Point3f(0), 1.8),
         color=texture,
+        interpolate=true,
         shading=false
     )
     # point camera to center

@@ -53,8 +53,7 @@ Write DGGS data to disk and load them back:
 write("example.dggs", dggs)
 dggs2 = GridSystem("example.dggs")
 ```
-
-Checkout the [tutorial](https://danlooo.github.io/DGGS.jl/dev/tutorial/) for further examples.
+The data can be visualized using `plot(dggs)`.
 
 ## Development
 

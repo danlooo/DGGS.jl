@@ -1,11 +1,3 @@
-"Rectangular bounding box in geographical space"
-struct BBox{T<:Real}
-    lon_min::T
-    lon_max::T
-    lat_min::T
-    lat_max::T
-end
-
 struct ColorScale{T<:Real}
     schema::ColorScheme
     min_value::T
@@ -40,7 +32,7 @@ struct GridSystem
     data::Dict{Int,CellCube} # some levels might be skipped
 
     function GridSystem(data)
-        map(x -> x.data |> propertynames |> sort, values(data)) |> allequal || error("Same axes must be used at all levels.")
+        map(x -> x.data.axes .|> name, values(data)) |> allequal || error("Same dimensions must be used at all levels.")
         new(data)
     end
 end
