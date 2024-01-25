@@ -38,6 +38,7 @@ YAXArrays = "c21b50f5-aa40-41ea-b809-c0f5e47bfa5c"
 Zarr = "0a941bbe-ad1d-11e8-39d9-ab76183a1d99"
 
 [compat]
+Caching = "0.2"
 DGGRID7_jll = "0.9.1"
 julia = "1.9"
 
