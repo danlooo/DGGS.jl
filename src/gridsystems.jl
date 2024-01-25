@@ -100,3 +100,8 @@ Base.setindex!(dggs::GridSystem, cell_cube::CellCube, level::Int) = dggs.data[le
 
 CellCube(dggs::GridSystem) = dggs[dggs.data|>keys|>maximum]
 plot(dggs::GridSystem) = dggs |> CellCube |> plot
+
+function Base.mapslices(f, dggs::GridSystem; dims, kw...)
+    data = dggs |> CellCube |> x -> mapslices(f, x; dims=dims, kw...)
+    return GridSystem(data)
+end

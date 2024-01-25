@@ -94,7 +94,9 @@ function query(cell_cube::CellCube, query_str::String="all")
     return CellCube(data, cell_cube.level)
 end
 
-function reduce(agg_func, cell_cube::CellCube; dims)
+function Base.mapslices(agg_func, cell_cube::CellCube; dims, kw...)
+    data = mapslices(agg_func, cell_cube.data; dims, kw...)
+    return CellCube(data, cell_cube.level)
 end
 
 "maximial i or j value in Q2DI index given a level"

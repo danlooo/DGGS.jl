@@ -1,6 +1,6 @@
 using DGGS
 using Test
-
+using Statistics
 
 @testset verbose = true "DGGS.jl" begin
     lon_range = -180:180
@@ -17,6 +17,9 @@ using Test
     @test typeof(dggs) == GridSystem
     @test geo_cube |> x -> CellCube(x, 8) |> GeoCube |> typeof == GeoCube
     @test keys(dggs.data) |> maximum == 6
+
+    @test_throws ErrorException mapslices(mean, dggs[6]; dims=["q2di_i", "q2di_j"])
+    @test
 
     dggs_path = tempname()
     write(dggs_path, dggs)

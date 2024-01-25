@@ -13,6 +13,15 @@ end
 struct CellCube
     data::YAXArray
     level::Int8
+
+    function CellCube(data, level)
+        level > 0 || error("Level must be positive")
+        :q2di_i in name.(data.axes) || error("Axis q2di_i is missing")
+        :q2di_j in name.(data.axes) || error("Axis q2di_j is missing")
+        :q2di_n in name.(data.axes) || error("Axis q2di_n is missing")
+
+        new(data, level)
+    end
 end
 
 struct GeoCube
