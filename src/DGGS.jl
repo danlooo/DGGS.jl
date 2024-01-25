@@ -9,9 +9,6 @@ using DataFrames
 using CSV
 using ColorSchemes
 using FileIO
-using ImageTransformations
-using CoordinateTransformations
-using Serialization
 using IterTools
 using ProgressMeter
 using Infiltrator
@@ -22,6 +19,7 @@ using JSON3
 using GLMakie
 using GeometryBasics
 using OrderedCollections
+using ImageCore
 
 # must be sorted by dependency
 include("types.jl")
