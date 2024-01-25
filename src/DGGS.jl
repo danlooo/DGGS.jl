@@ -9,11 +9,8 @@ using DataFrames
 using CSV
 using ColorSchemes
 using FileIO
-using Images
-using ImageCore
 using ImageTransformations
 using CoordinateTransformations
-using Rotations
 using Serialization
 using IterTools
 using ProgressMeter
