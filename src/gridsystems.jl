@@ -32,7 +32,7 @@ end
 
 GridSystem(geo_cube::GeoCube, level::Integer) = CellCube(geo_cube, level) |> GridSystem
 
-GridSystem(data::AbstractMatrix{<:Number}, lon_range::AbstractRange{<:Real}, lat_range::AbstractRange{<:Real}, level::Integer) = GeoCube(data, lon_range, lat_range) |> x -> GridSystem(x, level)
+GridSystem(data::AbstractArray{<:Number}, lon_range::AbstractRange{<:Real}, lat_range::AbstractRange{<:Real}, level::Integer) = GeoCube(data, lon_range, lat_range) |> x -> GridSystem(x, level)
 
 function GridSystem(path::String)
     levels = []
@@ -99,4 +99,4 @@ Base.getindex(dggs::GridSystem, level::Int) = dggs.data[level]
 Base.setindex!(dggs::GridSystem, cell_cube::CellCube, level::Int) = dggs.data[level] = cell_cube
 
 CellCube(dggs::GridSystem) = dggs[dggs.data|>keys|>maximum]
-plot(dggs::GridSystem) = dggs |> CellCube |> plot
+plot(dggs::GridSystem; kw...) = plot(CellCube(dggs); kw...)

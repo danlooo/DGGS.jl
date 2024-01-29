@@ -61,42 +61,6 @@ function CellCube(path::String, level; kwargs...)
     return cell_cube
 end
 
-"""
-Filter CellCube using a query string
-
-Name and value of the dimension to be filtered are seperated by `=`.
-Multiple filters may be provided. They must be separated by `,`.
-All elements of the resulting CellCube passed all given filters.
-
-Examples: `all`, `time=2023-11-04T00:00:00,band=4`
-"""
-function query(cell_cube::CellCube, query_str::String="all")
-    query_str in ["all", ""] && return cell_cube
-
-    query_d = Dict()
-    # Try parsing these types with descending priority
-    prefered_types = [DateTime, Int64, Float64, Bool, String]
-
-    for dim_query in split(query_str, ",")
-        k, v = split(dim_query, "=")
-
-        for t in prefered_types
-            v = tryparse(t, v)
-            if isnothing(v)
-                continue
-            end
-            query_d[Symbol(k)] = At(v)
-            break
-        end
-    end
-
-    data = Base.getindex(cell_cube.data; NamedTuple(query_d)...)
-    return CellCube(data, cell_cube.level)
-end
-
-function reduce(agg_func, cell_cube::CellCube; dims)
-end
-
 "maximial i or j value in Q2DI index given a level"
 max_ij(level) = level <= 3 ? level - 1 : 2^(level - 2)
 
@@ -133,6 +97,8 @@ function CellCube(geo_cube::GeoCube, level, agg_func=filter_null(mean))
     return CellCube(cell_cube, level)
 end
 
+Base.getindex(cell_cube::CellCube; i...) = Base.getindex(cell_cube.data; i...) |> x -> CellCube(x, cell_cube.level)
+
 function map_cell_to_geo_cube(xout, xin, cell_ids_mat)
     for (i, cell_id) in enumerate(cell_ids_mat)
         xout[i] = xin[cell_id.i+1, cell_id.j+1, cell_id.n+1]
@@ -166,27 +132,65 @@ function color_value(value, color_scale::ColorScale; null_color=RGBA{Float64}(0.
 end
 
 function plot(cell_cube::CellCube; resolution::Int64=800)
-    cell_cube.data.axes .|> name == (:q2di_i, :q2di_j, :q2di_n) || error("cell_cube has Too many dimensions for plotting. Please consider function query to filter.")
+    # cell_cube.data.axes .|> name == (:q2di_i, :q2di_j, :q2di_n) || error("cell_cube has Too many dimensions for plotting. Please consider function query to filter.")
 
     longitudes = range(-180, 180, length=resolution * 2)
     latitudes = range(-90, 90, length=resolution)
+    cell_ids_mat = transform_points(longitudes, latitudes, cell_cube.level)
 
-    geo_cube = GeoCube(cell_cube; longitudes, latitudes)
-    color_scale = ColorScale(ColorSchemes.viridis, filter_null(minimum)(geo_cube.data.data), filter_null(maximum)(geo_cube.data.data))
-    texture = map(x -> color_value(x, color_scale), geo_cube.data.data[1:length(longitudes), length(latitudes):-1:1]')
-    mesh = Sphere(Point3f(0), 1.8) |> x -> Tesselation(x, 128) |> uv_mesh
+    fig = Figure(backgroundcolor=:black, textcolor=:white)
+    ax = fig[1, 1] = LScene(fig[1, 1], show_axis=false)
+    cb = Colorbar(fig[1, 2])
 
-    set_theme!(backgroundcolor=:black)
-    scene = Scene(show_axis=false)
+    non_spatial_cube_axes = []
+    for (i, ax) in enumerate(cell_cube.data.axes)
+        name(ax) in [:q2di_i, :q2di_j, :q2di_n] && continue
+
+        entry = Dict(
+            :slider => (
+                label=ax |> name |> String,
+                range=1:length(ax),
+                format=x -> "$(ax[x])"
+            ),
+            :dim => ax
+        )
+        push!(non_spatial_cube_axes, entry)
+    end
+
+    if length(non_spatial_cube_axes) > 0
+        slider_grid = SliderGrid(fig[2, 1], [x[:slider] for x in non_spatial_cube_axes]...)
+        slider_observables = [s.value for s in slider_grid.sliders]
+
+        texture = lift(slider_observables...) do slider_values...
+            d = Dict()
+            for (ax, val) in zip(non_spatial_cube_axes, slider_values)
+                d[name(ax[:dim])] = val
+            end
+            d = NamedTuple(d)
+            filtered_cell_cube = getindex(cell_cube; d...)
+
+            geo_cube = GeoCube(filtered_cell_cube; longitudes, latitudes, cell_ids_mat)
+            color_scale = ColorScale(ColorSchemes.viridis, filter_null(minimum)(geo_cube.data.data) |> floor |> Int, filter_null(maximum)(geo_cube.data.data) |> ceil |> Int)
+            cb.limits[] = (color_scale.min_value, color_scale.max_value)
+            texture = map(x -> color_value(x, color_scale), geo_cube.data.data[1:length(longitudes), length(latitudes):-1:1]')
+        end
+        texture
+    else
+        geo_cube = GeoCube(cell_cube; longitudes, latitudes, cell_ids_mat)
+        color_scale = ColorScale(ColorSchemes.viridis, filter_null(minimum)(geo_cube.data.data), filter_null(maximum)(geo_cube.data.data))
+        texture = map(x -> color_value(x, color_scale), geo_cube.data.data[1:length(longitudes), length(latitudes):-1:1]')
+        texture
+    end
+
+    mesh = Sphere(Point3f(0), 1) |> x -> Tesselation(x, 128) |> uv_mesh
     mesh!(
-        scene,
+        ax,
         mesh,
         color=texture,
         interpolate=true,
-        shading=NoShading
+        shading=NoShading,
     )
-    # point camera to center
-    center!(scene)
-    cam3d_cad!(scene; fixed_axis=true)
-    return scene
+    center!(ax.scene)
+    cam3d_cad!(ax.scene; fixed_axis=true)
+    return fig
 end
