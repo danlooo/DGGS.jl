@@ -25,4 +25,21 @@ using Test
 
     scene1 = plot(cell_cube)
     scene2 = plot(dggs)
+
+    using YAXArrays
+    lon_range = -180:180
+    lat_range = -90:90
+    time_range = 1:12
+    level = 6
+    bands = 1:3
+    data = [band * exp(cosd(lon)) + time * (lat / 90) for lat in lat_range, lon in lon_range, time in time_range, band in bands]
+    axlist = (
+        Dim{:lat}(lat_range),
+        Dim{:lon}(lon_range),
+        Dim{:time}(time_range),
+        Dim{:band}(bands)
+    )
+    dggs2 = YAXArray(axlist, data) |> GeoCube |> x -> CellCube(x, level) |> GridSystem
+    @test dggs2[6][band=1, time=2] |> typeof == CellCube
+    @test dggs2[6][band=2, time=2].data.axes |> length == 3
 end

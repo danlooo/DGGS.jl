@@ -35,5 +35,6 @@ export
     GridSystem,
     ColorScale,
     query,
-    plot
+    plot,
+    At
 end
