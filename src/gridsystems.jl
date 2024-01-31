@@ -57,36 +57,34 @@ function Base.show(io::IO, ::MIME"text/plain", dggs::GridSystem)
     Base.show(io, "text/plain", dggs.data |> values |> first |> x -> x.data.axes)
 end
 
-function Base.write(path::String, dggs::GridSystem; kwargs...)
+function Base.write(path::String, dggs::GridSystem; attrs::Dict{Symbol,T}=Dict{Symbol,Any}(), kwargs...) where {T<:Any}
     mkdir(path)
-    attrs = Dict(
-        :Conventions => "Attribute Convention for Data Discovery 1-3, CF Conventions v1.8, DGGS data spec",
-        :keywords => ["DGGS", "MODIS", "NDVI"],
-        :title => "MODIS NDVI",
-        :summary => "MODIS NDVI sattelite images 2001",
-        :grid => Dict(
-            :coordinate_conversions => [
-                :version => 7.8,
-                :address_type => "Q2DI",
-                :type => "dggrid"
-            ],
-            :aperture => 4,
-            :grid_system => Dict(
-                :rotation_lon => 11.25,
-                :polyhedron => "icosahedron",
-                :name => "ISEA4H",
-                :radius => 6371007.180918475,
-                :polygon => "hexagon",
-                :rotation_lat => 58.2825,
-                :projection => "+isea",
-                :rotation_azimuth => 0
-            ),
-            :resolutions => [
-                Dict(:name => "spatial", :resolution => 4, :dimensions => ["q2di_i", "j", "n"]),
-                Dict(:name => "temporal", :resolution => 1, :dimensions => ["Time"])
-            ]
-        )
+
+    attrs = Dict{Symbol,Any}(attrs)
+    attrs[:Conventions] = "Attribute Convention for Data Discovery 1-3, CF Conventions v1.8, DGGS data spec"
+    attrs[:grid] = Dict(
+        :coordinate_conversions => [
+            :version => 7.8,
+            :address_type => "Q2DI",
+            :type => "dggrid"
+        ],
+        :aperture => 4,
+        :grid_system => Dict(
+            :rotation_lon => 11.25,
+            :polyhedron => "icosahedron",
+            :name => "ISEA4H",
+            :radius => 6371007.180918475,
+            :polygon => "hexagon",
+            :rotation_lat => 58.2825,
+            :projection => "+isea",
+            :rotation_azimuth => 0
+        ),
+        :resolutions => [
+            Dict(:name => "spatial", :resolution => 4, :dimensions => ["q2di_i", "q2di_j", "q2di_n"]),
+            Dict(:name => "temporal", :resolution => 1, :dimensions => ["Time"])
+        ]
     )
+
     JSON3.write("$path/.zattrs", attrs)
     write("$path/.zgroup", "{\"zarr_format\":2}")
     for cell_cube in values(dggs.data)
