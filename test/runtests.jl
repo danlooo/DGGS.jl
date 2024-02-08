@@ -42,4 +42,8 @@ using Test
     dggs2 = YAXArray(axlist, data) |> GeoCube |> x -> CellCube(x, level) |> GridSystem
     @test dggs2[6][band=1, time=2] |> typeof == CellCube
     @test dggs2[6][band=2, time=2].data.axes |> length == 3
+
+    @test transform_points(-180:180, -90:90, 7) |> size == (361, 181)
+    @test transform_points(-180, -90, 7) |> size == (1, 1)
+    @test transform_points([(-180, -90), (0, 0), (180, 90)], 7) |> length == 3
 end
