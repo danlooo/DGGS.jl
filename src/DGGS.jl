@@ -36,5 +36,6 @@ export
     ColorScale,
     query,
     plot,
-    At
+    At,
+    BBox
 end

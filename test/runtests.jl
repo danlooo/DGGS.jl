@@ -23,9 +23,6 @@ using Test
     dggs2 = GridSystem(dggs_path)
     rm(dggs_path, recursive=true)
 
-    scene1 = plot(cell_cube)
-    scene2 = plot(dggs)
-
     using YAXArrays
     lon_range = -180:180
     lat_range = -90:90
@@ -46,4 +43,12 @@ using Test
     @test transform_points(-180:180, -90:90, 7) |> size == (361, 181)
     @test transform_points(-180, -90, 7) |> size == (1, 1)
     @test transform_points([(-180, -90), (0, 0), (180, 90)], 7) |> length == 3
+
+    plot(cell_cube; resolution=100)
+    plot(cell_cube; resolution=100)
+    plot(dggs; resolution=100)
+    plot(dggs2; resolution=100)
+    plot(cell_cube, BBox(10, 20, 10, 20); resolution=100)
+    plot(dggs, BBox(10, 20, 10, 20); resolution=100)
+    plot(dggs2, BBox(10, 20, 10, 20); resolution=100)
 end

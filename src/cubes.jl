@@ -194,3 +194,58 @@ function plot(cell_cube::CellCube; resolution::Int64=800)
     cam3d_cad!(ax.scene; fixed_axis=true)
     return fig
 end
+
+function plot(cell_cube::CellCube, bbox::HyperRectangle{2,Float32}; resolution::Int64=800)
+    min_x, min_y = bbox.origin
+    max_x = min_x + bbox.widths[1]
+    max_y = min_y + bbox.widths[2]
+    longitudes = range(min_x, max_x; length=resolution)
+    latitudes = range(min_y, max_y; length=resolution)
+    cell_ids_mat = transform_points(longitudes, latitudes, cell_cube.level)
+    geo_cube = GeoCube(cell_cube; longitudes, latitudes, cell_ids_mat)
+
+    fig = Figure(backgroundcolor=:black, textcolor=:white)
+
+    non_spatial_cube_axes = []
+    for (i, ax) in enumerate(cell_cube.data.axes)
+        name(ax) in [:q2di_i, :q2di_j, :q2di_n] && continue
+
+        entry = Dict(
+            :slider => (
+                label=ax |> name |> String,
+                range=1:length(ax),
+                format=x -> "$(ax[x])"
+            ),
+            :dim => ax
+        )
+        push!(non_spatial_cube_axes, entry)
+    end
+
+    if length(non_spatial_cube_axes) > 0
+        slider_grid = SliderGrid(fig[2, 1], [x[:slider] for x in non_spatial_cube_axes]...)
+        slider_observables = [s.value for s in slider_grid.sliders]
+
+        geo_cube = lift(slider_observables...) do slider_values...
+            d = Dict()
+            for (ax, val) in zip(non_spatial_cube_axes, slider_values)
+                d[name(ax[:dim])] = val
+            end
+            filtered_cell_cube = getindex(cell_cube; NamedTuple(d)...)
+            geo_cube = GeoCube(filtered_cell_cube; longitudes, latitudes, cell_ids_mat)
+            geo_cube
+        end
+        geo_cube
+    else
+        geo_cube = Observable(GeoCube(cell_cube; longitudes, latitudes, cell_ids_mat))
+    end
+
+    min_value = filter_null(minimum)(geo_cube[].data.data) |> floor |> Int
+    max_value = filter_null(maximum)(geo_cube[].data.data) |> ceil |> Int
+    color_scale = ColorScale(ColorSchemes.viridis, min_value, max_value)
+    cb = Colorbar(fig[1, 2])
+    cb.limits[] = (color_scale.min_value, color_scale.max_value)
+
+    texture = @lift $geo_cube.data |> DimArray
+    heatmap(fig[1, 1], texture, axis=(backgroundcolor=RGBA{Float64}(0.15, 0.15, 0.15, 1), aspect=1))
+    return fig
+end
