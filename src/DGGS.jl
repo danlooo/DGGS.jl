@@ -20,6 +20,7 @@ using GLMakie
 using GeometryBasics
 using OrderedCollections
 using ImageCore
+using LinearAlgebra
 
 # must be sorted by dependency
 include("types.jl")

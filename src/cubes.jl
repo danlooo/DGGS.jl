@@ -132,67 +132,113 @@ function color_value(value, color_scale::ColorScale; null_color=RGBA{Float64}(0.
 end
 
 function plot(cell_cube::CellCube; resolution::Int64=800)
-    # cell_cube.data.axes .|> name == (:q2di_i, :q2di_j, :q2di_n) || error("cell_cube has Too many dimensions for plotting. Please consider function query to filter.")
-
+    # texture for plot in equirectangular geographic lat/lon projection
     longitudes = range(-180, 180, length=resolution * 2)
     latitudes = range(-90, 90, length=resolution)
     cell_ids_mat = transform_points(longitudes, latitudes, cell_cube.level)
 
-    fig = Figure(backgroundcolor=:black, textcolor=:white)
-    ax = fig[1, 1] = LScene(fig[1, 1], show_axis=false)
-    cb = Colorbar(fig[1, 2])
+    with_theme(theme_black()) do
+        fig = Figure()
+        ax = fig[1, 1] = LScene(fig[1, 1], show_axis=false)
+        side_panel = fig[1, 2] = GridLayout()
+        cb = Colorbar(side_panel[1, 1])
 
-    non_spatial_cube_axes = []
-    for (i, ax) in enumerate(cell_cube.data.axes)
-        name(ax) in [:q2di_i, :q2di_j, :q2di_n] && continue
+        non_spatial_cube_axes = []
+        for (i, ax) in enumerate(cell_cube.data.axes)
+            name(ax) in [:q2di_i, :q2di_j, :q2di_n] && continue
 
-        entry = Dict(
-            :slider => (
-                label=ax |> name |> String,
-                range=1:length(ax),
-                format=x -> "$(ax[x])"
-            ),
-            :dim => ax
-        )
-        push!(non_spatial_cube_axes, entry)
-    end
-
-    if length(non_spatial_cube_axes) > 0
-        slider_grid = SliderGrid(fig[2, 1], [x[:slider] for x in non_spatial_cube_axes]...)
-        slider_observables = [s.value for s in slider_grid.sliders]
-
-        texture = lift(slider_observables...) do slider_values...
-            d = Dict()
-            for (ax, val) in zip(non_spatial_cube_axes, slider_values)
-                d[name(ax[:dim])] = val
-            end
-            d = NamedTuple(d)
-            filtered_cell_cube = getindex(cell_cube; d...)
-
-            geo_cube = GeoCube(filtered_cell_cube; longitudes, latitudes, cell_ids_mat)
-            color_scale = ColorScale(ColorSchemes.viridis, filter_null(minimum)(geo_cube.data.data) |> floor |> Int, filter_null(maximum)(geo_cube.data.data) |> ceil |> Int)
-            cb.limits[] = (color_scale.min_value, color_scale.max_value)
-            texture = map(x -> color_value(x, color_scale), geo_cube.data.data[1:length(longitudes), length(latitudes):-1:1]')
+            entry = Dict(
+                :slider => (
+                    label=ax |> name |> String,
+                    range=1:length(ax),
+                    format=x -> "$(ax[x])",
+                    color_inactive=RGBA{Float64}(0.15, 0.15, 0.15, 1),
+                    color_active=:white,
+                    color_active_dimmed=:white
+                ),
+                :dim => ax
+            )
+            push!(non_spatial_cube_axes, entry)
         end
-        texture
-    else
-        geo_cube = GeoCube(cell_cube; longitudes, latitudes, cell_ids_mat)
-        color_scale = ColorScale(ColorSchemes.viridis, filter_null(minimum)(geo_cube.data.data), filter_null(maximum)(geo_cube.data.data))
-        texture = map(x -> color_value(x, color_scale), geo_cube.data.data[1:length(longitudes), length(latitudes):-1:1]')
-        texture
-    end
 
-    mesh = Sphere(Point3f(0), 1) |> x -> Tesselation(x, 128) |> uv_mesh
-    mesh!(
-        ax,
-        mesh,
-        color=texture,
-        interpolate=true,
-        shading=NoShading,
-    )
-    center!(ax.scene)
-    cam3d_cad!(ax.scene; fixed_axis=true)
-    return fig
+        if length(non_spatial_cube_axes) > 0
+            slider_grid = SliderGrid(fig[2, 1], [x[:slider] for x in non_spatial_cube_axes]...)
+            slider_observables = [s.value for s in slider_grid.sliders]
+
+            texture = lift(slider_observables...) do slider_values...
+                d = Dict()
+                for (ax, val) in zip(non_spatial_cube_axes, slider_values)
+                    d[name(ax[:dim])] = val
+                end
+                d = NamedTuple(d)
+                filtered_cell_cube = getindex(cell_cube; d...)
+
+                geo_cube = GeoCube(filtered_cell_cube; longitudes, latitudes, cell_ids_mat)
+                color_scale = ColorScale(ColorSchemes.viridis, filter_null(minimum)(geo_cube.data.data) |> floor |> Int, filter_null(maximum)(geo_cube.data.data) |> ceil |> Int)
+                cb.limits[] = (color_scale.min_value, color_scale.max_value)
+                texture = map(x -> color_value(x, color_scale), geo_cube.data.data[1:length(longitudes), length(latitudes):-1:1]')
+            end
+            texture
+        else
+            geo_cube = GeoCube(cell_cube; longitudes, latitudes, cell_ids_mat)
+            color_scale = ColorScale(ColorSchemes.viridis, filter_null(minimum)(geo_cube.data.data), filter_null(maximum)(geo_cube.data.data))
+            texture = map(x -> color_value(x, color_scale), geo_cube.data.data[1:length(longitudes), length(latitudes):-1:1]')
+            texture
+        end
+
+        mesh = Sphere(Point3f(0), 1) |> x -> Tesselation(x, 128) |> uv_mesh
+        mesh!(
+            ax,
+            mesh,
+            color=texture,
+            interpolate=true,
+            shading=NoShading,
+        )
+        center!(ax.scene)
+
+        cam = Camera3D(
+            ax.scene,
+            projectiontype=Makie.Perspective,
+            cad=true, # prevent dithering
+            fixed_axis=true,
+            lookat=[0, 0, 0],
+            upvector=[0, 0, 1],
+
+            # disable translation
+            forward_key=Keyboard.unknown,
+            backward_key=Keyboard.unknown,
+            up_key=Keyboard.unknown,
+            down_key=Keyboard.unknown,
+            left_key=Keyboard.unknown,
+            right_key=Keyboard.unknown,
+            translation_button=Mouse.none,
+            pan_left_key=Keyboard.left,
+            pan_right_key=Keyboard.right,
+            tilt_up_key=Keyboard.up,
+            tilt_down_key=Keyboard.down
+        )
+
+        north_up_btn = Button(side_panel[2, 1]; label="N↑")
+        on(north_up_btn.clicks) do c
+            update_cam!(ax.scene, cam.eyeposition[], cam.lookat[], (0.0, 0.0, 1.0))
+        end
+
+        # prevent view inside of earth    
+        on(cam.eyeposition) do eyeposition
+            dist_to_earth_center = norm(cam.eyeposition[])
+            min_zoom = 1.1
+            if dist_to_earth_center < min_zoom
+                zoom!(ax.scene, min_zoom)
+            end
+        end
+
+
+        # north_up_btn.labelcolor = :red
+        north_up_btn.buttoncolor = :black
+        north_up_btn.buttoncolor_hover = :black
+        north_up_btn.labelcolor_hover = :white
+        fig
+    end
 end
 
 function plot(cell_cube::CellCube, bbox::HyperRectangle{2,Float32}; resolution::Int64=800)
@@ -204,48 +250,53 @@ function plot(cell_cube::CellCube, bbox::HyperRectangle{2,Float32}; resolution::
     cell_ids_mat = transform_points(longitudes, latitudes, cell_cube.level)
     geo_cube = GeoCube(cell_cube; longitudes, latitudes, cell_ids_mat)
 
-    fig = Figure(backgroundcolor=:black, textcolor=:white)
 
-    non_spatial_cube_axes = []
-    for (i, ax) in enumerate(cell_cube.data.axes)
-        name(ax) in [:q2di_i, :q2di_j, :q2di_n] && continue
+    with_theme(theme_black()) do
+        fig = Figure()
+        non_spatial_cube_axes = []
+        for (i, ax) in enumerate(cell_cube.data.axes)
+            name(ax) in [:q2di_i, :q2di_j, :q2di_n] && continue
 
-        entry = Dict(
-            :slider => (
-                label=ax |> name |> String,
-                range=1:length(ax),
-                format=x -> "$(ax[x])"
-            ),
-            :dim => ax
-        )
-        push!(non_spatial_cube_axes, entry)
-    end
-
-    if length(non_spatial_cube_axes) > 0
-        slider_grid = SliderGrid(fig[2, 1], [x[:slider] for x in non_spatial_cube_axes]...)
-        slider_observables = [s.value for s in slider_grid.sliders]
-
-        geo_cube = lift(slider_observables...) do slider_values...
-            d = Dict()
-            for (ax, val) in zip(non_spatial_cube_axes, slider_values)
-                d[name(ax[:dim])] = val
-            end
-            filtered_cell_cube = getindex(cell_cube; NamedTuple(d)...)
-            geo_cube = GeoCube(filtered_cell_cube; longitudes, latitudes, cell_ids_mat)
-            geo_cube
+            entry = Dict(
+                :slider => (
+                    label=ax |> name |> String,
+                    range=1:length(ax),
+                    format=x -> "$(ax[x])",
+                    color_inactive=RGBA{Float64}(0.15, 0.15, 0.15, 1),
+                    color_active=:white,
+                    color_active_dimmed=:white
+                ),
+                :dim => ax
+            )
+            push!(non_spatial_cube_axes, entry)
         end
-        geo_cube
-    else
-        geo_cube = Observable(GeoCube(cell_cube; longitudes, latitudes, cell_ids_mat))
+
+        if length(non_spatial_cube_axes) > 0
+            slider_grid = SliderGrid(fig[2, 1], [x[:slider] for x in non_spatial_cube_axes]...)
+            slider_observables = [s.value for s in slider_grid.sliders]
+
+            geo_cube = lift(slider_observables...) do slider_values...
+                d = Dict()
+                for (ax, val) in zip(non_spatial_cube_axes, slider_values)
+                    d[name(ax[:dim])] = val
+                end
+                filtered_cell_cube = getindex(cell_cube; NamedTuple(d)...)
+                geo_cube = GeoCube(filtered_cell_cube; longitudes, latitudes, cell_ids_mat)
+                geo_cube
+            end
+            geo_cube
+        else
+            geo_cube = Observable(GeoCube(cell_cube; longitudes, latitudes, cell_ids_mat))
+        end
+
+        min_value = filter_null(minimum)(geo_cube[].data.data) |> floor |> Int
+        max_value = filter_null(maximum)(geo_cube[].data.data) |> ceil |> Int
+        color_scale = ColorScale(ColorSchemes.viridis, min_value, max_value)
+        cb = Colorbar(fig[1, 2])
+        cb.limits[] = (color_scale.min_value, color_scale.max_value)
+
+        texture = @lift $geo_cube.data |> DimArray
+        heatmap(fig[1, 1], texture, axis=(backgroundcolor=RGBA{Float64}(0.15, 0.15, 0.15, 1), aspect=1))
+        fig
     end
-
-    min_value = filter_null(minimum)(geo_cube[].data.data) |> floor |> Int
-    max_value = filter_null(maximum)(geo_cube[].data.data) |> ceil |> Int
-    color_scale = ColorScale(ColorSchemes.viridis, min_value, max_value)
-    cb = Colorbar(fig[1, 2])
-    cb.limits[] = (color_scale.min_value, color_scale.max_value)
-
-    texture = @lift $geo_cube.data |> DimArray
-    heatmap(fig[1, 1], texture, axis=(backgroundcolor=RGBA{Float64}(0.15, 0.15, 0.15, 1), aspect=1))
-    return fig
 end
