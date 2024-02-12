@@ -2,7 +2,7 @@
 
 julia_version = "1.10.0"
 manifest_format = "2.0"
-project_hash = "ea9a0bbd1ac1de748c13f71e77265526aaab437e"
+project_hash = "230838d06ed74449fa21b77df3ba7f0e7df1e519"
 
 [[deps.AWS]]
 deps = ["Base64", "Compat", "Dates", "Downloads", "GitHub", "HTTP", "IniFile", "JSON", "MbedTLS", "Mocking", "OrderedCollections", "Random", "SHA", "Sockets", "URIs", "UUIDs", "XMLDict"]
@@ -1788,11 +1788,6 @@ version = "0.1.1"
 [[deps.Test]]
 deps = ["InteractiveUtils", "Logging", "Random", "Serialization"]
 uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-
-[[deps.ThreadSafeDicts]]
-git-tree-sha1 = "53948619aafc920ab39e89942d1b6dfb2ae36532"
-uuid = "4239201d-c60e-5e0a-9702-85d713665ba7"
-version = "0.1.4"
 
 [[deps.ThreadedIterables]]
 git-tree-sha1 = "f5c6ac9a5f20cbd5ad2762f8372bfe980139c483"

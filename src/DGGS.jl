@@ -12,7 +12,6 @@ using FileIO
 using IterTools
 using ProgressMeter
 using Infiltrator
-using ThreadSafeDicts
 using ThreadedIterables
 using Statistics
 using JSON3
