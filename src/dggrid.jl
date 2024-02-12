@@ -20,38 +20,6 @@ function call_dggrid(meta::Dict)
 end
 
 # single threaded version
-function _transform_points(lon_range, lat_range, level)
-    points_path = tempname()
-    points_string = ""
-    # arrange points to match with pixels in png image
-    for lon in lon_range
-        for lat in lat_range
-            points_string *= "$(lon),$(lat)\n"
-        end
-    end
-    write(points_path, points_string)
-
-    out_points_path = tempname()
-
-    meta = Dict(
-        "dggrid_operation" => "TRANSFORM_POINTS",
-        "dggs_type" => "ISEA4H",
-        "dggs_res_spec" => level - 1,
-        "input_file_name" => points_path,
-        "input_address_type" => "GEO",
-        "input_delimiter" => "\",\"", "output_file_name" => out_points_path,
-        "output_address_type" => "Q2DI",
-        "output_delimiter" => "\",\"",
-    )
-
-    call_dggrid(meta)
-    cell_ids = CSV.read(out_points_path, DataFrame; header=["q2di_n", "q2di_i", "q2di_j"])
-    rm(points_path)
-    rm(out_points_path)
-    cell_ids_q2di = map((n, i, j) -> Q2DI(n, i, j), cell_ids.q2di_n, cell_ids.q2di_i, cell_ids.q2di_j) |>
-                    x -> reshape(x, length(lat_range), length(lon_range))
-    return cell_ids_q2di
-end
 
 "Transforms Vector of (lon,lat) coords to DGGRID indices"
 function _transform_points(coords::AbstractVector{Tuple{T,T}}, level) where {T<:Real}
@@ -82,6 +50,10 @@ function _transform_points(coords::AbstractVector{Tuple{T,T}}, level) where {T<:
     rm(out_points_path)
     cell_ids_q2di = map((n, i, j) -> Q2DI(n, i, j), cell_ids.q2di_n, cell_ids.q2di_i, cell_ids.q2di_j)
     return cell_ids_q2di
+end
+
+function _transform_points(lon_range, lat_range, level)
+    product(lon_range, lat_range) |> collect |> vec |> sort |> x -> _transform_points(x, level) |> x -> reshape(x, length(lat_range), length(lon_range))
 end
 
 function _transform_points(x, y, z, level; tile_length=256)
