@@ -56,17 +56,6 @@ function _transform_points(lon_range, lat_range, level)
     product(lon_range, lat_range) |> collect |> vec |> sort |> x -> _transform_points(x, level) |> x -> reshape(x, length(lat_range), length(lon_range))
 end
 
-function _transform_points(x, y, z, level; tile_length=256)
-    # @see https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
-    # @see https://help.openstreetmap.org/questions/747/given-a-latlon-how-do-i-find-the-precise-position-on-the-tilew
-
-    longitudes = tile2lng.(range(x, x + 1; length=tile_length), z)
-    latitudes = tile2lat.(range(y, y + 1; length=tile_length), z)
-    cell_ids = _transform_points(longitudes, latitudes, level)
-    return cell_ids
-end
-
-
 function transform_points(coords::Vector{Tuple{T,T}}, level; show_progress=true, chunk_size_points=2048) where {T<:Real}
     chunks = Iterators.partition(coords, chunk_size_points) |> collect
 
