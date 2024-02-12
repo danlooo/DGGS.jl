@@ -49,11 +49,18 @@ Dim{:q2di_n} Sampled{Int64} 0:11 ForwardOrdered Regular Points
 
 Write DGGS data to disk and load them back:
 
-```
+```julia
 write("example.dggs", dggs)
 dggs2 = GridSystem("example.dggs")
 ```
-The data can be visualized using `plot(dggs)`.
+
+Visualize:
+
+```julia
+using GLMakie
+plot(dggs)
+plot(dggs, BBox(0,20,40,60))
+```
 
 ## Development
 
