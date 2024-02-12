@@ -1,7 +1,6 @@
 using DGGS
 using Test
 
-
 @testset verbose = true "DGGS.jl" begin
     lon_range = -180:180
     lat_range = -90:90
@@ -29,7 +28,8 @@ using Test
     time_range = 1:12
     level = 6
     bands = 1:3
-    data = [band * exp(cosd(lon)) + time * (lat / 90) for lat in lat_range, lon in lon_range, time in time_range, band in bands]
+    data = [band * exp(cosd(lon)) + time * (lat / 90)
+            for lat in lat_range, lon in lon_range, time in time_range, band in bands]
     axlist = (
         Dim{:lat}(lat_range),
         Dim{:lon}(lon_range),
@@ -44,6 +44,7 @@ using Test
     @test transform_points(-180, -90, 7) |> size == (1, 1)
     @test transform_points([(-180, -90), (0, 0), (180, 90)], 7) |> length == 3
 
+    using GLMakie
     plot(cell_cube; resolution=100)
     plot(cell_cube; resolution=100)
     plot(dggs; resolution=100)

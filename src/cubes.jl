@@ -131,7 +131,7 @@ function color_value(value, color_scale::ColorScale; null_color=RGBA{Float64}(0.
     return color_scale.schema[value] |> RGBA
 end
 
-function plot(cell_cube::CellCube; resolution::Int64=800)
+function Makie.plot(cell_cube::CellCube; resolution::Int64=800)
     # texture for plot in equirectangular geographic lat/lon projection
     longitudes = range(-180, 180, length=resolution * 2)
     latitudes = range(-90, 90, length=resolution)
@@ -192,7 +192,7 @@ function plot(cell_cube::CellCube; resolution::Int64=800)
             mesh,
             color=texture,
             interpolate=true,
-            shading=NoShading,
+            shading=Makie.NoShading,
         )
         center!(ax.scene)
 
@@ -241,7 +241,7 @@ function plot(cell_cube::CellCube; resolution::Int64=800)
     end
 end
 
-function plot(cell_cube::CellCube, bbox::HyperRectangle{2,Float32}; resolution::Int64=800)
+function Makie.plot(cell_cube::CellCube, bbox::HyperRectangle{2,Float32}; resolution::Int64=800)
     min_x, min_y = bbox.origin
     max_x = min_x + bbox.widths[1]
     max_y = min_y + bbox.widths[2]

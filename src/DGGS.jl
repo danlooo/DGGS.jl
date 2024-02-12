@@ -16,7 +16,7 @@ using ThreadSafeDicts
 using ThreadedIterables
 using Statistics
 using JSON3
-using GLMakie
+using Makie
 using GeometryBasics
 using OrderedCollections
 using ImageCore
@@ -36,7 +36,6 @@ export
     GridSystem,
     ColorScale,
     query,
-    plot,
     At,
     BBox
 end
