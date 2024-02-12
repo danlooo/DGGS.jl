@@ -126,8 +126,6 @@ end
 chunk_size_points: number of points (e.g. pixels) to transform in one block (task of a thread)
 """
 function transform_points(lon_range, lat_range, level; show_progress=true, chunk_size_points=2048)
-    Threads.nthreads() == 1 && @warn "Multithreading is not active. Please consider to start julia with --threads auto"
-
     chunk_size_lon = chunk_size_points / length(lat_range) |> ceil |> Int
     lon_chunks = Iterators.partition(lon_range, chunk_size_lon) |> collect
 
