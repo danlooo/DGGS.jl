@@ -20,6 +20,35 @@ function call_dggrid(meta::Dict)
 end
 
 # single threaded version
+function _transform_points(coords::AbstractVector{Q2DI}, level)
+    points_path = tempname()
+    points_string = ""
+    for c in coords
+        points_string *= "$(c.n), $(c.i), $(c.j)\n"
+    end
+    write(points_path, points_string)
+
+    out_points_path = tempname()
+
+    meta = Dict(
+        "dggrid_operation" => "TRANSFORM_POINTS",
+        "dggs_type" => "ISEA4H",
+        "dggs_res_spec" => level - 1,
+        "input_file_name" => points_path,
+        "input_address_type" => "Q2DI",
+        "input_delimiter" => "\",\"",
+        "output_file_name" => out_points_path,
+        "output_address_type" => "GEO",
+        "output_delimiter" => "\",\"",
+    )
+
+    call_dggrid(meta)
+    geo_coords = CSV.read(out_points_path, DataFrame; header=["lon", "lat"])
+    geo_coords = map((lon, lat) -> (lon, lat), geo_coords.lon, geo_coords.lat)
+    rm(points_path)
+    rm(out_points_path)
+    return geo_coords
+end
 
 "Transforms Vector of (lon,lat) coords to DGGRID indices"
 function _transform_points(coords::AbstractVector{Tuple{T,T}}, level) where {T<:Real}
@@ -39,7 +68,8 @@ function _transform_points(coords::AbstractVector{Tuple{T,T}}, level) where {T<:
         "dggs_res_spec" => level - 1,
         "input_file_name" => points_path,
         "input_address_type" => "GEO",
-        "input_delimiter" => "\",\"", "output_file_name" => out_points_path,
+        "input_delimiter" => "\",\"",
+        "output_file_name" => out_points_path,
         "output_address_type" => "Q2DI",
         "output_delimiter" => "\",\"",
     )
@@ -82,6 +112,31 @@ function transform_points(coords::Vector{Tuple{T,T}}, level; show_progress=true,
     return result
 end
 
+function transform_points(coords::Vector{Q2DI}, level; show_progress=true, chunk_size_points=2048) where {T<:Real}
+    chunks = Iterators.partition(coords, chunk_size_points) |> collect
+
+    if length(chunks) == 1
+        return _transform_points(coords, level)
+    end
+
+    results = nothing
+    if show_progress
+        p = Progress(length(chunks))
+        results = @threaded map(chunks) do coords
+            res = _transform_points(coords, level)
+            next!(p)
+            res
+        end
+        finish!(p)
+    else
+        results = @threaded map(chunks) do coords
+            _transform_points(coords, level)
+        end
+    end
+
+    result = vcat(results...)
+    return result
+end
 
 """
 chunk_size_points: number of points (e.g. pixels) to transform in one block (task of a thread)
@@ -114,5 +169,3 @@ function transform_points(lon_range, lat_range, level; show_progress=true, chunk
     cell_ids_mat = hcat(cell_ids_mats...) |> permutedims
     return cell_ids_mat
 end
-
-
