@@ -131,7 +131,7 @@ function color_value(value, color_scale::ColorScale; null_color=RGBA{Float64}(0.
     return color_scale.schema[value] |> RGBA
 end
 
-function Makie.plot(cell_cube::CellCube; resolution::Int64=800)
+function plot_geo(cell_cube::CellCube, resolution::Int64)
     # texture for plot in equirectangular geographic lat/lon projection
     longitudes = range(-180, 180, length=resolution * 2)
     latitudes = range(-90, 90, length=resolution)
@@ -238,6 +238,21 @@ function Makie.plot(cell_cube::CellCube; resolution::Int64=800)
         north_up_btn.buttoncolor_hover = :black
         north_up_btn.labelcolor_hover = :white
         fig
+    end
+end
+
+function plot_native(cell_cube::CellCube, resolution::Int64)
+    cell_cube
+
+end
+
+function Makie.plot(cell_cube::CellCube; resolution::Int64=800, type=:geo)
+    if type == :geo
+        plot_geo(cell_cube, resolution)
+    elseif type == :native
+        plot_native(cell_cube, resolution)
+    else
+        error("Type $type not available.")
     end
 end
 
