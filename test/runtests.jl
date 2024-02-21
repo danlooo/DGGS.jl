@@ -53,7 +53,7 @@ using Test
 
     using GLMakie
     plot(cell_cube; resolution=100)
-    plot(cell_cube; resolution=100)
+    plot(cell_cube; resolution=100, type=:native)
     plot(dggs; resolution=100)
     plot(dggs2; resolution=100)
     plot(cell_cube, BBox(10, 20, 10, 20); resolution=100)

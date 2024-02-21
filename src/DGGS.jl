@@ -20,6 +20,9 @@ using GeometryBasics
 using OrderedCollections
 using ImageCore
 using LinearAlgebra
+using FileIO
+using MeshIO
+using Pkg.Artifacts
 
 # must be sorted by dependency
 include("types.jl")

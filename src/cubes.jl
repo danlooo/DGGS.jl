@@ -131,6 +131,27 @@ function color_value(value, color_scale::ColorScale; null_color=RGBA{Float64}(0.
     return color_scale.schema[value] |> RGBA
 end
 
+function get_non_spatial_cube_axes(cell_cube)
+    non_spatial_cube_axes = []
+    for (i, ax) in enumerate(cell_cube.data.axes)
+        name(ax) in [:q2di_i, :q2di_j, :q2di_n] && continue
+
+        entry = Dict(
+            :slider => (
+                label=ax |> name |> String,
+                range=1:length(ax),
+                format=x -> "$(ax[x])",
+                color_inactive=RGBA{Float64}(0.15, 0.15, 0.15, 1),
+                color_active=:white,
+                color_active_dimmed=:white
+            ),
+            :dim => ax
+        )
+        push!(non_spatial_cube_axes, entry)
+    end
+    non_spatial_cube_axes
+end
+
 function plot_geo(cell_cube::CellCube, resolution::Int64)
     # texture for plot in equirectangular geographic lat/lon projection
     longitudes = range(-180, 180, length=resolution * 2)
@@ -143,23 +164,7 @@ function plot_geo(cell_cube::CellCube, resolution::Int64)
         side_panel = fig[1, 2] = GridLayout()
         cb = Colorbar(side_panel[1, 1])
 
-        non_spatial_cube_axes = []
-        for (i, ax) in enumerate(cell_cube.data.axes)
-            name(ax) in [:q2di_i, :q2di_j, :q2di_n] && continue
-
-            entry = Dict(
-                :slider => (
-                    label=ax |> name |> String,
-                    range=1:length(ax),
-                    format=x -> "$(ax[x])",
-                    color_inactive=RGBA{Float64}(0.15, 0.15, 0.15, 1),
-                    color_active=:white,
-                    color_active_dimmed=:white
-                ),
-                :dim => ax
-            )
-            push!(non_spatial_cube_axes, entry)
-        end
+        non_spatial_cube_axes = get_non_spatial_cube_axes(cell_cube)
 
         if length(non_spatial_cube_axes) > 0
             slider_grid = SliderGrid(fig[2, 1], [x[:slider] for x in non_spatial_cube_axes]...)
@@ -242,8 +247,69 @@ function plot_geo(cell_cube::CellCube, resolution::Int64)
 end
 
 function plot_native(cell_cube::CellCube, resolution::Int64)
-    cell_cube
+    cell_cube = cell_cube[q2di_n=2:11] # ignore 2 vertices at quad 1 and 12
 
+    with_theme(theme_black()) do
+        fig = Figure()
+        ax = fig[1, 1] = LScene(fig[1, 1], show_axis=false)
+        side_panel = fig[1, 2] = GridLayout()
+        cb = Colorbar(side_panel[1, 1])
+        non_spatial_cube_axes = get_non_spatial_cube_axes(cell_cube)
+
+        if length(non_spatial_cube_axes) > 0
+            slider_grid = SliderGrid(fig[2, 1], [x[:slider] for x in non_spatial_cube_axes]...)
+            slider_observables = [s.value for s in slider_grid.sliders]
+
+            texture = lift(slider_observables...) do slider_values...
+                d = Dict()
+                for (ax, val) in zip(non_spatial_cube_axes, slider_values)
+                    d[name(ax[:dim])] = val
+                end
+                d = NamedTuple(d)
+                filtered_cell_cube = getindex(cell_cube; d...)
+
+                color_scale = ColorScale(ColorSchemes.viridis, filter_null(minimum)(filtered_cell_cube.data.data) |> floor |> Int, filter_null(maximum)(filtered_cell_cube.data.data) |> ceil |> Int)
+                cb.limits[] = (color_scale.min_value, color_scale.max_value)
+
+                texture = filtered_cell_cube.data
+                texture = Array(texture)
+                texture = reshape(texture, size(texture)[1], 10 * size(texture)[1])
+                texture = map(x -> color_value(x, color_scale), texture)
+                texture
+            end
+        else
+            texture = Array(cell_cube.data)
+            texture = reshape(texture, size(texture)[1], 10 * size(texture)[1])
+            texture = map(x -> color_value(x, color_scale), texture)
+            texture
+        end
+
+        cam = Camera3D(
+            ax.scene,
+            show_axis=false,
+            projectiontype=Makie.Perspective,
+            clipping_mode=:static,
+            cad=true, # prevent dithering
+            lookat=[0, 0, 0],
+            upvector=[0, 0, 1],
+            fixed_axis=true,
+            # disable translation
+            forward_key=Keyboard.unknown,
+            backward_key=Keyboard.unknown,
+            up_key=Keyboard.unknown,
+            down_key=Keyboard.unknown,
+            left_key=Keyboard.unknown,
+            right_key=Keyboard.unknown,
+            translation_button=Mouse.none,
+            pan_left_key=Keyboard.left,
+            pan_right_key=Keyboard.right,
+            tilt_up_key=Keyboard.up,
+            tilt_down_key=Keyboard.down
+        )
+        msh = load(artifact"isea-obj" * "/isea.obj")
+        mesh!(ax, msh, color=texture, shading=NoShading)
+        fig
+    end
 end
 
 function Makie.plot(cell_cube::CellCube; resolution::Int64=800, type=:geo)
@@ -268,23 +334,7 @@ function Makie.plot(cell_cube::CellCube, bbox::HyperRectangle{2,Float32}; resolu
 
     with_theme(theme_black()) do
         fig = Figure()
-        non_spatial_cube_axes = []
-        for (i, ax) in enumerate(cell_cube.data.axes)
-            name(ax) in [:q2di_i, :q2di_j, :q2di_n] && continue
-
-            entry = Dict(
-                :slider => (
-                    label=ax |> name |> String,
-                    range=1:length(ax),
-                    format=x -> "$(ax[x])",
-                    color_inactive=RGBA{Float64}(0.15, 0.15, 0.15, 1),
-                    color_active=:white,
-                    color_active_dimmed=:white
-                ),
-                :dim => ax
-            )
-            push!(non_spatial_cube_axes, entry)
-        end
+        non_spatial_cube_axes = get_non_spatial_cube_axes(cell_cube)
 
         if length(non_spatial_cube_axes) > 0
             slider_grid = SliderGrid(fig[2, 1], [x[:slider] for x in non_spatial_cube_axes]...)
