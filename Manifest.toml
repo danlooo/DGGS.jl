@@ -2,7 +2,7 @@
 
 julia_version = "1.10.0"
 manifest_format = "2.0"
-project_hash = "230838d06ed74449fa21b77df3ba7f0e7df1e519"
+project_hash = "6b34ef3ad1772210d7ec3a04f4272d4867ed630a"
 
 [[deps.AWS]]
 deps = ["Base64", "Compat", "Dates", "Downloads", "GitHub", "HTTP", "IniFile", "JSON", "MbedTLS", "Mocking", "OrderedCollections", "Random", "SHA", "Sockets", "URIs", "UUIDs", "XMLDict"]
@@ -1122,6 +1122,12 @@ version = "1.1.9"
 deps = ["Artifacts", "Libdl"]
 uuid = "c8ffd9c3-330d-5841-b78e-0817d7145fa1"
 version = "2.28.2+1"
+
+[[deps.MeshIO]]
+deps = ["ColorTypes", "FileIO", "GeometryBasics", "Printf"]
+git-tree-sha1 = "8c26ab950860dfca6767f2bbd90fdf1e8ddc678b"
+uuid = "7269a6da-0436-5bbc-96c2-40638cbb6118"
+version = "0.4.11"
 
 [[deps.Missings]]
 deps = ["DataAPI"]
