@@ -35,11 +35,10 @@ GridSystem(geo_cube::GeoCube, level::Integer) = CellCube(geo_cube, level) |> Gri
 GridSystem(data::AbstractArray{<:Number}, lon_range::AbstractRange{<:Real}, lat_range::AbstractRange{<:Real}, level::Integer) = GeoCube(data, lon_range, lat_range) |> x -> GridSystem(x, level)
 
 function GridSystem(path::String)
-    levels = []
-    for (root, dirs, files) in walkdir(path)
-        levels = dirs |> x -> parse.(Int, x) |> sort
-        break
-    end
+    isdir(path) || error("path '$path' must be a directory")
+
+    levels = filter(isdir, readdir(path, join=true)) .|> basename .|> x -> parse(Int, x)
+    length(levels) > 0 || error("No resolution level detected")
 
     pyramid = Dict{Int,CellCube}()
 
