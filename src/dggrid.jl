@@ -1,3 +1,5 @@
+# Julia - Shell - C++ bridge for DGGRID that implements ISEA grids
+# Documentation of DGGRID: https://webpages.sou.edu/~sahrk/docs/dggridManualV70.pdf
 
 """
 Execute sytem call of DGGRID binary
