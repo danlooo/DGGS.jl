@@ -120,7 +120,10 @@ function Base.write(path::String, dggs::GridSystem; attrs::Dict{Symbol,T}=Dict{S
     for cell_cube in values(dggs.data)
         cell_cube_path = "$path/$(cell_cube.level)"
         savecube(cell_cube.data, cell_cube_path; kwargs...)
+        Zarr.consolidate_metadata(cell_cube_path) # needed for HTTP and S3
     end
+    Zarr.consolidate_metadata(path) # needed for HTTP and S3 
+    return
 end
 
 Base.getindex(dggs::GridSystem, level::Int) = dggs.data[level]
