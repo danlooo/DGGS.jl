@@ -13,8 +13,12 @@ function GeoCube(path::String, lon_dim, lat_dim)
     array = renameaxis!(array, lon_dim => :lon)
     array = renameaxis!(array, lat_dim => :lat)
 
+    # TODO: Check if unit is degrees
     -180 <= minimum(array.lon) < maximum(array.lon) <= 180 || error("Longitudes must be within [-180, 180]")
     -90 <= minimum(array.lat) < maximum(array.lat) <= 90 || error("Longitudes must be within [-180, 180]")
+
+    array.lon.val.order == DimensionalData.Dimensions.LookupArrays.ForwardOrdered() || error("Longitude must be sorted in forward ascending oder")
+    array.lat.val.order == DimensionalData.Dimensions.LookupArrays.ForwardOrdered() || error("Latitude must be sorted in forward ascending oder")
 
     GeoCube(array)
 end
@@ -68,11 +72,15 @@ function CellCube(geo_cube::GeoCube, level, agg_func=filter_null(mean))
     @info "Step 1/2: Transform coordinates"
     cell_ids_mat = transform_points(geo_cube.data.lon, geo_cube.data.lat, level)
 
+    # TODO: what if e.g. lon goes from 0 to 365?
+    # TODO: Reverse inverted geo axes
+
     cell_ids_indexlist = Dict()
     for c in 1:size(cell_ids_mat, 2)
         for r in 1:size(cell_ids_mat, 1)
             cell_id = cell_ids_mat[r, c]
             if cell_id in keys(cell_ids_indexlist)
+                # multiple pixels per cell
                 push!(cell_ids_indexlist[cell_id], CartesianIndex(r, c))
             else
                 cell_ids_indexlist[cell_id] = [CartesianIndex(r, c)]
@@ -107,7 +115,7 @@ end
 
 function GeoCube(cell_cube::CellCube; longitudes=-180:180, latitudes=-90:90, cell_ids_mat=nothing)
     # transforming points is the slowest step
-    # re-load from cache or re-use for all time points
+    # re-use for all time points
     if isnothing(cell_ids_mat)
         cell_ids_mat = transform_points(longitudes, latitudes, cell_cube.level)
     end
