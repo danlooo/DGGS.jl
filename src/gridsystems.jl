@@ -34,20 +34,45 @@ GridSystem(geo_cube::GeoCube, level::Integer) = CellCube(geo_cube, level) |> Gri
 
 GridSystem(data::AbstractArray{<:Number}, lon_range::AbstractRange{<:Real}, lat_range::AbstractRange{<:Real}, level::Integer) = GeoCube(data, lon_range, lat_range) |> x -> GridSystem(x, level)
 
-function GridSystem(path::String)
-    isdir(path) || error("path '$path' must be a directory")
-
-    levels = filter(isdir, readdir(path, join=true)) .|> basename .|> x -> parse(Int, x)
+function GridSystem_url(url)
+    url = replace(url, r"/+$" => "")
+    tmpfile = download("$url/.zattrs")
+    str = read(tmpfile, String)
+    rm(tmpfile)
+    attr_dict = JSON3.read(str)
+    levels = attr_dict.grid.resolutions.spatial.levels
     length(levels) > 0 || error("No resolution level detected")
 
     pyramid = Dict{Int,CellCube}()
+    for level in levels
+        cell_array = open_dataset("$url/$level") |> Cube
+        pyramid[level] = CellCube(cell_array, level)
+    end
 
+    return GridSystem(pyramid)
+end
+
+function GridSystem_local(path::String)
+    isdir(path) || error("path '$path' must be a directory")
+
+    attr_dict = JSON3.read("$path/.zattrs")
+    levels = attr_dict.grid.resolutions.spatial.levels
+    length(levels) > 0 || error("No resolution level detected")
+
+    pyramid = Dict{Int,CellCube}()
     for level in levels
         cell_array = Cube("$path/$level")
         pyramid[level] = CellCube(cell_array, level)
     end
 
     return GridSystem(pyramid)
+end
+
+function GridSystem(path::String)
+    startswith(path, r"http[s]?://") && return GridSystem_url(path)
+    isdir(path) && return GridSystem_local(path)
+
+    error("Path must be either a valid directory path or an URL")
 end
 
 function Base.show(io::IO, ::MIME"text/plain", dggs::GridSystem)
@@ -78,12 +103,18 @@ function Base.write(path::String, dggs::GridSystem; attrs::Dict{Symbol,T}=Dict{S
             :projection => "+isea",
             :rotation_azimuth => 0
         ),
-        :resolutions => [
-            Dict(:name => "spatial", :resolution => 4, :dimensions => ["q2di_i", "q2di_j", "q2di_n"]),
-            Dict(:name => "temporal", :resolution => 1, :dimensions => ["Time"])
-        ]
+        :resolutions => Dict(
+            :spatial => Dict(
+                :levels => dggs.data |> keys |> collect |> sort,
+                :dimensions => ["q2di_i", "q2di_j", "q2di_n"]
+            ),
+            :temporal => Dict(
+                :name => "temporal",
+                :levels => [1],
+                :dimensions => ["Time"]
+            )
+        )
     )
-
     JSON3.write("$path/.zattrs", attrs)
     write("$path/.zgroup", "{\"zarr_format\":2}")
     for cell_cube in values(dggs.data)

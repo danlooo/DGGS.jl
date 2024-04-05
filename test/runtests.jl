@@ -59,4 +59,7 @@ using Test
     plot(cell_cube, BBox(10, 20, 10, 20); resolution=100)
     plot(dggs, BBox(10, 20, 10, 20); resolution=100)
     plot(dggs2, BBox(10, 20, 10, 20); resolution=100)
+
+    dggs3 = GridSystem("https://s3.bgc-jena.mpg.de:9000/dggs/modis")
+    @test typeof(dggs3) == GridSystem
 end
