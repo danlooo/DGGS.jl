@@ -27,10 +27,24 @@ using Pkg
 Pkg.add(url="https://github.com/danlooo/DGGS.jl.git")
 ```
 
-Create a DGGS based on a synthetic data in a geographical grid:
+Load an external DGGS data cube:
 
 ```julia
 using DGGS
+dggs = GridSystem("https://s3.bgc-jena.mpg.de:9000/dggs/modis")
+```
+```
+DGGS GridSystem
+Levels: 2,3,4,5,6,7,8,9,10
+Dim{:q2di_i} Sampled{Int64} 0:1:15 ForwardOrdered Regular Points,
+Dim{:q2di_j} Sampled{Int64} 0:1:15 ForwardOrdered Regular Points,
+Dim{:q2di_n} Sampled{Int64} 0:1:11 ForwardOrdered Regular Points,
+Ti Sampled{Dates.DateTime} Dates.DateTime[2001-01-01T00:00:00, …, 2001-12-01T00:00:00] ForwardOrdered Irregular Points
+```
+
+Create a DGGS based on a synthetic data in a geographical grid:
+
+```julia
 lon_range = -180:180
 lat_range = -90:90
 level = 6
