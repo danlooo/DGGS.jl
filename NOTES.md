@@ -112,6 +112,14 @@ DGGRID [(Sahr et al.)](https://github.com/sahrk/DGGRID)
 
 ## Indices
 
+- Most common packages, OGC definition): 1D string
+- Issue: Need to squeeze 2D surface to 1D index using space filling curves
+- These curves are streets restrictimg our movements! (Convolutions, BBox queries etc.)
+- Hilbert curve: Google S2
+- Peano curve: Geohash
+- https://dl.acm.org/doi/pdf/10.1145/93605.98742
+- https://www.youtube.com/watch?v=z3PaGIQTFSE
+
 ### Dimensionality
 
 Ways of inexing DGGS data:

@@ -130,4 +130,4 @@ Base.getindex(dggs::GridSystem, level::Int) = dggs.data[level]
 Base.setindex!(dggs::GridSystem, cell_cube::CellCube, level::Int) = dggs.data[level] = cell_cube
 
 CellCube(dggs::GridSystem) = dggs[dggs.data|>keys|>maximum]
-Makie.plot(dggs::GridSystem, args...; kw...) = plot(CellCube(dggs), args...; kw...)
+Makie.plot(dggs::GridSystem, args...; kw...) = Makie.plot(CellCube(dggs), args...; kw...)
