@@ -8,7 +8,7 @@ function CellCube(path::String, lon_dim, lat_dim, level)
     CellCube(geo_cube, level)
 end
 
-function GeoCube(path::String, lon_dim, lat_dim)
+function GeoCube(path::String, lon_dim::String, lat_dim::String)
     array = Cube(path)
     array = renameaxis!(array, lon_dim => :lon)
     array = renameaxis!(array, lat_dim => :lat)
@@ -160,12 +160,8 @@ function get_non_spatial_cube_axes(cell_cube)
     non_spatial_cube_axes
 end
 
-function plot_geo(cell_cube::CellCube, resolution::Int64)
-    # texture for plot in equirectangular geographic lat/lon projection
-    longitudes = range(-180, 180, length=resolution * 2)
-    latitudes = range(-90, 90, length=resolution)
-    cell_ids_mat = transform_points(longitudes, latitudes, cell_cube.level)
 
+function plot_geo(cell_cube::CellCube, cell_ids_mat, longitudes, latitudes)
     with_theme(theme_black()) do
         fig = Figure()
         ax = fig[1, 1] = LScene(fig[1, 1], show_axis=false)
@@ -252,6 +248,15 @@ function plot_geo(cell_cube::CellCube, resolution::Int64)
         north_up_btn.labelcolor_hover = :white
         fig
     end
+end
+
+function plot_geo(cell_cube::CellCube, resolution::Int64)
+    # texture for plot in equirectangular geographic lat/lon projection
+    longitudes = range(-180, 180, length=resolution * 2)
+    latitudes = range(-90, 90, length=resolution)
+    cell_ids_mat = transform_points(longitudes, latitudes, cell_cube.level)
+
+    plot_geo(cell_cube, cell_ids_mat, longitudes, latitudes)
 end
 
 function plot_native(cell_cube::CellCube, resolution::Int64)
