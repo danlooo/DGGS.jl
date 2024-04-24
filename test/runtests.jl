@@ -1,6 +1,7 @@
 using DGGS
 using DimensionalData
 using YAXArrays
+using GLMakie
 using Test
 
 @testset verbose = true "DGGS.jl" begin
@@ -60,7 +61,6 @@ using Test
     fwd_rev_geo_goords = geo_coords |> x -> transform_points(x, level) |> x -> transform_points(x, level)
     @test geo_coords == map(x -> (round(x[1]), round(x[2])), fwd_rev_geo_goords)
 
-    using GLMakie
     plot(cell_cube; resolution=100)
     plot(cell_cube; resolution=100, type=:native)
     plot(dggs; resolution=100)

@@ -156,16 +156,16 @@ function Makie.plot(::Val{:geo}, cell_cube::CellCube, cell_ids_mat, longitudes, 
                 d = NamedTuple(d)
                 filtered_cell_cube = getindex(cell_cube; d...)
 
-                geo_cube = GeoCube(filtered_cell_cube; longitudes, latitudes, cell_ids_mat)
-                color_scale = ColorScale(ColorSchemes.viridis, filter_null(minimum)(geo_cube.data.data) |> floor |> Int, filter_null(maximum)(geo_cube.data.data) |> ceil |> Int)
+                geo_cube = to_geo_cube(filtered_cell_cube; longitudes, latitudes, cell_ids_mat)
+                color_scale = ColorScale(ColorSchemes.viridis, filter_null(minimum)(geo_cube) |> floor |> Int, filter_null(maximum)(geo_cube) |> ceil |> Int)
                 cb.limits[] = (color_scale.min_value, color_scale.max_value)
-                texture = map(x -> color_value(x, color_scale), geo_cube.data.data[1:length(longitudes), length(latitudes):-1:1]')
+                texture = map(x -> color_value(x, color_scale), geo_cube[1:length(longitudes), length(latitudes):-1:1]')
             end
             texture
         else
-            geo_cube = GeoCube(cell_cube; longitudes, latitudes, cell_ids_mat)
-            color_scale = ColorScale(ColorSchemes.viridis, filter_null(minimum)(geo_cube.data.data), filter_null(maximum)(geo_cube.data.data))
-            texture = map(x -> color_value(x, color_scale), geo_cube.data.data[1:length(longitudes), length(latitudes):-1:1]')
+            geo_cube = to_geo_cube(cell_cube; longitudes, latitudes, cell_ids_mat)
+            color_scale = ColorScale(ColorSchemes.viridis, filter_null(minimum)(geo_cube.data), filter_null(maximum)(geo_cube.data))
+            texture = map(x -> color_value(x, color_scale), geo_cube.data[1:length(longitudes), length(latitudes):-1:1]')
             texture
         end
 
