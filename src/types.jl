@@ -12,7 +12,7 @@ end
 
 struct CellCube
     data::YAXArray
-    level::Int8
+    level::Integer
 end
 
 struct GeoCube

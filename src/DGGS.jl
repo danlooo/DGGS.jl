@@ -2,6 +2,7 @@ module DGGS
 
 using DGGRID7_jll
 using DimensionalData
+using DimensionalData: DimArray
 using Zarr
 using NetCDF
 using YAXArrays
@@ -38,6 +39,8 @@ export
     GridSystem,
     ColorScale,
     query,
+    to_cell_cube,
+    to_geo_cube,
     At,
     BBox
 end

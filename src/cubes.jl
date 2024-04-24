@@ -3,41 +3,6 @@ function Base.show(io::IO, ::MIME"text/plain", cube::CellCube)
     Base.show(io, "text/plain", cube.data.axes)
 end
 
-function CellCube(path::String, lon_dim, lat_dim, level)
-    geo_cube = GeoCube(path::String, lon_dim, lat_dim)
-    CellCube(geo_cube, level)
-end
-
-function GeoCube(path::String, lon_dim::String, lat_dim::String)
-    array = Cube(path)
-    array = renameaxis!(array, lon_dim => :lon)
-    array = renameaxis!(array, lat_dim => :lat)
-
-    # TODO: Check if unit is degrees
-    -180 <= minimum(array.lon) < maximum(array.lon) <= 180 || error("Longitudes must be within [-180, 180]")
-    -90 <= minimum(array.lat) < maximum(array.lat) <= 90 || error("Longitudes must be within [-180, 180]")
-
-    array.lon.val.order == DimensionalData.Dimensions.LookupArrays.ForwardOrdered() || error("Longitude must be sorted in forward ascending oder")
-    array.lat.val.order == DimensionalData.Dimensions.LookupArrays.ForwardOrdered() || error("Latitude must be sorted in forward ascending oder")
-
-    GeoCube(array)
-end
-
-function GeoCube(data::AbstractMatrix{<:Number}, lon_range::AbstractRange{<:Real}, lat_range::AbstractRange{<:Real})
-    axlist = (
-        Dim{:lat}(lat_range),
-        Dim{:lon}(lon_range)
-    )
-    geo_array = YAXArray(axlist, data)
-    geo_cube = GeoCube(geo_array)
-    return geo_cube
-end
-
-function Base.show(io::IO, ::MIME"text/plain", cube::GeoCube)
-    println(io, "DGGS GeoCube")
-    Base.show(io, "text/plain", cube.data.axes)
-end
-
 function Base.getindex(cell_cube::CellCube, i::Q2DI)
     cell_cube.data[q2di_n=At(i.n), q2di_i=At(i.i), q2di_j=At(i.j)]
 end
@@ -59,18 +24,26 @@ function map_geo_to_cell_cube(xout, xin, cell_ids_indexlist, agg_func)
     end
 end
 
-function CellCube(path::String, level; kwargs...)
-    geo_cube = GeoCube(path)
-    cell_cube = CellCube(geo_cube, level; kwargs...)
-    return cell_cube
-end
 
 "maximial i or j value in Q2DI index given a level"
 max_ij(level) = level <= 3 ? level - 1 : 2^(level - 2)
 
-function CellCube(geo_cube::GeoCube, level, agg_func=filter_null(mean))
+function to_cell_cube(raster::AbstractDimArray, level::Integer, agg_func::Function=filter_null(mean))
+    lon_dim = filter(x -> x isa X, dims(raster))
+    lat_dim = filter(x -> x isa Y, dims(raster))
+
+    isempty(lon_dim) && error("Longitude dimension not found")
+    isempty(lat_dim) && error("Latitude dimension not found")
+    lon_dim = lon_dim[1]
+    lat_dim = lat_dim[1]
+
+    lon_dim.val.order == DimensionalData.Dimensions.LookupArrays.ForwardOrdered() || error("Longitude must be sorted in forward ascending oder")
+    lat_dim.val.order == DimensionalData.Dimensions.LookupArrays.ForwardOrdered() || error("Latitude must be sorted in forward ascending oder")
+    -180 <= minimum(lon_dim) <= maximum(lon_dim) <= 180 || error("$(name(lon_dim)) must be within [-180, 180]")
+    -90 <= minimum(lat_dim) <= maximum(lat_dim) <= 90 || error("$(name(lon_dim)) must be within [-90, 90]")
+
     @info "Step 1/2: Transform coordinates"
-    cell_ids_mat = transform_points(geo_cube.data.lon, geo_cube.data.lat, level)
+    cell_ids_mat = transform_points(lon_dim, lat_dim, level)
 
     # TODO: what if e.g. lon goes from 0 to 365?
     # TODO: Reverse inverted geo axes
@@ -91,10 +64,11 @@ function CellCube(geo_cube::GeoCube, level, agg_func=filter_null(mean))
     @info "Step 2/2: Re-grid the data"
     cell_cube = mapCube(
         map_geo_to_cell_cube,
-        geo_cube.data,
+        # mapCube can't find axes of other AbstractDimArrays e.g. Raster
+        YAXArray(dims(raster), raster.data),
         cell_ids_indexlist,
         agg_func,
-        indims=InDims(:lon, :lat),
+        indims=InDims(:X, :Y),
         outdims=OutDims(
             Dim{:q2di_i}(range(0; step=1, length=2^(level - 1))),
             Dim{:q2di_j}(range(0; step=1, length=2^(level - 1))),
@@ -102,7 +76,7 @@ function CellCube(geo_cube::GeoCube, level, agg_func=filter_null(mean))
         ),
         showprog=true
     )
-    return CellCube(cell_cube, level)
+    CellCube(cell_cube, level)
 end
 
 Base.getindex(cell_cube::CellCube; i...) = Base.getindex(cell_cube.data; i...) |> x -> CellCube(x, cell_cube.level)
@@ -113,7 +87,7 @@ function map_cell_to_geo_cube(xout, xin, cell_ids_mat)
     end
 end
 
-function GeoCube(cell_cube::CellCube; longitudes=-180:180, latitudes=-90:90, cell_ids_mat=nothing)
+function to_geo_cube(cell_cube::CellCube; longitudes=-180:180, latitudes=-90:90, cell_ids_mat=nothing)
     # transforming points is the slowest step
     # re-use for all time points
     if isnothing(cell_ids_mat)
@@ -130,7 +104,7 @@ function GeoCube(cell_cube::CellCube; longitudes=-180:180, latitudes=-90:90, cel
             Dim{:lat}(latitudes)
         )
     )
-    return GeoCube(geo_array)
+    return geo_array
 end
 
 function color_value(value, color_scale::ColorScale; null_color=RGBA{Float64}(0.15, 0.15, 0.15, 1))
