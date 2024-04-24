@@ -1,4 +1,28 @@
-# DGGSzarr Specification
+# DGGS
+
+## managing multiple CRS (local projections)
+
+- solution: DGGS (https://vimeo.com/935616988/d9de7a97e9 min 49:00)
+- UTM grid is not native to the sattelite
+- advantage of DGGS: one global CRS and still no loss in resolution
+- tiles of multiple local projections need to overlap. No comparision betwwen differnt zones -> DGGS is one global CRS
+- DGGS Cells wrap arround faces -> seamingless
+
+## data cube
+
+- vector world: sparse daat, few points from a couple of sites, tables with columns lon, lat and feature values, traditional databases postgis
+- raster world: dense data, images
+- Data Cube: https://esd.copernicus.org/articles/11/201/2020/
+- ESA and ECMWF using zarr for ARD
+- level 4 data: ARD 
+- data cubes allow fast loading of data, crucial for AI
+
+## zarr
+
+- peta bytes of data
+- like COG and STAC but more flexible chunking
+- scaleable
+- paralell reads and writs
 
 ## Abstract
 
@@ -18,6 +42,9 @@ Previous works focused on the creation of the grid themselves, as well as transl
 
 
 ## Related works
+- 60 projections, one for each UTM zone
+- 7 projections, one for each continent Equi7Grid (Bauer-Marschallinger et al., 2014)
+- 20 projections: icosahedron
 
 ### Google S2
 
@@ -119,6 +146,7 @@ DGGRID [(Sahr et al.)](https://github.com/sahrk/DGGRID)
 - Peano curve: Geohash
 - https://dl.acm.org/doi/pdf/10.1145/93605.98742
 - https://www.youtube.com/watch?v=z3PaGIQTFSE
+- Coordinate transformations introduces error in physical floating point geo coordinates , especially a problem at global scale  https://discourse.pangeo.io/t/example-which-highlights-the-limitations-of-netcdf-style-coordinates-for-large-geospatial-rasters/4140. DGGS is discrete: no floating point errors
 
 ### Dimensionality
 
