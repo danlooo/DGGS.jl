@@ -87,12 +87,8 @@ function map_cell_to_geo_cube(xout, xin, cell_ids_mat)
     end
 end
 
-function to_geo_cube(cell_cube::CellCube; longitudes=-180:180, latitudes=-90:90, cell_ids_mat=nothing)
-    # transforming points is the slowest step
-    # re-use for all time points
-    if isnothing(cell_ids_mat)
-        cell_ids_mat = transform_points(longitudes, latitudes, cell_cube.level)
-    end
+function to_geo_cube(cell_cube::CellCube; longitudes=-180:180, latitudes=-90:90)
+    cell_ids_mat = transform_points(longitudes, latitudes, cell_cube.level)
 
     geo_array = mapCube(
         map_cell_to_geo_cube,
@@ -106,6 +102,19 @@ function to_geo_cube(cell_cube::CellCube; longitudes=-180:180, latitudes=-90:90,
     )
     return geo_array
 end
+
+
+function to_geo_cube(cell_cube::CellCube, cell_ids::DimArray{Q2DI,2})
+    geo_array = mapCube(
+        map_cell_to_geo_cube,
+        cell_cube.data,
+        cell_ids.data,
+        indims=InDims(:q2di_i, :q2di_j, :q2di_n),
+        outdims=OutDims(dims(cell_ids)...)
+    )
+    return geo_array
+end
+
 
 function color_value(value, color_scale::ColorScale; null_color=RGBA{Float64}(0.15, 0.15, 0.15, 1))
     ismissing(value) && return null_color
@@ -134,8 +143,20 @@ function get_non_spatial_cube_axes(cell_cube)
     non_spatial_cube_axes
 end
 
+function plot_geo(cell_cube::CellCube; resolution::Real=800)
+    longitudes = range(-180, 180, length=resolution) |> X
+    latitudes = range(-90, 90, length=resolution) |> Y
 
-function Makie.plot(::Val{:geo}, cell_cube::CellCube, cell_ids_mat, longitudes, latitudes)
+    cell_ids_mat = transform_points(longitudes, latitudes, cell_cube.level)
+    cell_ids = DimArray(cell_ids_mat, (longitudes, latitudes))
+
+    plot_geo(cell_cube, cell_ids)
+end
+
+function plot_geo(cell_cube::CellCube, cell_ids::DimArray{Q2DI,2})
+    longitudes = dims(cell_ids, :X)
+    latitudes = dims(cell_ids, :Y)
+
     with_theme(theme_black()) do
         fig = Figure()
         ax = fig[1, 1] = LScene(fig[1, 1], show_axis=false)
@@ -156,14 +177,14 @@ function Makie.plot(::Val{:geo}, cell_cube::CellCube, cell_ids_mat, longitudes, 
                 d = NamedTuple(d)
                 filtered_cell_cube = getindex(cell_cube; d...)
 
-                geo_cube = to_geo_cube(filtered_cell_cube; longitudes, latitudes, cell_ids_mat)
+                geo_cube = to_geo_cube(filtered_cell_cube, cell_ids)
                 color_scale = ColorScale(ColorSchemes.viridis, filter_null(minimum)(geo_cube) |> floor |> Int, filter_null(maximum)(geo_cube) |> ceil |> Int)
                 cb.limits[] = (color_scale.min_value, color_scale.max_value)
                 texture = map(x -> color_value(x, color_scale), geo_cube[1:length(longitudes), length(latitudes):-1:1]')
             end
             texture
         else
-            geo_cube = to_geo_cube(cell_cube; longitudes, latitudes, cell_ids_mat)
+            geo_cube = to_geo_cube(cell_cube, cell_ids)
             color_scale = ColorScale(ColorSchemes.viridis, filter_null(minimum)(geo_cube.data), filter_null(maximum)(geo_cube.data))
             texture = map(x -> color_value(x, color_scale), geo_cube.data[1:length(longitudes), length(latitudes):-1:1]')
             texture
@@ -224,16 +245,52 @@ function Makie.plot(::Val{:geo}, cell_cube::CellCube, cell_ids_mat, longitudes, 
     end
 end
 
-function Makie.plot(::Val{:geo}, cell_cube::CellCube, resolution::Int64)
-    # texture for plot in equirectangular geographic lat/lon projection
-    longitudes = range(-180, 180, length=resolution * 2)
-    latitudes = range(-90, 90, length=resolution)
+function plot_geo(cell_cube::CellCube, bbox::HyperRectangle{2,Float32}; resolution::Int64=800)
+    min_x, min_y = bbox.origin
+    max_x = min_x + bbox.widths[1]
+    max_y = min_y + bbox.widths[2]
+    longitudes = range(min_x, max_x; length=resolution)
+    latitudes = range(min_y, max_y; length=resolution)
     cell_ids_mat = transform_points(longitudes, latitudes, cell_cube.level)
+    cell_ids = DimArray(cell_ids_mat, (longitudes |> X, latitudes |> Y))
+    geo_cube = to_geo_cube(cell_cube, cell_ids)
 
-    Makie.plot(Val(:geo), cell_cube, cell_ids_mat, longitudes, latitudes)
+
+    with_theme(theme_black()) do
+        fig = Figure()
+        non_spatial_cube_axes = get_non_spatial_cube_axes(cell_cube)
+
+        if length(non_spatial_cube_axes) > 0
+            slider_grid = SliderGrid(fig[2, 1], [x[:slider] for x in non_spatial_cube_axes]...)
+            slider_observables = [s.value for s in slider_grid.sliders]
+
+            geo_cube = lift(slider_observables...) do slider_values...
+                d = Dict()
+                for (ax, val) in zip(non_spatial_cube_axes, slider_values)
+                    d[name(ax[:dim])] = val
+                end
+                filtered_cell_cube = getindex(cell_cube; NamedTuple(d)...)
+                geo_cube = to_geo_cube(filtered_cell_cube, cell_ids)
+                geo_cube
+            end
+            geo_cube
+        else
+            geo_cube = Observable(to_geo_cube(cell_cube, cell_ids))
+        end
+
+        min_value = filter_null(minimum)(geo_cube[].data) |> floor |> Int
+        max_value = filter_null(maximum)(geo_cube[].data) |> ceil |> Int
+        color_scale = ColorScale(ColorSchemes.viridis, min_value, max_value)
+        cb = Colorbar(fig[1, 2])
+        cb.limits[] = (color_scale.min_value, color_scale.max_value)
+
+        texture = @lift $geo_cube |> DimArray
+        heatmap(fig[1, 1], texture, axis=(backgroundcolor=RGBA{Float64}(0.15, 0.15, 0.15, 1), aspect=1))
+        fig
+    end
 end
 
-function Makie.plot(::Val{:native}, cell_cube::CellCube, resolution::Int64)
+function plot_native(cell_cube::CellCube)
     cell_cube = cell_cube[q2di_n=2:11] # ignore 2 vertices at quad 1 and 12
 
     with_theme(theme_black()) do
@@ -255,7 +312,7 @@ function Makie.plot(::Val{:native}, cell_cube::CellCube, resolution::Int64)
                 d = NamedTuple(d)
                 filtered_cell_cube = getindex(cell_cube; d...)
 
-                color_scale = ColorScale(ColorSchemes.viridis, filter_null(minimum)(filtered_cell_cube.data.data) |> floor |> Int, filter_null(maximum)(filtered_cell_cube.data.data) |> ceil |> Int)
+                color_scale = ColorScale(ColorSchemes.viridis, filter_null(minimum)(filtered_cell_cube.data) |> floor |> Int, filter_null(maximum)(filtered_cell_cube.data) |> ceil |> Int)
                 cb.limits[] = (color_scale.min_value, color_scale.max_value)
 
                 texture = filtered_cell_cube.data
@@ -265,6 +322,7 @@ function Makie.plot(::Val{:native}, cell_cube::CellCube, resolution::Int64)
                 texture
             end
         else
+            color_scale = ColorScale(ColorSchemes.viridis, filter_null(minimum)(cell_cube.data) |> floor |> Int, filter_null(maximum)(cell_cube.data) |> ceil |> Int)
             texture = Array(cell_cube.data)
             texture = reshape(texture, size(texture)[1], 10 * size(texture)[1])
             texture = map(x -> color_value(x, color_scale), texture)
@@ -299,48 +357,10 @@ function Makie.plot(::Val{:native}, cell_cube::CellCube, resolution::Int64)
     end
 end
 
-Makie.plot(cell_cube::CellCube; resolution::Int64=800) = Makie.plot(Val(:geo), cell_cube, resolution)
-
-function Makie.plot(cell_cube::CellCube, bbox::HyperRectangle{2,Float32}; resolution::Int64=800)
-    min_x, min_y = bbox.origin
-    max_x = min_x + bbox.widths[1]
-    max_y = min_y + bbox.widths[2]
-    longitudes = range(min_x, max_x; length=resolution)
-    latitudes = range(min_y, max_y; length=resolution)
-    cell_ids_mat = transform_points(longitudes, latitudes, cell_cube.level)
-    geo_cube = GeoCube(cell_cube; longitudes, latitudes, cell_ids_mat)
-
-
-    with_theme(theme_black()) do
-        fig = Figure()
-        non_spatial_cube_axes = get_non_spatial_cube_axes(cell_cube)
-
-        if length(non_spatial_cube_axes) > 0
-            slider_grid = SliderGrid(fig[2, 1], [x[:slider] for x in non_spatial_cube_axes]...)
-            slider_observables = [s.value for s in slider_grid.sliders]
-
-            geo_cube = lift(slider_observables...) do slider_values...
-                d = Dict()
-                for (ax, val) in zip(non_spatial_cube_axes, slider_values)
-                    d[name(ax[:dim])] = val
-                end
-                filtered_cell_cube = getindex(cell_cube; NamedTuple(d)...)
-                geo_cube = GeoCube(filtered_cell_cube; longitudes, latitudes, cell_ids_mat)
-                geo_cube
-            end
-            geo_cube
-        else
-            geo_cube = Observable(GeoCube(cell_cube; longitudes, latitudes, cell_ids_mat))
-        end
-
-        min_value = filter_null(minimum)(geo_cube[].data.data) |> floor |> Int
-        max_value = filter_null(maximum)(geo_cube[].data.data) |> ceil |> Int
-        color_scale = ColorScale(ColorSchemes.viridis, min_value, max_value)
-        cb = Colorbar(fig[1, 2])
-        cb.limits[] = (color_scale.min_value, color_scale.max_value)
-
-        texture = @lift $geo_cube.data |> DimArray
-        heatmap(fig[1, 1], texture, axis=(backgroundcolor=RGBA{Float64}(0.15, 0.15, 0.15, 1), aspect=1))
-        fig
+function Makie.plot(cell_cube::CellCube, args...; type=:geo, kwargs...)
+    if type == :geo
+        plot_geo(cell_cube, args...; kwargs...)
+    elseif type == :native
+        plot_native(cell_cube, args...; kwargs...)
     end
 end

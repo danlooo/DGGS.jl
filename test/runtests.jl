@@ -19,7 +19,6 @@ using Test
     cell_cube2 = to_cell_cube(geo_arr, 5)
     dggs2 = GridSystem(cell_cube2)
 
-
     @test typeof(cell_cube) == CellCube
     @test typeof(dggs) == GridSystem
     @test keys(dggs.data) |> maximum == 6
@@ -61,13 +60,14 @@ using Test
     fwd_rev_geo_goords = geo_coords |> x -> transform_points(x, level) |> x -> transform_points(x, level)
     @test geo_coords == map(x -> (round(x[1]), round(x[2])), fwd_rev_geo_goords)
 
+    plot(cell_cube)
     plot(cell_cube; resolution=100)
-    plot(cell_cube; resolution=100, type=:native)
     plot(dggs; resolution=100)
     plot(dggs2; resolution=100)
-    plot(cell_cube, BBox(10, 20, 10, 20); resolution=100)
-    plot(dggs, BBox(10, 20, 10, 20); resolution=100)
-    plot(dggs2, BBox(10, 20, 10, 20); resolution=100)
+    alaska = BBox(-180, -150, 50, 80)
+    plot(cell_cube, alaska; resolution=100)
+    plot(dggs, alaska; resolution=100)
+    plot(dggs2, alaska; resolution=100)
 
     dggs3 = GridSystem("https://s3.bgc-jena.mpg.de:9000/dggs/modis")
     @test typeof(dggs3) == GridSystem
