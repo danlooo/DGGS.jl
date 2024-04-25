@@ -93,7 +93,7 @@ function map_cell_to_geo_cube(xout, xin, cell_ids_mat)
 end
 
 function to_geo_cube(cell_cube::CellCube; longitudes=-180:180, latitudes=-90:90)
-    cell_ids_mat = transform_points(longitudes, latitudes, cell_cube.level)
+    cell_ids_mat = transform_points(longitudes, latitudes, cell_cube.level).data
 
     geo_array = mapCube(
         map_cell_to_geo_cube,
@@ -149,12 +149,9 @@ function get_non_spatial_cube_axes(cell_cube)
 end
 
 function plot_geo(cell_cube::CellCube; resolution::Real=800)
-    longitudes = range(-180, 180, length=resolution) |> X
-    latitudes = range(-90, 90, length=resolution) |> Y
-
-    cell_ids_mat = transform_points(longitudes, latitudes, cell_cube.level)
-    cell_ids = DimArray(cell_ids_mat, (longitudes, latitudes))
-
+    longitudes = range(-180, 180, length=resolution)
+    latitudes = range(-90, 90, length=resolution)
+    cell_ids = transform_points(longitudes, latitudes, cell_cube.level)
     plot_geo(cell_cube, cell_ids)
 end
 
@@ -256,8 +253,7 @@ function plot_geo(cell_cube::CellCube, bbox::HyperRectangle{2,Float32}; resoluti
     max_y = min_y + bbox.widths[2]
     longitudes = range(min_x, max_x; length=resolution)
     latitudes = range(min_y, max_y; length=resolution)
-    cell_ids_mat = transform_points(longitudes, latitudes, cell_cube.level)
-    cell_ids = DimArray(cell_ids_mat, (longitudes |> X, latitudes |> Y))
+    cell_ids = transform_points(longitudes, latitudes, cell_cube.level)
     geo_cube = to_geo_cube(cell_cube, cell_ids)
 
 

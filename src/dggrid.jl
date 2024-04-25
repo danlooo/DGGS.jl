@@ -114,7 +114,7 @@ function transform_points(coords::Vector{Tuple{T,T}}, level; show_progress=true,
     return result
 end
 
-function transform_points(coords::Vector{Q2DI}, level; show_progress=true, chunk_size_points=2048) where {T<:Real}
+function transform_points(coords::Vector{Q2DI}, level; show_progress=true, chunk_size_points=2048)
     chunks = Iterators.partition(coords, chunk_size_points) |> collect
 
     if length(chunks) == 1
@@ -143,7 +143,7 @@ end
 """
 chunk_size_points: number of points (e.g. pixels) to transform in one block (task of a thread)
 """
-function transform_points(lon_range, lat_range, level; show_progress=true, chunk_size_points=2048)
+function transform_points(lon_range::AbstractVector{A}, lat_range::AbstractVector{B}, level::Integer; show_progress=true, chunk_size_points=2048) where {A<:Real,B<:Real}
     chunk_size_lon = chunk_size_points / length(lat_range) |> ceil |> Int
     lon_chunks = Iterators.partition(lon_range, chunk_size_lon) |> collect
 
@@ -169,5 +169,6 @@ function transform_points(lon_range, lat_range, level; show_progress=true, chunk
     end
 
     cell_ids_mat = hcat(cell_ids_mats...) |> permutedims
-    return cell_ids_mat
+    cell_ids = DimArray(cell_ids_mat, (lon_range |> X, lat_range |> Y))
+    return cell_ids
 end
