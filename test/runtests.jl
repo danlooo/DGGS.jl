@@ -1,42 +1,51 @@
 using DGGS
+using DimensionalData
+using YAXArrays
+using GLMakie
 using Test
 
 @testset verbose = true "DGGS.jl" begin
-    lon_range = -180:180
-    lat_range = -90:90
+    lon_range = X(-180:180)
+    lat_range = Y(-90:90)
     level = 6
-    data = [exp(cosd(lon)) + 3(lat / 90) for lat in lat_range, lon in lon_range]
+    data = [exp(cosd(lon)) + 3(lat / 90) for lon in lon_range, lat in lat_range]
 
-    geo_cube = GeoCube(data, lon_range, lat_range)
-    cell_cube = CellCube(geo_cube, level)
+    raster = DimArray(data, (lon_range, lat_range))
+    cell_cube = to_cell_cube(raster, level)
     dggs = GridSystem(data, lon_range, lat_range, level)
+    dggs = GridSystem(data, -180:180, -90:90, level)
 
-    @test typeof(geo_cube) == GeoCube
+    geo_arr = YAXArray((lon_range, lat_range), data)
+    cell_cube2 = to_cell_cube(geo_arr, 5)
+    dggs2 = GridSystem(cell_cube2)
+
     @test typeof(cell_cube) == CellCube
     @test typeof(dggs) == GridSystem
-    @test geo_cube |> x -> CellCube(x, 8) |> GeoCube |> typeof == GeoCube
     @test keys(dggs.data) |> maximum == 6
+
+    # convert back and forth
+    raster2 = raster |> x -> to_cell_cube(x, level) |> to_geo_cube
+    @test name.(dims(raster2)) == (:lon, :lat)
 
     dggs_path = tempname()
     write(dggs_path, dggs)
     dggs2 = GridSystem(dggs_path)
     rm(dggs_path, recursive=true)
 
-    using YAXArrays
-    lon_range = -180:180
-    lat_range = -90:90
+
     time_range = 1:12
     level = 6
     bands = 1:3
     data = [band * exp(cosd(lon)) + time * (lat / 90)
             for lat in lat_range, lon in lon_range, time in time_range, band in bands]
     axlist = (
-        Dim{:lat}(lat_range),
-        Dim{:lon}(lon_range),
+        lat_range,
+        lon_range,
         Dim{:time}(time_range),
         Dim{:band}(bands)
     )
-    dggs2 = YAXArray(axlist, data) |> GeoCube |> x -> CellCube(x, level) |> GridSystem
+    dggs2 = YAXArray(axlist, data) |> x -> to_cell_cube(x, level) |> GridSystem
+    @test dggs2 |> CellCube |> x -> x.data |> dims |> length == 5
     @test dggs2[6][band=1, time=2] |> typeof == CellCube
     @test dggs2[6][band=2, time=2].data.axes |> length == 3
 
@@ -51,14 +60,14 @@ using Test
     fwd_rev_geo_goords = geo_coords |> x -> transform_points(x, level) |> x -> transform_points(x, level)
     @test geo_coords == map(x -> (round(x[1]), round(x[2])), fwd_rev_geo_goords)
 
-    using GLMakie
+    plot(cell_cube)
     plot(cell_cube; resolution=100)
-    plot(cell_cube; resolution=100, type=:native)
     plot(dggs; resolution=100)
     plot(dggs2; resolution=100)
-    plot(cell_cube, BBox(10, 20, 10, 20); resolution=100)
-    plot(dggs, BBox(10, 20, 10, 20); resolution=100)
-    plot(dggs2, BBox(10, 20, 10, 20); resolution=100)
+    alaska = BBox(-180, -150, 50, 80)
+    plot(cell_cube, alaska; resolution=100)
+    plot(dggs, alaska; resolution=100)
+    plot(dggs2, alaska; resolution=100)
 
     dggs3 = GridSystem("https://s3.bgc-jena.mpg.de:9000/dggs/modis")
     @test typeof(dggs3) == GridSystem

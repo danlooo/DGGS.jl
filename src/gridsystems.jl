@@ -30,9 +30,17 @@ function GridSystem(cell_cube::CellCube)
     return GridSystem(pyramid)
 end
 
-GridSystem(geo_cube::GeoCube, level::Integer) = CellCube(geo_cube, level) |> GridSystem
+function GridSystem(data::AbstractArray{<:Number}, lon_range::AbstractRange{<:Real}, lat_range::AbstractRange{<:Real}, level::Integer)
+    raster = DimArray(data, (X(lon_range), Y(lat_range)))
+    cell_cube = to_cell_cube(raster, level)
+    GridSystem(cell_cube)
+end
 
-GridSystem(data::AbstractArray{<:Number}, lon_range::AbstractRange{<:Real}, lat_range::AbstractRange{<:Real}, level::Integer) = GeoCube(data, lon_range, lat_range) |> x -> GridSystem(x, level)
+function GridSystem(data::AbstractArray{<:Number}, lon_range::DimensionalData.Dimension, lat_range::DimensionalData.Dimension, level::Integer)
+    raster = DimArray(data, (lon_range, lat_range))
+    cell_cube = to_cell_cube(raster, level)
+    GridSystem(cell_cube)
+end
 
 function GridSystem_url(url)
     url = replace(url, r"/+$" => "")
