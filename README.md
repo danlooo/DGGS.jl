@@ -48,17 +48,17 @@ Create a DGGS based on a synthetic data in a geographical grid:
 lon_range = -180:180
 lat_range = -90:90
 level = 6
-data = [exp(cosd(lon)) + 3(lat / 90) for lat in lat_range, lon in lon_range]
-dggs = GridSystem(data, lon_range, lat_range, level)
+data = [exp(cosd(lon)) + 3(lat / 90) for lon in lon_range, lat in lat_range]
+dggs = to_cell_cube(data, lon_range, lat_range, level) |> GridSystem
 ```
 ```
 [ Info: Step 1/2: Transform coordinates
 [ Info: Step 2/2: Re-grid the data
 DGGS GridSystem
 Levels: 2,3,4,5,6
-Dim{:q2di_i} Sampled{Int64} 0:1:15 ForwardOrdered Regular Points,
-Dim{:q2di_j} Sampled{Int64} 0:1:15 ForwardOrdered Regular Points,
-Dim{:q2di_n} Sampled{Int64} 0:11 ForwardOrdered Regular Points
+↓ q2di_i Sampled{Int64} 0:1:15 ForwardOrdered Regular Points,
+→ q2di_j Sampled{Int64} 0:1:15 ForwardOrdered Regular Points,
+↗ q2di_n Sampled{Int64} 0:11 ForwardOrdered Regular Points
 ```
 
 Write DGGS data to disk and load them back:

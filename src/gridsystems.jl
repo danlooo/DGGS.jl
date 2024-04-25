@@ -30,12 +30,6 @@ function GridSystem(cell_cube::CellCube)
     return GridSystem(pyramid)
 end
 
-function GridSystem(data::AbstractArray{<:Number}, lon_range::AbstractRange{<:Real}, lat_range::AbstractRange{<:Real}, level::Integer)
-    raster = DimArray(data, (X(lon_range), Y(lat_range)))
-    cell_cube = to_cell_cube(raster, level)
-    GridSystem(cell_cube)
-end
-
 function GridSystem(data::AbstractArray{<:Number}, lon_range::DimensionalData.Dimension, lat_range::DimensionalData.Dimension, level::Integer)
     raster = DimArray(data, (lon_range, lat_range))
     cell_cube = to_cell_cube(raster, level)

@@ -79,6 +79,11 @@ function to_cell_cube(raster::AbstractDimArray, level::Integer, agg_func::Functi
     CellCube(cell_cube, level)
 end
 
+function to_cell_cube(raster::AbstractMatrix, lon_range::AbstractVector, lat_range::AbstractVector, level::Integer, agg_func::Function=filter_null(mean))
+    raster = DimArray(raster, (X(lon_range), Y(lat_range)))
+    return to_cell_cube(raster, level, agg_func)
+end
+
 Base.getindex(cell_cube::CellCube; i...) = Base.getindex(cell_cube.data; i...) |> x -> CellCube(x, cell_cube.level)
 
 function map_cell_to_geo_cube(xout, xin, cell_ids_mat)
