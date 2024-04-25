@@ -43,7 +43,7 @@ function to_cell_cube(raster::AbstractDimArray, level::Integer, agg_func::Functi
     -90 <= minimum(lat_dim) <= maximum(lat_dim) <= 90 || error("$(name(lon_dim)) must be within [-90, 90]")
 
     @info "Step 1/2: Transform coordinates"
-    cell_ids_mat = transform_points(lon_dim, lat_dim, level)
+    cell_ids_mat = transform_points(lon_dim.val, lat_dim.val, level)
 
     # TODO: what if e.g. lon goes from 0 to 365?
     # TODO: Reverse inverted geo axes
