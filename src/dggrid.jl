@@ -22,7 +22,7 @@ function call_dggrid(meta::Dict)
 end
 
 # single threaded version
-function _transform_points(coords::AbstractVector{Q2DI}, level)
+function _transform_points(coords::AbstractVector{Q2DI{T}}, level) where {T<:Integer}
     points_path = tempname()
     points_string = ""
     for c in coords
@@ -114,7 +114,7 @@ function transform_points(coords::Vector{Tuple{T,T}}, level; show_progress=true,
     return result
 end
 
-function transform_points(coords::Vector{Q2DI}, level; show_progress=true, chunk_size_points=2048)
+function transform_points(coords::Vector{Q2DI{T}}, level; show_progress=true, chunk_size_points=2048) where {T<:Integer}
     chunks = Iterators.partition(coords, chunk_size_points) |> collect
 
     if length(chunks) == 1

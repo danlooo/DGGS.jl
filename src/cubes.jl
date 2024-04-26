@@ -109,7 +109,7 @@ function to_geo_cube(cell_cube::CellCube; longitudes=-180:180, latitudes=-90:90)
 end
 
 
-function to_geo_cube(cell_cube::CellCube, cell_ids::DimArray{Q2DI,2})
+function to_geo_cube(cell_cube::CellCube, cell_ids::DimArray{Q2DI{T},2}) where {T<:Integer}
     geo_array = mapCube(
         map_cell_to_geo_cube,
         cell_cube.data,
@@ -155,7 +155,7 @@ function plot_geo(cell_cube::CellCube; resolution::Real=800)
     plot_geo(cell_cube, cell_ids)
 end
 
-function plot_geo(cell_cube::CellCube, cell_ids::DimArray{Q2DI,2})
+function plot_geo(cell_cube::CellCube, cell_ids::DimArray{Q2DI{T},2}) where {T<:Integer}
     longitudes = dims(cell_ids, :X)
     latitudes = dims(cell_ids, :Y)
 
