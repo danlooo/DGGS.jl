@@ -4,11 +4,13 @@ struct ColorScale{T<:Real}
     max_value::T
 end
 
-struct Q2DI
-    n
-    i
-    j
+struct Q2DI{T<:Integer}
+    n::UInt8
+    i::T
+    j::T
 end
+
+Q2DI(n::Integer, i::T, j::T) where {T<:Integer} = Q2DI(UInt8(n), T(i), T(j))
 
 struct CellCube
     data::YAXArray

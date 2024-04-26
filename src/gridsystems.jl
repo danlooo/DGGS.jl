@@ -4,7 +4,8 @@ function aggregate_cell_cube(xout, xin; agg_func=filter_null(mean))
         for i in axes(xout, 1)
             iview = ((i-1)*fac+1):min(size(xin, 1), (i * fac))
             jview = ((j-1)*fac+1):min(size(xin, 2), (j * fac))
-            xout[i, j] = agg_func(view(xin, iview, jview))
+            data = view(xin, iview, jview)
+            xout[i, j] = agg_func(data)
         end
     end
 end
@@ -30,7 +31,13 @@ function GridSystem(cell_cube::CellCube; agg_func=filter_null(mean))
     return GridSystem(pyramid)
 end
 
-function GridSystem(data::AbstractArray{<:Number}, lon_range::DimensionalData.Dimension, lat_range::DimensionalData.Dimension, level::Integer; kwargs...)
+function GridSystem(data::AbstractArray{<:Number}, lon_range::AbstractVector, lat_range::AbstractVector, level::Integer; kwargs...)
+    raster = DimArray(data, (X(lon_range), Y(lat_range)))
+    cell_cube = to_cell_cube(raster, level; kwargs...)
+    GridSystem(cell_cube)
+end
+
+function GridSystem(data::AbstractArray{<:Number}, lon_range::DimensionalData.XDim, lat_range::DimensionalData.YDim, level::Integer; kwargs...)
     raster = DimArray(data, (lon_range, lat_range))
     cell_cube = to_cell_cube(raster, level; kwargs...)
     GridSystem(cell_cube)
