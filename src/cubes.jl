@@ -28,7 +28,7 @@ end
 "maximial i or j value in Q2DI index given a level"
 max_ij(level) = level <= 3 ? level - 1 : 2^(level - 2)
 
-function to_cell_cube(raster::AbstractDimArray, level::Integer, agg_func::Function=filter_null(mean))
+function to_cell_cube(raster::AbstractDimArray, level::Integer; agg_func::Function=filter_null(mean), cell_ids::Union{DimArray{Q2DI,2},Nothing}=nothing)
     lon_dim = filter(x -> x isa X, dims(raster))
     lat_dim = filter(x -> x isa Y, dims(raster))
 
@@ -43,7 +43,7 @@ function to_cell_cube(raster::AbstractDimArray, level::Integer, agg_func::Functi
     -90 <= minimum(lat_dim) <= maximum(lat_dim) <= 90 || error("$(name(lon_dim)) must be within [-90, 90]")
 
     @info "Step 1/2: Transform coordinates"
-    cell_ids_mat = transform_points(lon_dim.val, lat_dim.val, level)
+    cell_ids_mat = isnothing(cell_ids) ? transform_points(lon_dim.val, lat_dim.val, level) : cell_ids
 
     # TODO: what if e.g. lon goes from 0 to 365?
     # TODO: Reverse inverted geo axes
@@ -79,9 +79,9 @@ function to_cell_cube(raster::AbstractDimArray, level::Integer, agg_func::Functi
     CellCube(cell_cube, level)
 end
 
-function to_cell_cube(raster::AbstractMatrix, lon_range::AbstractVector, lat_range::AbstractVector, level::Integer, agg_func::Function=filter_null(mean))
+function to_cell_cube(raster::AbstractMatrix, lon_range::AbstractVector, lat_range::AbstractVector, level::Integer; kwargs...)
     raster = DimArray(raster, (X(lon_range), Y(lat_range)))
-    return to_cell_cube(raster, level, agg_func)
+    return to_cell_cube(raster, level; kwargs...)
 end
 
 Base.getindex(cell_cube::CellCube; i...) = Base.getindex(cell_cube.data; i...) |> x -> CellCube(x, cell_cube.level)

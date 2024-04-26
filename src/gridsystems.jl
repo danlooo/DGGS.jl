@@ -9,13 +9,13 @@ function aggregate_cell_cube(xout, xin; agg_func=filter_null(mean))
     end
 end
 
-function GridSystem(cell_cube::CellCube)
+function GridSystem(cell_cube::CellCube; agg_func=filter_null(mean))
     pyramid = Dict{Int,CellCube}()
     pyramid[cell_cube.level] = cell_cube
 
     for coarser_level in cell_cube.level-1:-1:2
         coarser_cell_array = mapCube(
-            aggregate_cell_cube,
+            (xout, xin) -> aggregate_cell_cube(xout, xin; agg_func=agg_func),
             pyramid[coarser_level+1].data,
             indims=InDims(:q2di_i, :q2di_j),
             outdims=OutDims(
@@ -30,9 +30,9 @@ function GridSystem(cell_cube::CellCube)
     return GridSystem(pyramid)
 end
 
-function GridSystem(data::AbstractArray{<:Number}, lon_range::DimensionalData.Dimension, lat_range::DimensionalData.Dimension, level::Integer)
+function GridSystem(data::AbstractArray{<:Number}, lon_range::DimensionalData.Dimension, lat_range::DimensionalData.Dimension, level::Integer; kwargs...)
     raster = DimArray(data, (lon_range, lat_range))
-    cell_cube = to_cell_cube(raster, level)
+    cell_cube = to_cell_cube(raster, level; kwargs...)
     GridSystem(cell_cube)
 end
 
