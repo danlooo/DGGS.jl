@@ -28,7 +28,7 @@ end
 "maximial i or j value in Q2DI index given a level"
 max_ij(level) = level <= 3 ? level - 1 : 2^(level - 2)
 
-function to_cell_cube(raster::AbstractDimArray, level::Integer; agg_func::Function=filter_null(mean), cell_ids::Union{DimArray{Q2DI,2},Nothing}=nothing)
+function to_cell_cube(raster::AbstractDimArray, level::Integer; agg_func::Function=filter_null(mean), cell_ids::Union{AbstractMatrix,Nothing}=nothing)
     lon_dim = filter(x -> x isa X, dims(raster))
     lat_dim = filter(x -> x isa Y, dims(raster))
 
