@@ -24,6 +24,7 @@ function GridSystem(cell_cube::CellCube; agg_func=filter_null(mean))
                 Dim{:q2di_j}(range(0; step=1, length=2^(coarser_level - 1)))
             )
         )
+        coarser_cell_array = YAXArray(coarser_cell_array.axes, coarser_cell_array.data, cell_cube.data.properties)
         coarser_cell_cube = CellCube(coarser_cell_array, coarser_level)
         pyramid[coarser_level] = coarser_cell_cube
     end

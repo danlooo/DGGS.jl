@@ -2,7 +2,7 @@ module DGGS
 
 using DGGRID7_jll
 using DimensionalData
-using DimensionalData: DimArray
+using DimensionalData: DimArray, metadata
 using Zarr
 using NetCDF
 using YAXArrays

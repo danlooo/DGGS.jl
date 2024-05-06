@@ -28,9 +28,9 @@ end
 "maximial i or j value in Q2DI index given a level"
 max_ij(level) = level <= 3 ? level - 1 : 2^(level - 2)
 
-function to_cell_cube(raster::AbstractDimArray, level::Integer; agg_func::Function=filter_null(mean), cell_ids::Union{AbstractMatrix,Nothing}=nothing)
-    lon_dim = filter(x -> x isa X, dims(raster))
-    lat_dim = filter(x -> x isa Y, dims(raster))
+function to_cell_cube(raster::AbstractDimArray, level::Integer; agg_func::Function=filter_null(mean), cell_ids::Union{AbstractMatrix,Nothing}=nothing, lon_name::Symbol=:lon, lat_name::Symbol=:lat)
+    lon_dim = filter(x -> x isa X || name(x) == lon_name, dims(raster))
+    lat_dim = filter(x -> x isa Y || name(x) == lat_name, dims(raster))
 
     isempty(lon_dim) && error("Longitude dimension not found")
     isempty(lat_dim) && error("Latitude dimension not found")
@@ -76,6 +76,7 @@ function to_cell_cube(raster::AbstractDimArray, level::Integer; agg_func::Functi
         ),
         showprog=true
     )
+    cell_cube = YAXArray(cell_cube.axes, cell_cube.data, metadata(raster))
     CellCube(cell_cube, level)
 end
 
