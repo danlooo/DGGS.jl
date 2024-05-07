@@ -29,17 +29,19 @@ using Pkg.Artifacts
 include("types.jl")
 include("dggrid.jl")
 include("cubes.jl")
-include("gridsystems.jl")
+include("pyramids.jl")
 
 export
-    CellCube,
-    GeoCube,
+    DGGSArray,
+    DGGSPyramid,
+    DGGSDatasetPyramid,
+    DGGSGridSystem,
     Q2DI,
     transform_points,
-    GridSystem,
     ColorScale,
     query,
-    to_cell_cube,
+    to_dggs_array,
+    to_dggs_dataset_pyramid,
     to_geo_cube,
     At,
     BBox

@@ -1,13 +1,13 @@
-function Base.show(io::IO, ::MIME"text/plain", cube::CellCube)
-    println(io, "DGGS CellCube at level $(cube.level)")
+function Base.show(io::IO, ::MIME"text/plain", cube::DGGSArray)
+    println(io, "DGGSArray at level $(cube.level)")
     Base.show(io, "text/plain", cube.data.axes)
 end
 
-function Base.getindex(cell_cube::CellCube, i::Q2DI)
+function Base.getindex(cell_cube::DGGSArray, i::Q2DI)
     cell_cube.data[q2di_n=At(i.n), q2di_i=At(i.i), q2di_j=At(i.j)]
 end
 
-function Base.getindex(cell_cube::CellCube, lon::Real, lat::Real)
+function Base.getindex(cell_cube::DGGSArray, lon::Real, lat::Real)
     cell_id = _transform_points(lon, lat, cell_cube.level)[1, 1]
     cell_cube.data[q2di_n=At(cell_id.n), q2di_i=At(cell_id.i), q2di_j=At(cell_id.j)]
 end
@@ -28,7 +28,7 @@ end
 "maximial i or j value in Q2DI index given a level"
 max_ij(level) = level <= 3 ? level - 1 : 2^(level - 2)
 
-function to_cell_cube(raster::AbstractDimArray, level::Integer; agg_func::Function=filter_null(mean), cell_ids::Union{AbstractMatrix,Nothing}=nothing, lon_name::Symbol=:lon, lat_name::Symbol=:lat)
+function to_dggs_array(raster::AbstractDimArray, level::Integer; agg_func::Function=filter_null(mean), cell_ids::Union{AbstractMatrix,Nothing}=nothing, lon_name::Symbol=:lon, lat_name::Symbol=:lat)
     lon_dim = filter(x -> x isa X || name(x) == lon_name, dims(raster))
     lat_dim = filter(x -> x isa Y || name(x) == lat_name, dims(raster))
 
@@ -77,15 +77,15 @@ function to_cell_cube(raster::AbstractDimArray, level::Integer; agg_func::Functi
         showprog=true
     )
     cell_cube = YAXArray(cell_cube.axes, cell_cube.data, metadata(raster))
-    CellCube(cell_cube, level)
+    DGGSArray(cell_cube, level)
 end
 
-function to_cell_cube(raster::AbstractMatrix, lon_range::AbstractVector, lat_range::AbstractVector, level::Integer; kwargs...)
+function to_dggs_array(raster::AbstractMatrix, lon_range::AbstractVector, lat_range::AbstractVector, level::Integer; kwargs...)
     raster = DimArray(raster, (X(lon_range), Y(lat_range)))
-    return to_cell_cube(raster, level; kwargs...)
+    return to_dggs_array(raster, level; kwargs...)
 end
 
-Base.getindex(cell_cube::CellCube; i...) = Base.getindex(cell_cube.data; i...) |> x -> CellCube(x, cell_cube.level)
+Base.getindex(cell_cube::DGGSArray; i...) = Base.getindex(cell_cube.data; i...) |> x -> DGGSArray(x, cell_cube.level)
 
 function map_cell_to_geo_cube(xout, xin, cell_ids_mat)
     for (i, cell_id) in enumerate(cell_ids_mat)
@@ -93,7 +93,7 @@ function map_cell_to_geo_cube(xout, xin, cell_ids_mat)
     end
 end
 
-function to_geo_cube(cell_cube::CellCube; longitudes=-180:180, latitudes=-90:90)
+function to_geo_cube(cell_cube::DGGSArray; longitudes=-180:180, latitudes=-90:90)
     cell_ids_mat = transform_points(longitudes, latitudes, cell_cube.level).data
 
     geo_array = mapCube(
@@ -110,7 +110,7 @@ function to_geo_cube(cell_cube::CellCube; longitudes=-180:180, latitudes=-90:90)
 end
 
 
-function to_geo_cube(cell_cube::CellCube, cell_ids::DimArray{Q2DI{T},2}) where {T<:Integer}
+function to_geo_cube(cell_cube::DGGSArray, cell_ids::DimArray{Q2DI{T},2}) where {T<:Integer}
     geo_array = mapCube(
         map_cell_to_geo_cube,
         cell_cube.data,
@@ -149,14 +149,14 @@ function get_non_spatial_cube_axes(cell_cube)
     non_spatial_cube_axes
 end
 
-function plot_geo(cell_cube::CellCube; resolution::Real=800)
+function plot_geo(cell_cube::DGGSArray; resolution::Real=800)
     longitudes = range(-180, 180, length=resolution)
     latitudes = range(-90, 90, length=resolution)
     cell_ids = transform_points(longitudes, latitudes, cell_cube.level)
     plot_geo(cell_cube, cell_ids)
 end
 
-function plot_geo(cell_cube::CellCube, cell_ids::DimArray{Q2DI{T},2}) where {T<:Integer}
+function plot_geo(cell_cube::DGGSArray, cell_ids::DimArray{Q2DI{T},2}) where {T<:Integer}
     longitudes = dims(cell_ids, :X)
     latitudes = dims(cell_ids, :Y)
 
@@ -248,7 +248,7 @@ function plot_geo(cell_cube::CellCube, cell_ids::DimArray{Q2DI{T},2}) where {T<:
     end
 end
 
-function plot_geo(cell_cube::CellCube, bbox::HyperRectangle{2,Float32}; resolution::Int64=800)
+function plot_geo(cell_cube::DGGSArray, bbox::HyperRectangle{2,Float32}; resolution::Int64=800)
     min_x, min_y = bbox.origin
     max_x = min_x + bbox.widths[1]
     max_y = min_y + bbox.widths[2]
@@ -292,7 +292,7 @@ function plot_geo(cell_cube::CellCube, bbox::HyperRectangle{2,Float32}; resoluti
     end
 end
 
-function plot_native(cell_cube::CellCube)
+function plot_native(cell_cube::DGGSArray)
     cell_cube = cell_cube[q2di_n=2:11] # ignore 2 vertices at quad 1 and 12
 
     with_theme(theme_black()) do
@@ -359,7 +359,7 @@ function plot_native(cell_cube::CellCube)
     end
 end
 
-function Makie.plot(cell_cube::CellCube, args...; type=:geo, kwargs...)
+function Makie.plot(cell_cube::DGGSArray, args...; type=:geo, kwargs...)
     if type == :geo
         plot_geo(cell_cube, args...; kwargs...)
     elseif type == :native

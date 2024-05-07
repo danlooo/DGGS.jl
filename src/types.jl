@@ -16,16 +16,33 @@ function Base.show(io::IO, ::MIME"text/plain", i::Q2DI{T}) where {T<:Integer}
     println(io, "Q2DI($(i.n), $(i.i), $(i.j))")
 end
 
-struct CellCube
+struct DGGSArray
     data::YAXArray
     level::Integer
 end
 
-struct GridSystem
-    data::Dict{Int,CellCube} # some levels might be skipped
+struct DGGSPyramid
+    data::Dict{Int,DGGSArray} # some levels may be skipped
 
-    function GridSystem(data)
+    function DGGSPyramid(data)
         map(x -> x.data.axes .|> name, values(data)) |> allequal || error("Same dimensions must be used at all levels.")
         new(data)
     end
 end
+
+struct DGGSDatasetPyramid
+    data::Dict{Integer,Dict{Symbol,DGGSArray}}
+    attrs::Dict{String,Any}
+end
+
+struct DGGSDataset
+    data::YAXArrays.Dataset
+end
+
+struct DGGSGridSystem
+    name::String
+    aperture::Int
+    index::String
+end
+
+DGGSGridSystem(d::Dict{String,Any}) = DGGSGridSystem(d["name"], d["aperture"], d["index"])
