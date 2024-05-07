@@ -21,22 +21,21 @@ struct DGGSArray
     level::Integer
 end
 
-struct DGGSPyramid
+struct DGGSArrayPyramid
     data::Dict{Int,DGGSArray} # some levels may be skipped
 
-    function DGGSPyramid(data)
+    function DGGSArrayPyramid(data)
         map(x -> x.data.axes .|> name, values(data)) |> allequal || error("Same dimensions must be used at all levels.")
         new(data)
     end
 end
 
-struct DGGSDatasetPyramid
-    data::Dict{Integer,Dict{Symbol,DGGSArray}}
-    attrs::Dict{String,Any}
-end
-
 struct DGGSDataset
     data::YAXArrays.Dataset
+end
+
+struct DGGSDatasetPyramid
+    data::Dict{Integer,DGGSDataset}
 end
 
 struct DGGSGridSystem

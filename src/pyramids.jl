@@ -10,7 +10,7 @@ function aggregate_cell_cube(xout, xin; agg_func=filter_null(mean))
     end
 end
 
-function DGGSPyramid(cell_cube::DGGSArray; agg_func=filter_null(mean))
+function DGGSArrayPyramid(cell_cube::DGGSArray; agg_func=filter_null(mean))
     pyramid = Dict{Int,DGGSArray}()
     pyramid[cell_cube.level] = cell_cube
 
@@ -29,19 +29,19 @@ function DGGSPyramid(cell_cube::DGGSArray; agg_func=filter_null(mean))
         pyramid[coarser_level] = coarser_cell_cube
     end
 
-    return DGGSPyramid(pyramid)
+    return DGGSArrayPyramid(pyramid)
 end
 
-function DGGSPyramid(data::AbstractArray{<:Number}, lon_range::AbstractVector, lat_range::AbstractVector, level::Integer; kwargs...)
+function DGGSArrayPyramid(data::AbstractArray{<:Number}, lon_range::AbstractVector, lat_range::AbstractVector, level::Integer; kwargs...)
     raster = DimArray(data, (X(lon_range), Y(lat_range)))
     cell_cube = to_dggs_array(raster, level; kwargs...)
-    DGGSPyramid(cell_cube)
+    DGGSArrayPyramid(cell_cube)
 end
 
-function DGGSPyramid(data::AbstractArray{<:Number}, lon_range::DimensionalData.XDim, lat_range::DimensionalData.YDim, level::Integer; kwargs...)
+function DGGSArrayPyramid(data::AbstractArray{<:Number}, lon_range::DimensionalData.XDim, lat_range::DimensionalData.YDim, level::Integer; kwargs...)
     raster = DimArray(data, (lon_range, lat_range))
     cell_cube = to_dggs_array(raster, level; kwargs...)
-    DGGSPyramid(cell_cube)
+    DGGSArrayPyramid(cell_cube)
 end
 
 function GridSystem_url(url)
@@ -59,7 +59,7 @@ function GridSystem_url(url)
         pyramid[level] = DGGSArray(cell_array, level)
     end
 
-    return DGGSPyramid(pyramid)
+    return DGGSArrayPyramid(pyramid)
 end
 
 function GridSystem_local(path::String)
@@ -75,24 +75,24 @@ function GridSystem_local(path::String)
         pyramid[level] = DGGSArray(cell_array, level)
     end
 
-    return DGGSPyramid(pyramid)
+    return DGGSArrayPyramid(pyramid)
 end
 
-function DGGSPyramid(path::String)
+function DGGSArrayPyramid(path::String)
     startswith(path, r"http[s]?://") && return GridSystem_url(path)
     isdir(path) && return GridSystem_local(path)
 
     error("Path must be either a valid directory path or an URL")
 end
 
-function Base.show(io::IO, ::MIME"text/plain", dggs::DGGSPyramid)
+function Base.show(io::IO, ::MIME"text/plain", dggs::DGGSArrayPyramid)
     println(io, "DGGS Pyramid")
     println(io, "Levels: $(join(dggs.data |> keys |> collect |> sort, ","))")
     Base.show(io, "text/plain", dggs.data |> values |> first |> x -> x.data.axes)
 end
 
 function to_dggs_dataset_pyramid(geo_ds::Dataset, max_level::Int, cell_ids::DimArray{Q2DI{Int64},2})
-    pyramids = OrderedDict{Symbol,DGGSPyramid}()
+    array_pyramids = OrderedDict{Symbol,DGGSArrayPyramid}()
     # build dggs for each variable
     # to ensure pyramid building in DGGS space
     for (var, geo_cube) in geo_ds.cubes
@@ -110,17 +110,9 @@ function to_dggs_dataset_pyramid(geo_ds::Dataset, max_level::Int, cell_ids::DimA
         end
         geo_cube = YAXArray(Tuple(axs), geo_cube.data, geo_cube.properties)
         cell_cube = to_dggs_array(geo_cube, max_level; cell_ids=cell_ids)
-        pyramids[var] = cell_cube |> DGGSPyramid
+        array_pyramids[var] = cell_cube |> DGGSArrayPyramid
     end
 
-    dggs_data = Dict{Integer,Dict{Symbol,DGGSArray}}()
-    for level in 2:max_level
-        dggs_level = Dict{Symbol,DGGSArray}()
-        for var in geo_ds.cubes |> keys
-            dggs_level[var] = pyramids[var][level]
-        end
-        dggs_data[level] = dggs_level
-    end
     properties = geo_ds.properties
     properties["_DGGS"] = Dict(
         "index" => "Q2DI",
@@ -134,30 +126,50 @@ function to_dggs_dataset_pyramid(geo_ds::Dataset, max_level::Int, cell_ids::DimA
         "projection" => "+isea",
         "rotation_azimuth" => 0
     )
-    dggs = DGGSDatasetPyramid(dggs_data, properties)
+
+    dggs = Dict{Integer,DGGSDataset}()
+    for level in 2:max_level
+        cubes = Dict{Symbol,YAXArray}()
+        for (k, ar) in array_pyramids
+            cubes[k] = array_pyramids[k][level].data
+        end
+        properties["_DGGS"]["level"] = level
+        ds = Dataset(; properties=properties, cubes...) |> DGGSDataset
+        dggs[level] = ds
+    end
+    dggs = DGGSDatasetPyramid(dggs)
+    return dggs
+end
+
+function Base.write(base_path, dggs::DGGSDatasetPyramid)
+    @infiltrate
+end
+
+function open_dggs_dataset(path::String)
+    root_group = zopen(path)
+    dggs_datasets = Dict()
+    for (k, zarr_group) in sort(root_group.groups)
+        ds = open_dataset(zarr_group)
+        level = ds.properties["_DGGS"]["level"]
+        dggs_datasets[level] = ds |> DGGSDataset
+    end
+    dggs = dggs_datasets |> DGGSDatasetPyramid
     return dggs
 end
 
 Base.getindex(dggs::DGGSDatasetPyramid, level::Int) = dggs.data[level]
-Base.getindex(dggs::DGGSPyramid, level::Int) = dggs.data[level]
-Base.setindex!(dggs::DGGSPyramid, cell_cube::DGGSArray, level::Int) = dggs.data[level] = cell_cube
+Base.getindex(dggs::DGGSArrayPyramid, level::Int) = dggs.data[level]
+Base.setindex!(dggs::DGGSArrayPyramid, cell_cube::DGGSArray, level::Int) = dggs.data[level] = cell_cube
 
-DGGSArray(dggs::DGGSPyramid) = dggs[dggs.data|>keys|>maximum]
-Makie.plot(dggs::DGGSPyramid, args...; kw...) = Makie.plot(DGGSArray(dggs), args...; kw...)
+DGGSArray(dggs::DGGSArrayPyramid) = dggs[dggs.data|>keys|>maximum]
+Makie.plot(dggs::DGGSArrayPyramid, args...; kw...) = Makie.plot(DGGSArray(dggs), args...; kw...)
 
 function get_axes(dggs::DGGSDatasetPyramid)
     level = dggs.data[dggs.data|>keys|>first]
-    axes = []
-    for (k, arr) in level
-        for ax in arr.data.axes
-            push!(axes, ax)
-        end
-    end
-    unique!(axes)
-    return axes
+    return level.data.axes |> values
 end
 
-function Base.show(io::IO, ::MIME"text/plain", dggs::DGGSDatasetPyramid; show_n_attributes::Integer=5)
+function Base.show(io::IO, ::MIME"text/plain", dggs::DGGSDatasetPyramid)
     level = dggs.data[dggs.data|>keys|>first]
     axes = get_axes(dggs)
 
@@ -173,25 +185,30 @@ function Base.show(io::IO, ::MIME"text/plain", dggs::DGGSDatasetPyramid; show_n_
 
     println(io, "Axes:")
     for ax in axes
+        startswith(String(name(ax)), "q2di_") && continue
         print(io, "  ")
-        printstyled(io, name(ax); color=:red)
+        Base.show(io, "text/plain", ax)
         println(io)
     end
 
     println(io, "Variables:")
-    for (k, arr) in level
+    for (k, arr) in level.data.cubes
         print(io, "  ")
-        get(arr.data.properties, "standard_name", k) |> x -> printstyled(io, x; color=:blue)
-        get(arr.data.properties, "units", "units undefined") |> x -> printstyled(io, " ($x)"; color=:white)
+        get(arr.properties, "standard_name", k) |> x -> printstyled(io, x; color=:blue)
+        get(arr.properties, "units", "units undefined") |> x -> printstyled(io, " $x"; color=:white)
         print(io, " ")
-        print(io, name(arr.data.axes))
+        print(io, setdiff(name(arr.axes), (:q2di_n, :q2di_i, :q2di_j)) |> Tuple)
         print(io, " $(eltype(arr.data))")
         println(io)
     end
+
+    println(io, "$(length(dggs.attrs)) Attributes")
 end
 
 function Base.getproperty(dggs::DGGSDatasetPyramid, v::Symbol)
-    if v == :grid
+    if v == :attrs
+        return dggs.data |> values |> first |> x -> x.data.properties
+    elseif v == :grid
         return dggs.attrs["_DGGS"] |> DGGSGridSystem
     elseif v == :axes
         return get_axes(dggs)
