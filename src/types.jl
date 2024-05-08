@@ -1,9 +1,3 @@
-struct ColorScale{T<:Real}
-    schema::ColorScheme
-    min_value::T
-    max_value::T
-end
-
 struct Q2DI{T<:Integer}
     n::UInt8
     i::T
@@ -16,34 +10,50 @@ function Base.show(io::IO, ::MIME"text/plain", i::Q2DI{T}) where {T<:Integer}
     println(io, "Q2DI($(i.n), $(i.i), $(i.j))")
 end
 
-struct DGGSArray
-    data::YAXArray
-end
-
-struct DGGSArrayPyramid
-    data::Dict{Int,DGGSArray} # some levels may be skipped
-
-    function DGGSArrayPyramid(data)
-        map(x -> x.data.axes .|> name, values(data)) |> allequal || error("Same dimensions must be used at all levels.")
-        new(data)
-    end
-end
-
-struct DGGSDataset
-    data::YAXArrays.Dataset
-end
-
-struct DGGSDatasetPyramid
-    data::Dict{Integer,DGGSDataset}
-end
-
 struct DGGSGridSystem
     name::String
-    aperture::Int
     index::String
 end
 
-DGGSGridSystem(d::Dict{String,Any}) = DGGSGridSystem(d["name"], d["aperture"], d["index"])
+DGGSGridSystem(d::Dict{String,Any}) = DGGSGridSystem(d["name"], d["index"])
+
+struct DGGSArray
+    data::YAXArray
+    attrs::Dict{String,Any}
+    name::String
+    level::Integer
+    dggs::DGGSGridSystem
+end
+
+struct DGGSLayer
+    data::Dict{Symbol,DGGSArray}
+    bands::Vector{Symbol}
+    level::Integer
+
+    function DGGSLayer(data, bands, level)
+        if !(map(x -> x.dggs.name, collect(values(data))) |> allequal)
+            error("DGGS are different")
+        end
+
+        if !(map(x -> x.level, collect(values(data))) |> allequal)
+            error("Levels are different")
+        end
+        new(data, bands, level)
+    end
+end
+
+struct DGGSPyramid
+    data::Dict{Int,DGGSLayer}
+    levels::Vector{Integer}
+    bands::Vector{Symbol}
+
+    function DGGSPyramid(data, levels, bands)
+        if !(map(l -> l.bands, collect(values(data))) |> allequal)
+            error("Bands are different")
+        end
+        new(data, levels, bands)
+    end
+end
 
 
 const Q2DI_DGGS_PROPS = Dict(

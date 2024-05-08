@@ -33,18 +33,7 @@ include("pyramids.jl")
 
 export
     DGGSArray,
-    DGGSDataset,
-    DGGSArrayPyramid,
-    DGGSDatasetPyramid,
-    DGGSGridSystem,
-    Q2DI,
-    transform_points,
-    ColorScale,
-    query,
-    to_dggs_array,
-    to_dggs_dataset_pyramid,
-    to_geo_cube,
-    open_dggs_dataset,
-    At,
-    BBox
+    DGGSLayer,
+    DGGSPyramid,
+    open_pyramid
 end
