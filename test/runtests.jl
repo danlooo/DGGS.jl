@@ -28,7 +28,7 @@ raster2 = raster |> x -> to_dggs_array(x, level) |> to_geo_cube
 
 dggs_path = tempname()
 write(dggs_path, dggs)
-dggs2 = GridSystem(dggs_path)
+dggs2 = open_dggs_dataset(dggs_path)
 rm(dggs_path, recursive=true)
 
 
@@ -43,7 +43,7 @@ axlist = (
     Dim{:time}(time_range),
     Dim{:band}(bands)
 )
-dggs2 = YAXArray(axlist, data) |> x -> to_dggs_array(x, level) |> GridSystem
+dggs2 = YAXArray(axlist, data) |> x -> to_dggs_dataset_pyramid(x, level)
 @test dggs2 |> CellCube |> x -> x.data |> dims |> length == 5
 @test dggs2[6][band=1, time=2] |> typeof == CellCube
 @test dggs2[6][band=2, time=2].data.axes |> length == 3
