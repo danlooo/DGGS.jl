@@ -10,11 +10,11 @@ function aggregate_cell_cube(xout, xin; agg_func=filter_null(mean))
     end
 end
 
-function DGGSArrayPyramid(cell_cube::DGGSArray; agg_func=filter_null(mean))
+function DGGSArrayPyramid(cell_array::DGGSArray; agg_func=filter_null(mean))
     pyramid = Dict{Int,DGGSArray}()
-    pyramid[cell_cube.level] = cell_cube
+    pyramid[cell_array.level] = cell_array
 
-    for coarser_level in cell_cube.level-1:-1:2
+    for coarser_level in cell_array.level-1:-1:2
         coarser_cell_array = mapCube(
             (xout, xin) -> aggregate_cell_cube(xout, xin; agg_func=agg_func),
             pyramid[coarser_level+1].data,
@@ -24,8 +24,10 @@ function DGGSArrayPyramid(cell_cube::DGGSArray; agg_func=filter_null(mean))
                 Dim{:q2di_j}(range(0; step=1, length=2^(coarser_level - 1)))
             )
         )
-        coarser_cell_array = YAXArray(coarser_cell_array.axes, coarser_cell_array.data, cell_cube.data.properties)
-        coarser_cell_cube = DGGSArray(coarser_cell_array, coarser_level)
+        props = deepcopy(cell_array.data.properties)
+        props["_DGGS"]["level"] = coarser_level
+        coarser_cell_array = YAXArray(coarser_cell_array.axes, coarser_cell_array.data, deepcopy(props))
+        coarser_cell_cube = DGGSArray(coarser_cell_array)
         pyramid[coarser_level] = coarser_cell_cube
     end
 
@@ -34,14 +36,14 @@ end
 
 function DGGSArrayPyramid(data::AbstractArray{<:Number}, lon_range::AbstractVector, lat_range::AbstractVector, level::Integer; kwargs...)
     raster = DimArray(data, (X(lon_range), Y(lat_range)))
-    cell_cube = to_dggs_array(raster, level; kwargs...)
-    DGGSArrayPyramid(cell_cube)
+    cell_array = to_dggs_array(raster, level; kwargs...)
+    DGGSArrayPyramid(cell_array)
 end
 
 function DGGSArrayPyramid(data::AbstractArray{<:Number}, lon_range::DimensionalData.XDim, lat_range::DimensionalData.YDim, level::Integer; kwargs...)
     raster = DimArray(data, (lon_range, lat_range))
-    cell_cube = to_dggs_array(raster, level; kwargs...)
-    DGGSArrayPyramid(cell_cube)
+    cell_array = to_dggs_array(raster, level; kwargs...)
+    DGGSArrayPyramid(cell_array)
 end
 
 function GridSystem_url(url)
@@ -91,7 +93,7 @@ function Base.show(io::IO, ::MIME"text/plain", dggs::DGGSArrayPyramid)
     Base.show(io, "text/plain", dggs.data |> values |> first |> x -> x.data.axes)
 end
 
-function to_dggs_dataset_pyramid(geo_ds::Dataset, max_level::Int, cell_ids::DimArray{Q2DI{Int64},2})
+function to_dggs_dataset_pyramid(geo_ds::Dataset, max_level::Int, cell_ids::DimArray{Q2DI{Int64},2}; verbose::Bool=true)
     array_pyramids = OrderedDict{Symbol,DGGSArrayPyramid}()
     # build dggs for each variable
     # to ensure pyramid building in DGGS space
@@ -109,40 +111,57 @@ function to_dggs_dataset_pyramid(geo_ds::Dataset, max_level::Int, cell_ids::DimA
             end
         end
         geo_cube = YAXArray(Tuple(axs), geo_cube.data, geo_cube.properties)
-        cell_cube = to_dggs_array(geo_cube, max_level; cell_ids=cell_ids)
-        array_pyramids[var] = cell_cube |> DGGSArrayPyramid
+        cell_array = to_dggs_array(geo_cube, max_level; cell_ids=cell_ids, verbose=verbose)
+        array_pyramids[var] = cell_array |> DGGSArrayPyramid
     end
 
-    properties = geo_ds.properties
-    properties["_DGGS"] = Dict(
-        "index" => "Q2DI",
-        "aperture" => 4,
-        "rotation_lon" => 11.25,
-        "polyhedron" => "icosahedron",
-        "name" => "DGGRID ISEA4H Q2DI",
-        "radius" => 6371007.180918475,
-        "polygon" => "hexagon",
-        "rotation_lat" => 58.2825,
-        "projection" => "+isea",
-        "rotation_azimuth" => 0
-    )
-
+    props = deepcopy(geo_ds.properties)
+    props["_DGGS"] = Q2DI_DGGS_PROPS
     dggs = Dict{Integer,DGGSDataset}()
     for level in 2:max_level
         cubes = Dict{Symbol,YAXArray}()
         for (k, ar) in array_pyramids
             cubes[k] = array_pyramids[k][level].data
         end
-        properties["_DGGS"]["level"] = level
-        ds = Dataset(; properties=properties, cubes...) |> DGGSDataset
+        props["_DGGS"]["level"] = level
+        ds = Dataset(; properties=deepcopy(props), cubes...) |> DGGSDataset
         dggs[level] = ds
     end
     dggs = DGGSDatasetPyramid(dggs)
     return dggs
 end
 
-function Base.write(base_path, dggs::DGGSDatasetPyramid)
-    @infiltrate
+function Base.write(base_path::String, dggs::DGGSArrayPyramid)
+    mkdir(base_path)
+
+    for level in dggs.levels
+        level_path = "$base_path/$level"
+        ds = Dataset(; properties=dggs[level].attrs, Dict(dggs[level].name |> Symbol => dggs[level].data)...)
+        savedataset(ds; path=level_path)
+        JSON3.write("$level_path/.zgroup", Dict(:zarr_format => 2))
+        Zarr.consolidate_metadata(level_path)
+    end
+
+    JSON3.write("$base_path/.zattrs", dggs.attrs)
+    JSON3.write("$base_path/.zgroup", Dict(:zarr_format => 2))
+    Zarr.consolidate_metadata(base_path)
+    return
+end
+
+function Base.write(base_path::String, dggs::DGGSDatasetPyramid)
+    mkdir(base_path)
+
+    for level in dggs.levels
+        level_path = "$base_path/$level"
+        savedataset(dggs[level].data; path=level_path)
+        JSON3.write("$level_path/.zgroup", Dict(:zarr_format => 2))
+        Zarr.consolidate_metadata(level_path)
+    end
+
+    JSON3.write("$base_path/.zattrs", dggs.attrs)
+    JSON3.write("$base_path/.zgroup", Dict(:zarr_format => 2))
+    Zarr.consolidate_metadata(base_path)
+    return
 end
 
 function open_dggs_dataset(path::String)
@@ -159,7 +178,7 @@ end
 
 Base.getindex(dggs::DGGSDatasetPyramid, level::Int) = dggs.data[level]
 Base.getindex(dggs::DGGSArrayPyramid, level::Int) = dggs.data[level]
-Base.setindex!(dggs::DGGSArrayPyramid, cell_cube::DGGSArray, level::Int) = dggs.data[level] = cell_cube
+Base.setindex!(dggs::DGGSArrayPyramid, cell_array::DGGSArray, level::Int) = dggs.data[level] = cell_array
 
 DGGSArray(dggs::DGGSArrayPyramid) = dggs[dggs.data|>keys|>maximum]
 Makie.plot(dggs::DGGSArrayPyramid, args...; kw...) = Makie.plot(DGGSArray(dggs), args...; kw...)
@@ -173,31 +192,28 @@ function Base.show(io::IO, ::MIME"text/plain", dggs::DGGSDatasetPyramid)
     level = dggs.data[dggs.data|>keys|>first]
     axes = get_axes(dggs)
 
-    println(io, typeof(dggs))
-
-    print(io, "DGGS: ")
-    printstyled(io, dggs.grid.name; color=:white)
+    printstyled(io, typeof(dggs); color=:white)
     println(io)
+    "title" in keys(dggs.attrs) && println(io, dggs.attrs["title"])
 
-    print(io, "Levels: ")
-    printstyled(io, join(dggs.data |> keys |> collect |> sort, ", "); color=:white)
-    println(io)
+    printstyled(io, "Spatial axes:\n"; color=:white)
+    println(io, "  DGGS: " * dggs.grid.name)
+    println(io, "  Levels: " * join(dggs.data |> keys |> collect |> sort, ", "))
 
-    println(io, "Axes:")
+    printstyled(io, "Other axes:\n"; color=:white)
     for ax in axes
         startswith(String(name(ax)), "q2di_") && continue
-        print(io, "  ")
-        Base.show(io, "text/plain", ax)
+        printstyled(io, "  " * String(name(ax)); color=:red)
         println(io)
     end
 
-    println(io, "Variables:")
+    printstyled(io, "Data variables:\n"; color=:white)
     for (k, arr) in level.data.cubes
         print(io, "  ")
         get(arr.properties, "standard_name", k) |> x -> printstyled(io, x; color=:blue)
         get(arr.properties, "units", "units undefined") |> x -> printstyled(io, " $x"; color=:white)
         print(io, " ")
-        print(io, setdiff(name(arr.axes), (:q2di_n, :q2di_i, :q2di_j)) |> Tuple)
+        printstyled(io, setdiff(name(arr.axes), (:q2di_n, :q2di_i, :q2di_j)) |> Tuple; color=:red)
         print(io, " $(eltype(arr.data))")
         println(io)
     end
@@ -212,9 +228,13 @@ function Base.getproperty(dggs::DGGSDatasetPyramid, v::Symbol)
         return dggs.attrs["_DGGS"] |> DGGSGridSystem
     elseif v == :axes
         return get_axes(dggs)
+    elseif v == :levels
+        return dggs.data |> keys |> collect
+    elseif v == :dataset
+        return dggs.data |> values |> first
     else
         return getfield(dggs, v)
     end
 end
 
-Base.propertynames(::DGGSDatasetPyramid) = (:attrs, :data, :grid, :axes)
+Base.propertynames(::DGGSDatasetPyramid) = (:attrs, :data, :grid, :axes, :levels, :dataset)

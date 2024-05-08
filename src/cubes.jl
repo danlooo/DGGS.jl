@@ -1,16 +1,47 @@
 function Base.show(io::IO, ::MIME"text/plain", cube::DGGSArray)
     println(io, "DGGSArray at level $(cube.level)")
-    Base.show(io, "text/plain", cube.data.axes)
+    println(io, "Grid: $(cube.grid)")
+    Base.show(io, "text/plain", cube.data.properties)
 end
 
-function Base.getindex(cell_cube::DGGSArray, i::Q2DI)
-    cell_cube.data[q2di_n=At(i.n), q2di_i=At(i.i), q2di_j=At(i.j)]
+function Base.getindex(cell_array::DGGSArray, i::Q2DI)
+    cell_array.data[q2di_n=At(i.n), q2di_i=At(i.i), q2di_j=At(i.j)]
 end
 
-function Base.getindex(cell_cube::DGGSArray, lon::Real, lat::Real)
-    cell_id = _transform_points(lon, lat, cell_cube.level)[1, 1]
-    cell_cube.data[q2di_n=At(cell_id.n), q2di_i=At(cell_id.i), q2di_j=At(cell_id.j)]
+function Base.getindex(cell_array::DGGSArray, lon::Real, lat::Real)
+    cell_id = _transform_points(lon, lat, cell_array.level)[1, 1]
+    cell_array.data[q2di_n=At(cell_id.n), q2di_i=At(cell_id.i), q2di_j=At(cell_id.j)]
 end
+
+function Base.getproperty(arr::DGGSArray, v::Symbol)
+    if v == :attrs
+        return arr.data.properties
+    elseif v == :grid
+        return arr.attrs["_DGGS"] |> DGGSGridSystem
+    elseif v == :level
+        return arr.attrs["_DGGS"]["level"]
+    elseif v == :name
+        return get(arr.attrs, "name", "layer")
+    else
+        return getfield(arr, v)
+    end
+end
+Base.propertynames(::DGGSArray) = (:attrs, :grid, :level, :name, :data)
+
+function Base.getproperty(dggs::DGGSArrayPyramid, v::Symbol)
+    if v == :attrs
+        res = dggs.data |> values |> first |> x -> x.data.properties |> deepcopy
+        delete!(res["_DGGS"], "level")
+        return res
+    elseif v == :levels
+        return dggs.data |> keys |> collect
+    else
+        return getfield(dggs, v)
+    end
+end
+Base.propertynames(::DGGSArrayPyramid) = (:levels, :data)
+
+Base.propertynames(::DGGSDatasetPyramid) = (:attrs, :grid, :level, :data)
 
 "Apply function f after filtering of missing and NAN values"
 function filter_null(f)
@@ -28,7 +59,7 @@ end
 "maximial i or j value in Q2DI index given a level"
 max_ij(level) = level <= 3 ? level - 1 : 2^(level - 2)
 
-function to_dggs_array(raster::AbstractDimArray, level::Integer; agg_func::Function=filter_null(mean), cell_ids::Union{AbstractMatrix,Nothing}=nothing, lon_name::Symbol=:lon, lat_name::Symbol=:lat)
+function to_dggs_array(raster::AbstractDimArray, level::Integer; agg_func::Function=filter_null(mean), cell_ids::Union{AbstractMatrix,Nothing}=nothing, lon_name::Symbol=:lon, lat_name::Symbol=:lat, verbose::Bool=true)
     lon_dim = filter(x -> x isa X || name(x) == lon_name, dims(raster))
     lat_dim = filter(x -> x isa Y || name(x) == lat_name, dims(raster))
 
@@ -42,7 +73,7 @@ function to_dggs_array(raster::AbstractDimArray, level::Integer; agg_func::Funct
     -180 <= minimum(lon_dim) <= maximum(lon_dim) <= 180 || error("$(name(lon_dim)) must be within [-180, 180]")
     -90 <= minimum(lat_dim) <= maximum(lat_dim) <= 90 || error("$(name(lon_dim)) must be within [-90, 90]")
 
-    @info "Step 1/2: Transform coordinates"
+    verbose && @info "Step 1/2: Transform coordinates"
     cell_ids_mat = isnothing(cell_ids) ? transform_points(lon_dim.val, lat_dim.val, level) : cell_ids
 
     # TODO: what if e.g. lon goes from 0 to 365?
@@ -61,8 +92,8 @@ function to_dggs_array(raster::AbstractDimArray, level::Integer; agg_func::Funct
         end
     end
 
-    @info "Step 2/2: Re-grid the data"
-    cell_cube = mapCube(
+    verbose && @info "Step 2/2: Re-grid the data"
+    cell_array = mapCube(
         map_geo_to_cell_cube,
         # mapCube can't find axes of other AbstractDimArrays e.g. Raster
         YAXArray(dims(raster), raster.data),
@@ -76,8 +107,11 @@ function to_dggs_array(raster::AbstractDimArray, level::Integer; agg_func::Funct
         ),
         showprog=true
     )
-    cell_cube = YAXArray(cell_cube.axes, cell_cube.data, metadata(raster))
-    DGGSArray(cell_cube, level)
+    props = raster |> metadata |> typeof == Dict{String,Any} ? deepcopy(metadata(raster)) : Dict{String,Any}()
+    props["_DGGS"] = deepcopy(Q2DI_DGGS_PROPS)
+    props["_DGGS"]["level"] = level
+    cell_array = YAXArray(cell_array.axes, cell_array.data, props)
+    DGGSArray(cell_array)
 end
 
 function to_dggs_array(raster::AbstractMatrix, lon_range::AbstractVector, lat_range::AbstractVector, level::Integer; kwargs...)
@@ -85,7 +119,38 @@ function to_dggs_array(raster::AbstractMatrix, lon_range::AbstractVector, lat_ra
     return to_dggs_array(raster, level; kwargs...)
 end
 
-Base.getindex(cell_cube::DGGSArray; i...) = Base.getindex(cell_cube.data; i...) |> x -> DGGSArray(x, cell_cube.level)
+Base.getindex(cell_array::DGGSArray; i...) = Base.getindex(cell_array.data; i...) |> x -> DGGSArray(x, cell_array.level)
+
+# allowd due to CF conventions see http://cfconventions.org/Data/cf-standard-names/docs/guidelines.html
+function Base.getproperty(ds::DGGSDataset, v::Symbol)
+    if v == :attrs
+        return ds.data.properties
+    elseif v == :level
+        return ds.data.properties["_DGGS"]["level"]
+    elseif v == :grid
+        return ds.data.properties["_DGGS"] |> DGGSGridSystem
+    elseif v == :data # before keys to prevent stack overflow
+        return getfield(ds, v)
+    elseif v in keys(ds.data.cubes)
+        return ds.data.cubes[v] |> DGGSArray
+    elseif v == :arrays
+        res = Dict{Symbol,DGGSArray}()
+        for (k, v) in ds.data.cubes
+            res[k] = DGGSArray(v)
+        end
+        return OrderedDict(res)
+    else
+        return getfield(ds, v)
+    end
+end
+
+Base.propertynames(ds::DGGSDataset) = union(keys(ds.arrays), (:attrs, :level, :grid, :arrays, :data))
+
+function Base.show(io::IO, ::MIME"text/plain", ds::DGGSDataset)
+    println(io, typeof(ds))
+    println(io, "Level: $(ds.level)")
+    print(io, "DGGS: $(ds.grid)")
+end
 
 function map_cell_to_geo_cube(xout, xin, cell_ids_mat)
     for (i, cell_id) in enumerate(cell_ids_mat)
@@ -93,12 +158,12 @@ function map_cell_to_geo_cube(xout, xin, cell_ids_mat)
     end
 end
 
-function to_geo_cube(cell_cube::DGGSArray; longitudes=-180:180, latitudes=-90:90)
-    cell_ids_mat = transform_points(longitudes, latitudes, cell_cube.level).data
+function to_geo_cube(cell_array::DGGSArray; longitudes=-180:180, latitudes=-90:90)
+    cell_ids_mat = transform_points(longitudes, latitudes, cell_array.level).data
 
     geo_array = mapCube(
         map_cell_to_geo_cube,
-        cell_cube.data,
+        cell_array.data,
         cell_ids_mat,
         indims=InDims(:q2di_i, :q2di_j, :q2di_n),
         outdims=OutDims(
@@ -110,10 +175,10 @@ function to_geo_cube(cell_cube::DGGSArray; longitudes=-180:180, latitudes=-90:90
 end
 
 
-function to_geo_cube(cell_cube::DGGSArray, cell_ids::DimArray{Q2DI{T},2}) where {T<:Integer}
+function to_geo_cube(cell_array::DGGSArray, cell_ids::DimArray{Q2DI{T},2}) where {T<:Integer}
     geo_array = mapCube(
         map_cell_to_geo_cube,
-        cell_cube.data,
+        cell_array.data,
         cell_ids.data,
         indims=InDims(:q2di_i, :q2di_j, :q2di_n),
         outdims=OutDims(dims(cell_ids)...)
@@ -128,9 +193,9 @@ function color_value(value, color_scale::ColorScale; null_color=RGBA{Float64}(0.
     return color_scale.schema[value] |> RGBA
 end
 
-function get_non_spatial_cube_axes(cell_cube)
+function get_non_spatial_cube_axes(cell_array)
     non_spatial_cube_axes = []
-    for (i, ax) in enumerate(cell_cube.data.axes)
+    for (i, ax) in enumerate(cell_array.data.axes)
         name(ax) in [:q2di_i, :q2di_j, :q2di_n] && continue
 
         entry = Dict(
@@ -149,14 +214,14 @@ function get_non_spatial_cube_axes(cell_cube)
     non_spatial_cube_axes
 end
 
-function plot_geo(cell_cube::DGGSArray; resolution::Real=800)
+function plot_geo(cell_array::DGGSArray; resolution::Real=800)
     longitudes = range(-180, 180, length=resolution)
     latitudes = range(-90, 90, length=resolution)
-    cell_ids = transform_points(longitudes, latitudes, cell_cube.level)
-    plot_geo(cell_cube, cell_ids)
+    cell_ids = transform_points(longitudes, latitudes, cell_array.level)
+    plot_geo(cell_array, cell_ids)
 end
 
-function plot_geo(cell_cube::DGGSArray, cell_ids::DimArray{Q2DI{T},2}) where {T<:Integer}
+function plot_geo(cell_array::DGGSArray, cell_ids::DimArray{Q2DI{T},2}) where {T<:Integer}
     longitudes = dims(cell_ids, :X)
     latitudes = dims(cell_ids, :Y)
 
@@ -166,7 +231,7 @@ function plot_geo(cell_cube::DGGSArray, cell_ids::DimArray{Q2DI{T},2}) where {T<
         side_panel = fig[1, 2] = GridLayout()
         cb = Colorbar(side_panel[1, 1])
 
-        non_spatial_cube_axes = get_non_spatial_cube_axes(cell_cube)
+        non_spatial_cube_axes = get_non_spatial_cube_axes(cell_array)
 
         if length(non_spatial_cube_axes) > 0
             slider_grid = SliderGrid(fig[2, 1], [x[:slider] for x in non_spatial_cube_axes]...)
@@ -178,7 +243,7 @@ function plot_geo(cell_cube::DGGSArray, cell_ids::DimArray{Q2DI{T},2}) where {T<
                     d[name(ax[:dim])] = val
                 end
                 d = NamedTuple(d)
-                filtered_cell_cube = getindex(cell_cube; d...)
+                filtered_cell_cube = getindex(cell_array; d...)
 
                 geo_cube = to_geo_cube(filtered_cell_cube, cell_ids)
                 color_scale = ColorScale(ColorSchemes.viridis, filter_null(minimum)(geo_cube) |> floor |> Int, filter_null(maximum)(geo_cube) |> ceil |> Int)
@@ -187,7 +252,7 @@ function plot_geo(cell_cube::DGGSArray, cell_ids::DimArray{Q2DI{T},2}) where {T<
             end
             texture
         else
-            geo_cube = to_geo_cube(cell_cube, cell_ids)
+            geo_cube = to_geo_cube(cell_array, cell_ids)
             color_scale = ColorScale(ColorSchemes.viridis, filter_null(minimum)(geo_cube.data), filter_null(maximum)(geo_cube.data))
             texture = map(x -> color_value(x, color_scale), geo_cube.data[1:length(longitudes), length(latitudes):-1:1]')
             texture
@@ -248,19 +313,19 @@ function plot_geo(cell_cube::DGGSArray, cell_ids::DimArray{Q2DI{T},2}) where {T<
     end
 end
 
-function plot_geo(cell_cube::DGGSArray, bbox::HyperRectangle{2,Float32}; resolution::Int64=800)
+function plot_geo(cell_array::DGGSArray, bbox::HyperRectangle{2,Float32}; resolution::Int64=800)
     min_x, min_y = bbox.origin
     max_x = min_x + bbox.widths[1]
     max_y = min_y + bbox.widths[2]
     longitudes = range(min_x, max_x; length=resolution)
     latitudes = range(min_y, max_y; length=resolution)
-    cell_ids = transform_points(longitudes, latitudes, cell_cube.level)
-    geo_cube = to_geo_cube(cell_cube, cell_ids)
+    cell_ids = transform_points(longitudes, latitudes, cell_array.level)
+    geo_cube = to_geo_cube(cell_array, cell_ids)
 
 
     with_theme(theme_black()) do
         fig = Figure()
-        non_spatial_cube_axes = get_non_spatial_cube_axes(cell_cube)
+        non_spatial_cube_axes = get_non_spatial_cube_axes(cell_array)
 
         if length(non_spatial_cube_axes) > 0
             slider_grid = SliderGrid(fig[2, 1], [x[:slider] for x in non_spatial_cube_axes]...)
@@ -271,13 +336,13 @@ function plot_geo(cell_cube::DGGSArray, bbox::HyperRectangle{2,Float32}; resolut
                 for (ax, val) in zip(non_spatial_cube_axes, slider_values)
                     d[name(ax[:dim])] = val
                 end
-                filtered_cell_cube = getindex(cell_cube; NamedTuple(d)...)
+                filtered_cell_cube = getindex(cell_array; NamedTuple(d)...)
                 geo_cube = to_geo_cube(filtered_cell_cube, cell_ids)
                 geo_cube
             end
             geo_cube
         else
-            geo_cube = Observable(to_geo_cube(cell_cube, cell_ids))
+            geo_cube = Observable(to_geo_cube(cell_array, cell_ids))
         end
 
         min_value = filter_null(minimum)(geo_cube[].data) |> floor |> Int
@@ -292,15 +357,15 @@ function plot_geo(cell_cube::DGGSArray, bbox::HyperRectangle{2,Float32}; resolut
     end
 end
 
-function plot_native(cell_cube::DGGSArray)
-    cell_cube = cell_cube[q2di_n=2:11] # ignore 2 vertices at quad 1 and 12
+function plot_native(cell_array::DGGSArray)
+    cell_array = cell_array[q2di_n=2:11] # ignore 2 vertices at quad 1 and 12
 
     with_theme(theme_black()) do
         fig = Figure()
         ax = fig[1, 1] = LScene(fig[1, 1], show_axis=false)
         side_panel = fig[1, 2] = GridLayout()
         cb = Colorbar(side_panel[1, 1])
-        non_spatial_cube_axes = get_non_spatial_cube_axes(cell_cube)
+        non_spatial_cube_axes = get_non_spatial_cube_axes(cell_array)
 
         if length(non_spatial_cube_axes) > 0
             slider_grid = SliderGrid(fig[2, 1], [x[:slider] for x in non_spatial_cube_axes]...)
@@ -312,7 +377,7 @@ function plot_native(cell_cube::DGGSArray)
                     d[name(ax[:dim])] = val
                 end
                 d = NamedTuple(d)
-                filtered_cell_cube = getindex(cell_cube; d...)
+                filtered_cell_cube = getindex(cell_array; d...)
 
                 color_scale = ColorScale(ColorSchemes.viridis, filter_null(minimum)(filtered_cell_cube.data) |> floor |> Int, filter_null(maximum)(filtered_cell_cube.data) |> ceil |> Int)
                 cb.limits[] = (color_scale.min_value, color_scale.max_value)
@@ -324,8 +389,8 @@ function plot_native(cell_cube::DGGSArray)
                 texture
             end
         else
-            color_scale = ColorScale(ColorSchemes.viridis, filter_null(minimum)(cell_cube.data) |> floor |> Int, filter_null(maximum)(cell_cube.data) |> ceil |> Int)
-            texture = Array(cell_cube.data)
+            color_scale = ColorScale(ColorSchemes.viridis, filter_null(minimum)(cell_array.data) |> floor |> Int, filter_null(maximum)(cell_array.data) |> ceil |> Int)
+            texture = Array(cell_array.data)
             texture = reshape(texture, size(texture)[1], 10 * size(texture)[1])
             texture = map(x -> color_value(x, color_scale), texture)
             texture
@@ -359,10 +424,10 @@ function plot_native(cell_cube::DGGSArray)
     end
 end
 
-function Makie.plot(cell_cube::DGGSArray, args...; type=:geo, kwargs...)
+function Makie.plot(cell_array::DGGSArray, args...; type=:geo, kwargs...)
     if type == :geo
-        plot_geo(cell_cube, args...; kwargs...)
+        plot_geo(cell_array, args...; kwargs...)
     elseif type == :native
-        plot_native(cell_cube, args...; kwargs...)
+        plot_native(cell_array, args...; kwargs...)
     end
 end

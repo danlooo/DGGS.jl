@@ -33,6 +33,7 @@ include("pyramids.jl")
 
 export
     DGGSArray,
+    DGGSDataset,
     DGGSArrayPyramid,
     DGGSDatasetPyramid,
     DGGSGridSystem,

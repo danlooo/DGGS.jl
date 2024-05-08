@@ -18,7 +18,6 @@ end
 
 struct DGGSArray
     data::YAXArray
-    level::Integer
 end
 
 struct DGGSArrayPyramid
@@ -45,3 +44,17 @@ struct DGGSGridSystem
 end
 
 DGGSGridSystem(d::Dict{String,Any}) = DGGSGridSystem(d["name"], d["aperture"], d["index"])
+
+
+const Q2DI_DGGS_PROPS = Dict(
+    "index" => "Q2DI",
+    "aperture" => 4,
+    "rotation_lon" => 11.25,
+    "polyhedron" => "icosahedron",
+    "name" => "DGGRID ISEA4H Q2DI",
+    "radius" => 6371007.180918475,
+    "polygon" => "hexagon",
+    "rotation_lat" => 58.2825,
+    "projection" => "+isea",
+    "rotation_azimuth" => 0
+)
