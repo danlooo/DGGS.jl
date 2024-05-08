@@ -14,7 +14,8 @@ function DGGSArray(arr::YAXArray)
 end
 
 function Base.show(io::IO, ::MIME"text/plain", arr::DGGSArray)
-    println(io, "$(typeof(arr)) at level $(arr.level)")
+    println(io, "$(typeof(arr))")
+    println(io, "Level: $(arr.level)")
     println(io, "Name: $(arr.name)")
 end
 

@@ -11,6 +11,8 @@ function open_pyramid(path::String)
     return DGGSPyramid(pyramid)
 end
 
+open_layer(path::String) = error("Not implemented")
+open_array(path::String) = error("Not implemented")
 
 function write_pyramid(path::String, dggs::DGGSPyramid)
     error("Not implemented")
