@@ -1,8 +1,7 @@
-function DGGSArray(arr::YAXArray)
+function DGGSArray(arr::YAXArray, name=:layer)
     haskey(arr.properties, "_DGGS") || error("Array is not in DGGS format")
 
     attrs = arr.properties
-    name = attrs["name"]
     level = attrs["_DGGS"]["level"]
     dggs = DGGSGridSystem(attrs["_DGGS"])
 
@@ -16,4 +15,10 @@ function Base.show(io::IO, ::MIME"text/plain", arr::DGGSArray)
     println(io, "Name: $(arr.name)")
 end
 
-open_array(path::String) = error("Not implemented")
+function open_array(path::String)
+    z = zopen(path)
+    z isa ZArray || error("Path must point to a ZArray and not $(typeof(z))")
+    data = zopen(path) |> YAXArray
+    arr = YAXArray(data.axes, data, z.attrs)
+    DGGSArray(arr)
+end

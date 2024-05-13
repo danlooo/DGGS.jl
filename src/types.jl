@@ -20,18 +20,19 @@ DGGSGridSystem(d::Dict{String,Any}) = DGGSGridSystem(d["name"], d["index"])
 struct DGGSArray
     data::YAXArray
     attrs::Dict{String,Any}
-    name::String
+    name::Symbol
     level::Integer
     dggs::DGGSGridSystem
 end
 
 struct DGGSLayer
     data::Dict{Symbol,DGGSArray}
+    attrs::Dict{String,Any}
     bands::Vector{Symbol}
     level::Integer
     dggs::DGGSGridSystem
 
-    function DGGSLayer(data, bands, level, dggs)
+    function DGGSLayer(data, attrs, bands, level, dggs)
         if !(map(x -> x.dggs.name, collect(values(data))) |> allequal)
             error("DGGS are different")
         end
@@ -44,17 +45,18 @@ struct DGGSLayer
             error("Grid Systems are different")
         end
 
-        new(data, bands, level, dggs)
+        new(data, attrs, bands, level, dggs)
     end
 end
 
 struct DGGSPyramid
     data::Dict{Int,DGGSLayer}
+    attrs::Dict{String,Any}
     levels::Vector{Integer}
     bands::Vector{Symbol}
     dggs::DGGSGridSystem
 
-    function DGGSPyramid(data, levels, bands, dggs)
+    function DGGSPyramid(data, attrs, levels, bands, dggs)
         if !(map(l -> l.bands, collect(values(data))) |> allequal)
             error("Bands are different")
         end
@@ -63,7 +65,7 @@ struct DGGSPyramid
             error("Grid Systems are different")
         end
 
-        new(data, levels, bands, dggs)
+        new(data, attrs, levels, bands, dggs)
     end
 end
 

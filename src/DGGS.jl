@@ -36,5 +36,8 @@ export
     DGGSArray,
     DGGSLayer,
     DGGSPyramid,
-    open_pyramid
+    open_array,
+    open_layer,
+    open_pyramid,
+    write_pyramid
 end

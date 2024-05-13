@@ -1,9 +1,9 @@
 
-function DGGSPyramid(data::Dict{Int,DGGSLayer})
+function DGGSPyramid(data::Dict{Int,DGGSLayer}, attrs=Dict{String,Any}())
     levels = data |> keys |> collect
     bands = data |> values |> first |> x -> x.bands
     dggs = data |> values |> first |> x -> x.dggs
-    DGGSPyramid(data, levels, bands, dggs)
+    DGGSPyramid(data, attrs, levels, bands, dggs)
 end
 
 function Base.show(io::IO, ::MIME"text/plain", dggs::DGGSPyramid)
@@ -26,12 +26,31 @@ function open_pyramid(path::String)
         pyramid[level] = DGGSLayer(layer_ds)
     end
 
-    return DGGSPyramid(pyramid)
+    return DGGSPyramid(pyramid, root_group.attrs)
 end
 
 
-function write_pyramid(path::String, dggs::DGGSPyramid)
-    error("Not implemented")
+function write_pyramid(base_path::String, dggs::DGGSPyramid)
+    mkdir(base_path)
+
+    for level in dggs.levels
+        level_path = "$base_path/$level"
+        arrs = map((k, v) -> k => v.data, keys(dggs[level].data), values(dggs[level].data))
+        ds = Dataset(; properties=dggs[level].attrs, arrs...)
+        savedataset(ds; path=level_path)
+        JSON3.write("$level_path/.zgroup", Dict(:zarr_format => 2))
+        Zarr.consolidate_metadata(level_path)
+
+        # required for open_array using HTTP
+        for band in keys(ds.cubes)
+            Zarr.consolidate_metadata("$level_path/$band")
+        end
+    end
+
+    JSON3.write("$base_path/.zattrs", dggs.attrs)
+    JSON3.write("$base_path/.zgroup", Dict(:zarr_format => 2))
+    Zarr.consolidate_metadata(base_path)
+    return
 end
 
 function to_pyramid(data::AbstractDimArray)

@@ -4,16 +4,17 @@ function DGGSLayer(data::YAXArrays.Dataset)
 
     layer = Dict{Symbol,DGGSArray}()
     for (k, c) in data.cubes
-        layer[k] = DGGSArray(c)
+        arr = YAXArray(c.axes, c.data, union(c.properties, data.properties) |> Dict)
+        layer[k] = DGGSArray(arr, k)
     end
-    DGGSLayer(layer)
+    DGGSLayer(layer, data.properties)
 end
 
-function DGGSLayer(data::Dict{Symbol,DGGSArray})
+function DGGSLayer(data::Dict{Symbol,DGGSArray}, attrs=Dict{String,Any}())
     bands = keys(data) |> collect
     level = data |> values |> first |> x -> x.level
     dggs = data |> values |> first |> x -> x.dggs
-    DGGSLayer(data, bands, level, dggs)
+    DGGSLayer(data, attrs, bands, level, dggs)
 end
 
 function Base.show(io::IO, ::MIME"text/plain", l::DGGSLayer)
@@ -31,6 +32,11 @@ function Base.getproperty(l::DGGSLayer, v::Symbol)
     end
 end
 
-Base.propertynames(l::DGGSLayer) = union(l.bands, (:data, :bands))
+Base.propertynames(l::DGGSLayer) = union(l.bands, (:data, :bands, :attrs))
 
-open_layer(path::String) = error("Not implemented")
+function open_layer(path::String)
+    z = zopen(path)
+    z isa ZGroup || error("Path must point to a ZGoup and not $(typeof(z))")
+    ds = open_dataset(z)
+    DGGSLayer(ds)
+end
