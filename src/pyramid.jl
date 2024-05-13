@@ -53,7 +53,7 @@ function write_pyramid(base_path::String, dggs::DGGSPyramid)
     return
 end
 
-function aggregate_cell_cube(xout, xin; agg_func=filter_null(mean))
+function aggregate_layer(xout, xin, agg_func)
     fac = ceil(Int, size(xin, 1) / size(xout, 1))
     for j in axes(xout, 2)
         for i in axes(xout, 1)
@@ -65,11 +65,34 @@ function aggregate_cell_cube(xout, xin; agg_func=filter_null(mean))
     end
 end
 
+function to_pyramid(geo_ds::Dataset, level::Integer; agg_func::Function=filter_null(mean))
+    l = to_layer(geo_ds, level)
+    dggs = to_pyramid(l)
+    return dggs
+end
 
-function to_pyramid(raster::AbstractDimArray, level::Integer)
-    data = Dict{Int,DGGSLayer}
+function to_pyramid(l::DGGSLayer; agg_func::Function=filter_null(mean))
+    pyramid = Dict{Int,DGGSLayer}()
+    pyramid[l.level] = l
 
-    arr = to_array(raster, level)
-    # TODO: to_array |> to_pyramid
-    error("Not implemented")
+    for coarser_level in l.level-1:-1:2
+        finer_layer = pyramid[coarser_level+1]
+        coarser_data = Dict{Symbol,DGGSArray}()
+        for (k, arr) in finer_layer.data
+            coarser_arr = mapCube(
+                (xout, xin) -> aggregate_layer(xout, xin, agg_func),
+                arr.data;
+                indims=InDims(:q2di_i, :q2di_j),
+                outdims=OutDims(
+                    Dim{:q2di_i}(range(0; step=1, length=2^(coarser_level - 1))),
+                    Dim{:q2di_j}(range(0; step=1, length=2^(coarser_level - 1)))
+                )
+            )
+            coarser_data[k] = DGGSArray(coarser_arr, finer_layer.attrs, k, coarser_level, finer_layer.dggs)
+        end
+
+        pyramid[coarser_level] = DGGSLayer(coarser_data, l.attrs)
+    end
+
+    return DGGSPyramid(pyramid, l.attrs)
 end

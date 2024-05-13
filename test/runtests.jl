@@ -51,5 +51,6 @@ for (k, arr) in geo_ds.cubes
     arrs[k] = YAXArray(axs, arr.data, arr.properties)
 end
 geo_ds = Dataset(; properties=geo_ds.properties, arrs...)
-
-l = to_layer(geo_ds, level)
+dggs2 = to_pyramid(geo_ds, level)
+@test maximum(dggs2.levels) == level
+@test minimum(dggs2.levels) == 2

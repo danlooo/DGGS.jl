@@ -41,6 +41,9 @@ function open_layer(path::String)
     DGGSLayer(ds)
 end
 
+"""
+Transforms a `YAXArrays.Dataset` in geographic lat/lon ratser to a DGGSLayer at agiven layer
+"""
 function to_layer(geo_ds::Dataset, level::Integer; lon_name=:lon, lat_name=:lat)
     level > 0 || error("Level must be positive")
 
