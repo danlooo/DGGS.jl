@@ -53,6 +53,23 @@ function write_pyramid(base_path::String, dggs::DGGSPyramid)
     return
 end
 
-function to_pyramid(data::AbstractDimArray)
+function aggregate_cell_cube(xout, xin; agg_func=filter_null(mean))
+    fac = ceil(Int, size(xin, 1) / size(xout, 1))
+    for j in axes(xout, 2)
+        for i in axes(xout, 1)
+            iview = ((i-1)*fac+1):min(size(xin, 1), (i * fac))
+            jview = ((j-1)*fac+1):min(size(xin, 2), (j * fac))
+            data = view(xin, iview, jview)
+            xout[i, j] = agg_func(data)
+        end
+    end
+end
+
+
+function to_pyramid(raster::AbstractDimArray, level::Integer)
+    data = Dict{Int,DGGSLayer}
+
+    arr = to_array(raster, level)
+    # TODO: to_array |> to_pyramid
     error("Not implemented")
 end

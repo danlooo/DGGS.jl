@@ -40,3 +40,23 @@ function open_layer(path::String)
     ds = open_dataset(z)
     DGGSLayer(ds)
 end
+
+function to_layer(geo_ds::Dataset, level::Integer; lon_name=:lon, lat_name=:lat)
+    level > 0 || error("Level must be positive")
+
+    lon_dim = filter(x -> x isa X || name(x) == lon_name, collect(values(geo_ds.axes)))
+    lat_dim = filter(x -> x isa Y || name(x) == lat_name, collect(values(geo_ds.axes)))
+
+    isempty(lon_dim) && error("Longitude dimension not found")
+    isempty(lat_dim) && error("Latitude dimension not found")
+    lon_dim = lon_dim[1]
+    lat_dim = lat_dim[1]
+
+    cell_ids = transform_points(lon_dim.val, lat_dim.val, level)
+    data = Dict{Symbol,DGGSArray}()
+    for (band, geo_arr) in geo_ds.cubes
+        data[band] = to_array(geo_arr, level; cell_ids=cell_ids)
+    end
+    bands = geo_ds.cubes |> keys |> collect
+    DGGSLayer(data, geo_ds.properties, bands, level, DGGSGridSystem(Q2DI_DGGS_PROPS))
+end

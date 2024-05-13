@@ -39,5 +39,8 @@ export
     open_array,
     open_layer,
     open_pyramid,
-    write_pyramid
+    write_pyramid,
+    to_array,
+    to_layer,
+    to_pyramid
 end
