@@ -1,3 +1,21 @@
+
+function DGGSPyramid(data::Dict{Int,DGGSLayer})
+    levels = data |> keys |> collect
+    bands = data |> values |> first |> x -> x.bands
+    dggs = data |> values |> first |> x -> x.dggs
+    DGGSPyramid(data, levels, bands, dggs)
+end
+
+function Base.show(io::IO, ::MIME"text/plain", dggs::DGGSPyramid)
+    println(io, "$(typeof(dggs))")
+    println(io, "DGGS: $(dggs.dggs)")
+    println(io, "Levels: $(dggs.levels)")
+    println(io, "Bands: $(dggs.bands)")
+end
+
+Base.getindex(dggs::DGGSPyramid, i::Integer) = dggs.data[i]
+
+
 function open_pyramid(path::String)
     root_group = zopen(path)
     haskey(root_group.attrs, "_DGGS") || error("Zarr store is not in DGGS format")
@@ -11,8 +29,6 @@ function open_pyramid(path::String)
     return DGGSPyramid(pyramid)
 end
 
-open_layer(path::String) = error("Not implemented")
-open_array(path::String) = error("Not implemented")
 
 function write_pyramid(path::String, dggs::DGGSPyramid)
     error("Not implemented")

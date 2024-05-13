@@ -28,8 +28,9 @@ using Pkg.Artifacts
 # must be sorted by dependency
 include("types.jl")
 include("dggrid.jl")
-include("cubes.jl")
-include("pyramids.jl")
+include("array.jl")
+include("layer.jl")
+include("pyramid.jl")
 
 export
     DGGSArray,
