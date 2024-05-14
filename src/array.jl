@@ -15,7 +15,7 @@ function Base.show(io::IO, ::MIME"text/plain", arr::DGGSArray)
     println(io, "Name: $(arr.name)")
 end
 
-function open_array(path::String)
+function open_dggs_array(path::String)
     z = zopen(path)
     z isa ZArray || error("Path must point to a ZArray and not $(typeof(z))")
     data = zopen(path) |> YAXArray
@@ -35,7 +35,7 @@ function map_geo_to_cell_array(xout, xin, cell_ids_indexlist, agg_func)
     end
 end
 
-function to_array(
+function to_dggs_array(
     raster::AbstractDimArray,
     level::Integer;
     lon_name::Symbol=:lon,

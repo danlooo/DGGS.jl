@@ -16,7 +16,7 @@ end
 Base.getindex(dggs::DGGSPyramid, i::Integer) = dggs.data[i]
 
 
-function open_pyramid(path::String)
+function open_dggs_pyramid(path::String)
     root_group = zopen(path)
     haskey(root_group.attrs, "_DGGS") || error("Zarr store is not in DGGS format")
 
@@ -30,7 +30,7 @@ function open_pyramid(path::String)
 end
 
 
-function write_pyramid(base_path::String, dggs::DGGSPyramid)
+function write_dggs_pyramid(base_path::String, dggs::DGGSPyramid)
     mkdir(base_path)
 
     for level in dggs.levels
@@ -49,7 +49,7 @@ function write_pyramid(base_path::String, dggs::DGGSPyramid)
         JSON3.write("$level_path/.zgroup", Dict(:zarr_format => 2))
         Zarr.consolidate_metadata(level_path)
 
-        # required for open_array using HTTP
+        # required for open_dggs_array using HTTP
         for band in keys(ds.cubes)
             attrs = JSON3.read("$level_path/$band/.zattrs", Dict{String,Any})
             attrs = merge(attrs, dggs[level][band].attrs)
@@ -72,7 +72,7 @@ function write_pyramid(base_path::String, dggs::DGGSPyramid)
     return nothing
 end
 
-function aggregate_layer(xout, xin, agg_func)
+function aggregate_dggs_layer(xout, xin, agg_func)
     fac = ceil(Int, size(xin, 1) / size(xout, 1))
     for j in axes(xout, 2)
         for i in axes(xout, 1)
@@ -84,13 +84,13 @@ function aggregate_layer(xout, xin, agg_func)
     end
 end
 
-function to_pyramid(geo_ds::Dataset, level::Integer; agg_func::Function=filter_null(mean))
-    l = to_layer(geo_ds, level)
-    dggs = to_pyramid(l)
+function to_dggs_pyramid(geo_ds::Dataset, level::Integer; agg_func::Function=filter_null(mean))
+    l = to_dggs_layer(geo_ds, level)
+    dggs = to_dggs_pyramid(l)
     return dggs
 end
 
-function to_pyramid(l::DGGSLayer; agg_func::Function=filter_null(mean))
+function to_dggs_pyramid(l::DGGSLayer; agg_func::Function=filter_null(mean))
     pyramid = Dict{Int,DGGSLayer}()
     pyramid[l.level] = l
 
@@ -99,7 +99,7 @@ function to_pyramid(l::DGGSLayer; agg_func::Function=filter_null(mean))
         coarser_data = Dict{Symbol,DGGSArray}()
         for (k, arr) in finer_layer.data
             coarser_arr = mapCube(
-                (xout, xin) -> aggregate_layer(xout, xin, agg_func),
+                (xout, xin) -> aggregate_dggs_layer(xout, xin, agg_func),
                 arr.data;
                 indims=InDims(:q2di_i, :q2di_j),
                 outdims=OutDims(
@@ -116,10 +116,10 @@ function to_pyramid(l::DGGSLayer; agg_func::Function=filter_null(mean))
     return DGGSPyramid(pyramid, l.attrs)
 end
 
-to_pyramid(a::DGGSArray; kw...) = a |> DGGSLayer |> l -> to_pyramid(l; kw...)
+to_dggs_pyramid(a::DGGSArray; kw...) = a |> DGGSLayer |> l -> to_dggs_pyramid(l; kw...)
 
-function to_pyramid(raster::AbstractDimArray, level::Integer; kw...)
-    arr = to_array(raster, level; kw...)
-    dggs = to_pyramid(arr)
+function to_dggs_pyramid(raster::AbstractDimArray, level::Integer; kw...)
+    arr = to_dggs_array(raster, level; kw...)
+    dggs = to_dggs_pyramid(arr)
     return dggs
 end

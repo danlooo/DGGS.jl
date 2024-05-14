@@ -43,7 +43,7 @@ end
 
 Base.propertynames(l::DGGSLayer) = union(l.bands, (:data, :bands, :attrs))
 
-function open_layer(path::String)
+function open_dggs_layer(path::String)
     z = zopen(path)
     z isa ZGroup || error("Path must point to a ZGoup and not $(typeof(z))")
     ds = open_dataset(z)
@@ -53,7 +53,7 @@ end
 """
 Transforms a `YAXArrays.Dataset` in geographic lat/lon ratser to a DGGSLayer at agiven layer
 """
-function to_layer(geo_ds::Dataset, level::Integer; lon_name=:lon, lat_name=:lat)
+function to_dggs_layer(geo_ds::Dataset, level::Integer; lon_name=:lon, lat_name=:lat)
     level > 0 || error("Level must be positive")
 
     lon_dim = filter(x -> x isa X || name(x) == lon_name, collect(values(geo_ds.axes)))
@@ -67,10 +67,10 @@ function to_layer(geo_ds::Dataset, level::Integer; lon_name=:lon, lat_name=:lat)
     cell_ids = transform_points(lon_dim.val, lat_dim.val, level)
     data = Dict{Symbol,DGGSArray}()
     for (band, geo_arr) in geo_ds.cubes
-        data[band] = to_array(geo_arr, level; cell_ids=cell_ids)
+        data[band] = to_dggs_array(geo_arr, level; cell_ids=cell_ids)
     end
     bands = geo_ds.cubes |> keys |> collect
     DGGSLayer(data, geo_ds.properties, bands, level, DGGSGridSystem(Q2DI_DGGS_PROPS))
 end
 
-to_layer(raster::AbstractDimArray, level::Integer; kw...) = to_array(raster, level, kw...) |> DGGSLayer
+to_dggs_layer(raster::AbstractDimArray, level::Integer; kw...) = to_dggs_array(raster, level, kw...) |> DGGSLayer

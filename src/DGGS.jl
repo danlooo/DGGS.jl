@@ -36,11 +36,11 @@ export
     DGGSArray,
     DGGSLayer,
     DGGSPyramid,
-    open_array,
-    open_layer,
-    open_pyramid,
-    write_pyramid,
-    to_array,
-    to_layer,
-    to_pyramid
+    open_dggs_array,
+    open_dggs_layer,
+    open_dggs_pyramid,
+    write_dggs_pyramid,
+    to_dggs_array,
+    to_dggs_layer,
+    to_dggs_pyramid
 end

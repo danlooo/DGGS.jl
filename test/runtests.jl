@@ -13,9 +13,9 @@ Random.seed!(1337)
 #
 
 base_path = "https://s3.bgc-jena.mpg.de:9000/dggs/sresa1b_ncar_ccsm3-example"
-a = open_array("$base_path/3/tas")
-l = open_layer("$base_path/3")
-p = open_pyramid("$base_path")
+a = open_dggs_array("$base_path/3/tas")
+l = open_dggs_layer("$base_path/3")
+p = open_dggs_pyramid("$base_path")
 
 @test length(p.attrs) == length(l.attrs)
 @test length(a.attrs) > length(p.attrs)
@@ -30,7 +30,7 @@ lat_range = Y(-90:90)
 level = 6
 data = [exp(cosd(lon)) + 3(lat / 90) for lon in lon_range, lat in lat_range]
 raster = DimArray(data, (lon_range, lat_range))
-a = to_array(raster, level)
+a = to_dggs_array(raster, level)
 @test a.level == level
 
 # load netcdf geo raster
@@ -45,7 +45,7 @@ for (k, arr) in geo_ds.cubes
     arrs[k] = YAXArray(axs, arr.data, arr.properties)
 end
 geo_ds = Dataset(; properties=geo_ds.properties, arrs...)
-dggs2 = to_pyramid(geo_ds, level)
+dggs2 = to_dggs_pyramid(geo_ds, level)
 @test maximum(dggs2.levels) == level
 @test minimum(dggs2.levels) == 2
 
@@ -54,24 +54,24 @@ dggs2 = to_pyramid(geo_ds, level)
 #
 
 d = tempname()
-write_pyramid(d, dggs2)
-dggs2a = open_pyramid(d)
-l = open_layer("$d/3")
-a = open_array("$d/3/tas")
+write_dggs_pyramid(d, dggs2)
+dggs2a = open_dggs_pyramid(d)
+l = open_dggs_layer("$d/3")
+a = open_dggs_array("$d/3/tas")
 @test dggs2.attrs == dggs2a.attrs
 @test dggs2.levels == dggs2a.levels
 @test dggs2.bands == dggs2a.bands
 rm(d, recursive=true)
 
-# BUG: attrs inscl. _DGGS are not written to disk resulting in error during open_array
+# BUG: attrs inscl. _DGGS are not written to disk resulting in error during open_dggs_array
 
 #
 # Rasters
 #
 
-a1 = Raster(rand(5, 5), (X(1:5), Y(1:5))) |> x -> to_array(x, 4)
-a2 = DimArray(rand(5, 5), (X(1:5), Y(1:5))) |> x -> to_array(x, 2)
-a3 = YAXArray((X(1:5), Y(1:5)), rand(5, 5), Dict()) |> x -> to_array(x, 2)
+a1 = Raster(rand(5, 5), (X(1:5), Y(1:5))) |> x -> to_dggs_array(x, 4)
+a2 = DimArray(rand(5, 5), (X(1:5), Y(1:5))) |> x -> to_dggs_array(x, 2)
+a3 = YAXArray((X(1:5), Y(1:5)), rand(5, 5), Dict()) |> x -> to_dggs_array(x, 2)
 
-@test Raster(rand(361, 181), (X(-180:180), Y(-90:90))) |> x -> to_layer(x, 4) isa DGGSLayer
-@test Raster(rand(361, 181), (X(-180:180), Y(-90:90))) |> x -> to_pyramid(x, 4) isa DGGSPyramid
+@test Raster(rand(361, 181), (X(-180:180), Y(-90:90))) |> x -> to_dggs_layer(x, 4) isa DGGSLayer
+@test Raster(rand(361, 181), (X(-180:180), Y(-90:90))) |> x -> to_dggs_pyramid(x, 4) isa DGGSPyramid
