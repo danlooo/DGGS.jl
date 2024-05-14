@@ -38,7 +38,7 @@ arr = to_array(raster, level)
 # load netcdf geo raster
 # reformat lon axes from [0,360] to [-180,180]
 # skip mask
-geo_ds = open_dataset("data/sresa1b_ncar_ccsm3-example.nc")
+geo_ds = open_dataset("sresa1b_ncar_ccsm3-example.nc")
 geo_ds.axes[:lon] = X(geo_ds.axes[:lon] .- 180)
 arrs = Dict()
 for (k, arr) in geo_ds.cubes
@@ -60,7 +60,7 @@ write_pyramid(d, dggs2)
 dggs2a = open_pyramid(d)
 l = open_layer("$d/3")
 a = open_array("$d/3/tas")
-@test (setdiff(dggs2.attrs, dggs2a.attrs) .|> x -> x.first) == ["_DGGS"]
+@test dggs2.attrs == dggs2a.attrs
 @test dggs2.levels == dggs2a.levels
 @test dggs2.bands == dggs2a.bands
 rm(d, recursive=true)

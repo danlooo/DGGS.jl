@@ -35,30 +35,41 @@ function write_pyramid(base_path::String, dggs::DGGSPyramid)
 
     for level in dggs.levels
         level_path = "$base_path/$level"
-        @infiltrate
+
         arrs = map((k, v) -> k => v.data, keys(dggs[level].data), values(dggs[level].data))
+
         attrs = dggs[level].attrs
-        attrs["_DGGS"] = Dict{Symbol,Any}(key => getfield(dggs.dggs, key) for key in propertynames(dggs.dggs))
+        attrs["_DGGS"] = Dict{Symbol,Any}(
+            key => getfield(dggs.dggs, key) for key in propertynames(dggs.dggs)
+        )
         attrs["_DGGS"][:level] = level
+
         ds = Dataset(; properties=attrs, arrs...)
+
         savedataset(ds; path=level_path)
         JSON3.write("$level_path/.zgroup", Dict(:zarr_format => 2))
         Zarr.consolidate_metadata(level_path)
 
         # required for open_array using HTTP
         for band in keys(ds.cubes)
+            attrs = JSON3.read("$level_path/$band/.zattrs", Dict{String,Any})
+            attrs["_DGGS"] = Dict{String,Any}(
+                String(key) => getfield(dggs.dggs, key) for key in propertynames(dggs.dggs)
+            )
+            attrs["_DGGS"]["level"] = level
+            JSON3.write("$level_path/$band/.zattrs", attrs)
             Zarr.consolidate_metadata("$level_path/$band")
         end
     end
 
     global_attrs = dggs.attrs
-    global_attrs["_DGGS"] = Dict{Symbol,Any}(key => getfield(dggs.dggs, key) for key in propertynames(dggs.dggs))
-    global_attrs["_DGGS"][:levels] = dggs.levels
+    global_attrs["_DGGS"] = Dict{String,Any}(String(key) => getfield(dggs.dggs, key) for key in propertynames(dggs.dggs))
+    global_attrs["_DGGS"]["levels"] = dggs.levels
 
     JSON3.write("$base_path/.zattrs", global_attrs)
     JSON3.write("$base_path/.zgroup", Dict(:zarr_format => 2))
     Zarr.consolidate_metadata(base_path)
-    return
+    return nothing
 end
 
 function aggregate_layer(xout, xin, agg_func)

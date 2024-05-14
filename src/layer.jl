@@ -31,6 +31,8 @@ function Base.show(io::IO, ::MIME"text/plain", l::DGGSLayer)
     println(io, "Bands: $(l.bands)")
 end
 
+Base.getindex(l::DGGSLayer, band::Symbol) = l.data[band]
+
 function Base.getproperty(l::DGGSLayer, v::Symbol)
     if v in getfield(l, :bands) # prevent stack overflow
         return l.data[v]
