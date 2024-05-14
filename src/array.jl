@@ -28,13 +28,6 @@ function filter_null(f)
     x -> x |> filter(!ismissing) |> filter(!isnan) |> f
 end
 
-function map_geo_to_cell_array(xout, xin, cell_ids_indexlist, agg_func)
-    for (cell_id, cell_indices) in cell_ids_indexlist
-        # xout is not a YAXArray anymore
-        xout[cell_id.i+1, cell_id.j+1, cell_id.n+1] = agg_func(view(xin, cell_indices))
-    end
-end
-
 function to_dggs_array(
     raster::AbstractDimArray,
     level::Integer;
@@ -77,7 +70,6 @@ function to_dggs_array(
 
     verbose && @info "Step 2/2: Re-grid the data"
     cell_array = mapCube(
-        map_geo_to_cell_array,
         # mapCube can't find axes of other AbstractDimArrays e.g. Raster
         YAXArray(dims(raster), raster.data),
         cell_ids_indexlist,
@@ -89,7 +81,13 @@ function to_dggs_array(
             Dim{:q2di_n}(0:11)
         ),
         showprog=true
-    )
+    ) do xout, xin, cell_ids_indexlist, agg_func
+        for (cell_id, cell_indices) in cell_ids_indexlist
+            # xout is not a YAXArray anymore
+            xout[cell_id.i+1, cell_id.j+1, cell_id.n+1] = agg_func(view(xin, cell_indices))
+        end
+    end
+
     props = raster |> metadata |> typeof == Dict{String,Any} ? deepcopy(metadata(raster)) : Dict{String,Any}()
     props["_DGGS"] = deepcopy(Q2DI_DGGS_PROPS)
     props["_DGGS"]["level"] = level
