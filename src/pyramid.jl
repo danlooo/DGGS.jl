@@ -10,7 +10,12 @@ function Base.show(io::IO, ::MIME"text/plain", dggs::DGGSPyramid)
     println(io, "$(typeof(dggs))")
     println(io, "DGGS: $(dggs.dggs)")
     println(io, "Levels: $(dggs.levels)")
-    println(io, "Bands: $(dggs.bands)")
+    println(io, "Bands: ")
+    for a in dggs.data |> first |> x -> values(x.second.data) |> collect
+        print(io, "  ")
+        Base.show(io, a)
+        println(io, "")
+    end
 end
 
 Base.getindex(dggs::DGGSPyramid, i::Integer) = dggs.data[i]

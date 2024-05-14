@@ -13,9 +13,19 @@ end
 struct DGGSGridSystem
     name::String
     index::String
+    polygon::String
+    aperture::Integer
+    projection::String
 end
 
-DGGSGridSystem(d::Dict{String,Any}) = DGGSGridSystem(d["name"], d["index"])
+DGGSGridSystem(d::Dict{String,Any}) = DGGSGridSystem(d["name"], d["index"], d["polygon"], d["aperture"], d["projection"])
+
+Base.show(io::IO, ::MIME"text/plain", dggs::DGGSGridSystem) = Base.show_default(io, dggs)
+
+function Base.show(io::IO, dggs::DGGSGridSystem)
+    polygons = Dict("hexagon" => "⬢")
+    print(io, "$(dggs.projection) $(dggs.aperture) $(get(polygons, dggs.polygon, "?"))")
+end
 
 struct DGGSArray
     data::YAXArray
@@ -79,6 +89,6 @@ const Q2DI_DGGS_PROPS = Dict(
     "radius" => 6371007.180918475,
     "polygon" => "hexagon",
     "rotation_lat" => 58.2825,
-    "projection" => "+isea",
+    "projection" => "isea",
     "rotation_azimuth" => 0
 )

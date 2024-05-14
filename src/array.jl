@@ -8,11 +8,24 @@ function DGGSArray(arr::YAXArray, name=:layer)
     DGGSArray(arr, attrs, name, level, dggs)
 end
 
-function Base.show(io::IO, ::MIME"text/plain", arr::DGGSArray)
-    println(io, "$(typeof(arr))")
-    println(io, "DGGS: $(arr.dggs)")
-    println(io, "Level: $(arr.level)")
-    println(io, "Name: $(arr.name)")
+Base.show(io::IO, ::MIME"text/plain", arr::DGGSArray) = Base.show_default(io, arr)
+
+function Base.show(io::IO, arr::DGGSArray)
+    ":$(arr.name) " |> x -> printstyled(io, x; color=:red)
+
+    non_spatial_axes = filter(x -> !startswith(String(x), "q2di"), DimensionalData.name(arr.data.axes))
+
+    if length(non_spatial_axes) == 1
+        print(io, "(:")
+        print(io, non_spatial_axes[1])
+        print(io, ") ")
+    elseif length(non_spatial_axes) > 1
+        print(io, non_spatial_axes)
+        print(io, " ")
+    end
+
+    get(arr.attrs, "long_name", "") |> x -> printstyled(io, x; color=:white)
+    get(arr.attrs, "units", "") |> x -> printstyled(io, " " * x; color=:blue)
 end
 
 function open_dggs_array(path::String)

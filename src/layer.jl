@@ -28,7 +28,12 @@ function Base.show(io::IO, ::MIME"text/plain", l::DGGSLayer)
     println(io, "$(typeof(l))")
     println(io, "DGGS: $(l.dggs)")
     println(io, "Level: $(l.level)")
-    println(io, "Bands: $(l.bands)")
+    println(io, "Bands: ")
+    for a in values(l.data) |> collect
+        print(io, "  ")
+        Base.show(io, a)
+        println(io, "")
+    end
 end
 
 Base.getindex(l::DGGSLayer, band::Symbol) = l.data[band]
