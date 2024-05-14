@@ -35,8 +35,12 @@ function write_pyramid(base_path::String, dggs::DGGSPyramid)
 
     for level in dggs.levels
         level_path = "$base_path/$level"
+        @infiltrate
         arrs = map((k, v) -> k => v.data, keys(dggs[level].data), values(dggs[level].data))
-        ds = Dataset(; properties=dggs[level].attrs, arrs...)
+        attrs = dggs[level].attrs
+        attrs["_DGGS"] = Dict{Symbol,Any}(key => getfield(dggs.dggs, key) for key in propertynames(dggs.dggs))
+        attrs["_DGGS"][:level] = level
+        ds = Dataset(; properties=attrs, arrs...)
         savedataset(ds; path=level_path)
         JSON3.write("$level_path/.zgroup", Dict(:zarr_format => 2))
         Zarr.consolidate_metadata(level_path)
@@ -47,7 +51,11 @@ function write_pyramid(base_path::String, dggs::DGGSPyramid)
         end
     end
 
-    JSON3.write("$base_path/.zattrs", dggs.attrs)
+    global_attrs = dggs.attrs
+    global_attrs["_DGGS"] = Dict{Symbol,Any}(key => getfield(dggs.dggs, key) for key in propertynames(dggs.dggs))
+    global_attrs["_DGGS"][:levels] = dggs.levels
+
+    JSON3.write("$base_path/.zattrs", global_attrs)
     JSON3.write("$base_path/.zgroup", Dict(:zarr_format => 2))
     Zarr.consolidate_metadata(base_path)
     return
@@ -95,4 +103,12 @@ function to_pyramid(l::DGGSLayer; agg_func::Function=filter_null(mean))
     end
 
     return DGGSPyramid(pyramid, l.attrs)
+end
+
+to_pyramid(a::DGGSArray; kw...) = a |> DGGSLayer |> l -> to_pyramid(l; kw...)
+
+function to_pyramid(raster::AbstractDimArray, level::Integer; kw...)
+    arr = to_array(raster, level; kw...)
+    dggs = to_pyramid(arr)
+    return dggs
 end

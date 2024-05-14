@@ -4,9 +4,13 @@ using YAXArrays
 using GLMakie
 using Test
 using Rasters
+using RasterDataSources
+using Random
+
+Random.seed!(1337)
 
 #
-# Load and write arrays, layers, and pyramids
+# Load layers, and pyramids
 #
 
 base_path = "https://s3.bgc-jena.mpg.de:9000/dggs/sresa1b_ncar_ccsm3-example"
@@ -18,14 +22,6 @@ dggs = open_pyramid("$base_path")
 @test l.attrs |> length == 19
 @test dggs.attrs |> length == 19
 @test (setdiff(dggs.attrs, l.attrs) .|> x -> x.first) == ["_DGGS"] # same global attrs expect DGGS level
-
-d = tempname()
-write_pyramid(d, dggs)
-dggs_2 = open_pyramid(d)
-@test dggs.attrs == dggs_2.attrs
-@test dggs.levels == dggs_2.levels
-@test dggs.bands == dggs_2.bands
-rm(d, recursive=true)
 
 #
 # Convert lat/lon rasters into a DGGS
@@ -46,11 +42,38 @@ geo_ds = open_dataset("data/sresa1b_ncar_ccsm3-example.nc")
 geo_ds.axes[:lon] = X(geo_ds.axes[:lon] .- 180)
 arrs = Dict()
 for (k, arr) in geo_ds.cubes
-    k == :msk_rgn && continue
-    axs = Tuple(ax isa Dim{:lon} ? geo_ds.axes[:lon] : ax for ax in arr.axes)
+    k == :msk_rgn && continue # exclude mask
+    axs = Tuple(ax isa Dim{:lon} ? geo_ds.axes[:lon] : ax for ax in arr.axes) # propagate fixed axis
     arrs[k] = YAXArray(axs, arr.data, arr.properties)
 end
 geo_ds = Dataset(; properties=geo_ds.properties, arrs...)
 dggs2 = to_pyramid(geo_ds, level)
 @test maximum(dggs2.levels) == level
 @test minimum(dggs2.levels) == 2
+
+#
+# Write pyramids 
+#
+
+d = tempname()
+write_pyramid(d, dggs2)
+dggs2a = open_pyramid(d)
+l = open_layer("$d/3")
+a = open_array("$d/3/tas")
+@test (setdiff(dggs2.attrs, dggs2a.attrs) .|> x -> x.first) == ["_DGGS"]
+@test dggs2.levels == dggs2a.levels
+@test dggs2.bands == dggs2a.bands
+rm(d, recursive=true)
+
+# BUG: attrs inscl. _DGGS are not written to disk resulting in error during open_array
+
+#
+# Rasters
+#
+
+a1 = Raster(rand(5, 5), (X(1:5), Y(1:5))) |> x -> to_array(x, 4)
+a2 = DimArray(rand(5, 5), (X(1:5), Y(1:5))) |> x -> to_array(x, 2)
+a3 = YAXArray((X(1:5), Y(1:5)), rand(5, 5), Dict()) |> x -> to_array(x, 2)
+
+@test Raster(rand(361, 181), (X(-180:180), Y(-90:90))) |> x -> to_layer(x, 4) isa DGGSLayer
+@test Raster(rand(361, 181), (X(-180:180), Y(-90:90))) |> x -> to_pyramid(x, 4) isa DGGSPyramid

@@ -17,6 +17,13 @@ function DGGSLayer(data::Dict{Symbol,DGGSArray}, attrs=Dict{String,Any}())
     DGGSLayer(data, attrs, bands, level, dggs)
 end
 
+function DGGSLayer(arr::DGGSArray)
+    bands = [:layer]
+    data = Dict{Symbol,DGGSArray}()
+    data[:layer] = arr
+    DGGSLayer(data, arr.attrs, bands, arr.level, arr.dggs)
+end
+
 function Base.show(io::IO, ::MIME"text/plain", l::DGGSLayer)
     println(io, "$(typeof(l))")
     println(io, "DGGS: $(l.dggs)")
@@ -63,3 +70,5 @@ function to_layer(geo_ds::Dataset, level::Integer; lon_name=:lon, lat_name=:lat)
     bands = geo_ds.cubes |> keys |> collect
     DGGSLayer(data, geo_ds.properties, bands, level, DGGSGridSystem(Q2DI_DGGS_PROPS))
 end
+
+to_layer(raster::AbstractDimArray, level::Integer; kw...) = to_array(raster, level, kw...) |> DGGSLayer
