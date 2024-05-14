@@ -2,7 +2,7 @@
 
 julia_version = "1.10.0"
 manifest_format = "2.0"
-project_hash = "c369afdd45b16800edcae53f9c93a22c63dbcc77"
+project_hash = "7d3b2d434fd96971f21193216929c3e92d72c579"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -382,6 +382,11 @@ git-tree-sha1 = "c6033cc3892d0ef5bb9cd29b7f2f0331ea5184ea"
 uuid = "f5851436-0d7a-5f13-b9de-f02708fd171a"
 version = "3.3.10+0"
 
+[[deps.FieldMetadata]]
+git-tree-sha1 = "c279c6eab9767a3f62685e5276c850512e0a1afd"
+uuid = "bf96fef3-21d2-5d20-8afa-0e7d4c32a885"
+version = "0.3.1"
+
 [[deps.FileIO]]
 deps = ["Pkg", "Requires", "UUIDs"]
 git-tree-sha1 = "c5c28c245101bd59154f649e19b038d15901b5dc"
@@ -436,6 +441,12 @@ deps = ["Statistics"]
 git-tree-sha1 = "335bfdceacc84c5cdf16aadc768aa5ddfc5383cc"
 uuid = "53c48c17-4a7d-5ca2-90c5-79b7896eea93"
 version = "0.8.4"
+
+[[deps.Flatten]]
+deps = ["ConstructionBase", "FieldMetadata"]
+git-tree-sha1 = "d3541c658c7e452fefba6c933c43842282cdfd3e"
+uuid = "4c728ea3-d9ee-5c9a-9642-b6f7d7dc04fa"
+version = "0.4.3"
 
 [[deps.Fontconfig_jll]]
 deps = ["Artifacts", "Bzip2_jll", "Expat_jll", "FreeType2_jll", "JLLWrappers", "Libdl", "Libuuid_jll", "Pkg", "Zlib_jll"]
@@ -510,6 +521,11 @@ deps = ["Adapt"]
 git-tree-sha1 = "ec632f177c0d990e64d955ccc1b8c04c485a0950"
 uuid = "46192b85-c4d5-4398-a991-12ede77f4527"
 version = "0.1.6"
+
+[[deps.GeoFormatTypes]]
+git-tree-sha1 = "59107c179a586f0fe667024c5eb7033e81333271"
+uuid = "68eda718-8dee-11e9-39e7-89f7f65f511f"
+version = "0.4.2"
 
 [[deps.GeoInterface]]
 deps = ["Extents"]
@@ -1228,6 +1244,28 @@ uuid = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 git-tree-sha1 = "b9039e93773ddcfc828f12aadf7115b4b4d225f5"
 uuid = "b3c3ace0-ae52-54e7-9d0b-2c1406fd6b9d"
 version = "0.3.2"
+
+[[deps.Rasters]]
+deps = ["Adapt", "ColorTypes", "ConstructionBase", "Dates", "DimensionalData", "DiskArrays", "Extents", "FillArrays", "Flatten", "GeoFormatTypes", "GeoInterface", "Missings", "Mmap", "OffsetArrays", "ProgressMeter", "RecipesBase", "Reexport", "Requires", "Setfield"]
+git-tree-sha1 = "7ed9ac3cd05cd94d8ddc6f2fb796ff5760c8f6ef"
+uuid = "a3a2b9e3-a471-40c9-b274-f788e487c689"
+version = "0.10.1"
+
+    [deps.Rasters.extensions]
+    RastersArchGDALExt = "ArchGDAL"
+    RastersCoordinateTransformationsExt = "CoordinateTransformations"
+    RastersHDF5Ext = "HDF5"
+    RastersMakieExt = "Makie"
+    RastersNCDatasetsExt = "NCDatasets"
+    RastersRasterDataSourcesExt = "RasterDataSources"
+
+    [deps.Rasters.weakdeps]
+    ArchGDAL = "c9ce4bd3-c3d5-55b8-8973-c0e20141b8c3"
+    CoordinateTransformations = "150eb455-5306-5404-9cee-2592286d6298"
+    HDF5 = "f67ccb44-e63f-5c2f-98bd-6dc0ccc4ba2f"
+    Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
+    NCDatasets = "85f8d34a-cbdd-5861-8df4-14fed0d494ab"
+    RasterDataSources = "3cb90ccd-e1b6-4867-9617-4276c8b2ca36"
 
 [[deps.Ratios]]
 deps = ["Requires"]

@@ -45,7 +45,6 @@ function write_pyramid(base_path::String, dggs::DGGSPyramid)
         attrs["_DGGS"][:level] = level
 
         ds = Dataset(; properties=attrs, arrs...)
-
         savedataset(ds; path=level_path)
         JSON3.write("$level_path/.zgroup", Dict(:zarr_format => 2))
         Zarr.consolidate_metadata(level_path)
@@ -53,6 +52,7 @@ function write_pyramid(base_path::String, dggs::DGGSPyramid)
         # required for open_array using HTTP
         for band in keys(ds.cubes)
             attrs = JSON3.read("$level_path/$band/.zattrs", Dict{String,Any})
+            attrs = merge(attrs, dggs[level][band].attrs)
             attrs["_DGGS"] = Dict{String,Any}(
                 String(key) => getfield(dggs.dggs, key) for key in propertynames(dggs.dggs)
             )

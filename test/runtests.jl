@@ -4,24 +4,22 @@ using YAXArrays
 using GLMakie
 using Test
 using Rasters
-using RasterDataSources
 using Random
 
 Random.seed!(1337)
 
 #
-# Load layers, and pyramids
+# Ppen arrays, layers, and pyramids
 #
 
 base_path = "https://s3.bgc-jena.mpg.de:9000/dggs/sresa1b_ncar_ccsm3-example"
-arr = open_array("$base_path/3/tas")
+a = open_array("$base_path/3/tas")
 l = open_layer("$base_path/3")
-dggs = open_pyramid("$base_path")
+p = open_pyramid("$base_path")
 
-@test arr.attrs |> length == 31
-@test l.attrs |> length == 19
-@test dggs.attrs |> length == 19
-@test (setdiff(dggs.attrs, l.attrs) .|> x -> x.first) == ["_DGGS"] # same global attrs expect DGGS level
+@test length(p.attrs) == length(l.attrs)
+@test length(a.attrs) > length(p.attrs)
+@test (setdiff(p.attrs, l.attrs) .|> x -> x.first) == ["_DGGS"] # same global attrs expect DGGS level
 
 #
 # Convert lat/lon rasters into a DGGS
@@ -32,8 +30,8 @@ lat_range = Y(-90:90)
 level = 6
 data = [exp(cosd(lon)) + 3(lat / 90) for lon in lon_range, lat in lat_range]
 raster = DimArray(data, (lon_range, lat_range))
-arr = to_array(raster, level)
-@test arr.level == level
+a = to_array(raster, level)
+@test a.level == level
 
 # load netcdf geo raster
 # reformat lon axes from [0,360] to [-180,180]
