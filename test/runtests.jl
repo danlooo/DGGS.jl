@@ -12,8 +12,7 @@ Random.seed!(1337)
 # Ppen arrays, layers, and pyramids
 #
 
-base_path = "https://s3.bgc-jena.mpg.de:9000/dggs/sresa1b_ncar_ccsm3-example"
-p = open_dggs_pyramid("$base_path")
+p = open_dggs_pyramid("https://s3.bgc-jena.mpg.de:9000/dggs/sresa1b_ncar_ccsm3-example")
 l = p[4]
 a = l.tas
 
@@ -32,7 +31,11 @@ level = 6
 data = [exp(cosd(lon)) + 3(lat / 90) for lon in lon_range, lat in lat_range]
 raster = DimArray(data, (lon_range, lat_range))
 a = to_dggs_array(raster, level)
+raster2 = to_geo_array(a, lon_range.val, lat_range.val)
 @test a.level == level
+
+# low loss after converting back
+@test all(abs.(Matrix(raster) .- Matrix(raster2)) .< 1.5)
 
 # load netcdf geo raster
 # reformat lon axes from [0,360] to [-180,180]

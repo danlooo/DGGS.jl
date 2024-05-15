@@ -40,6 +40,7 @@ export
     open_dggs_layer,
     open_dggs_pyramid,
     write_dggs_pyramid,
+    to_geo_array,
     to_dggs_array,
     to_dggs_layer,
     to_dggs_pyramid

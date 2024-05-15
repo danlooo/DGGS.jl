@@ -24,7 +24,7 @@ Base.show(io::IO, ::MIME"text/plain", dggs::DGGSGridSystem) = Base.show_default(
 
 function Base.show(io::IO, dggs::DGGSGridSystem)
     polygons = Dict("hexagon" => "⬢")
-    print(io, "$(dggs.projection) $(dggs.aperture) $(get(polygons, dggs.polygon, "?"))")
+    print(io, "$(dggs.id) $(get(polygons, dggs.polygon, "?"))")
 end
 
 struct DGGSArray

@@ -24,10 +24,38 @@ function DGGSLayer(arr::DGGSArray)
     DGGSLayer(data, arr.attrs, bands, arr.level, arr.dggs)
 end
 
+function Base.axes(l::DGGSLayer)
+    axes = Vector()
+    for arr in values(l.data)
+        append!(axes, arr.data.axes)
+    end
+    unique!(axes)
+    return axes
+end
+
 function Base.show(io::IO, ::MIME"text/plain", l::DGGSLayer)
-    println(io, "$(typeof(l))")
+    printstyled(io, typeof(l); color=:white)
+    println(io, "")
+
+    if "title" in keys(l.attrs)
+        println(io, "Title:\t$(l.attrs["title"])")
+    end
+
     println(io, "DGGS: $(l.dggs)")
     println(io, "Level: $(l.level)")
+
+    println(io, "Non spatial axes:")
+    for ax in axes(l)
+        ax_name = DimensionalData.name(ax)
+        startswith(String(ax_name), "q2di") && continue
+
+        print(io, "  ")
+        printstyled(io, ax_name; color=:red)
+        print(io, " ")
+        print(io, eltype(ax.val))
+        println(io, "")
+    end
+
     println(io, "Bands: ")
     for a in values(l.data) |> collect
         print(io, "  ")

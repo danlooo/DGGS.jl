@@ -7,9 +7,23 @@ function DGGSPyramid(data::Dict{Int,DGGSLayer}, attrs=Dict{String,Any}())
 end
 
 function Base.show(io::IO, ::MIME"text/plain", dggs::DGGSPyramid)
-    println(io, "$(typeof(dggs))")
+    printstyled(io, typeof(dggs); color=:white)
+    println(io, "")
     println(io, "DGGS: $(dggs.dggs)")
     println(io, "Levels: $(dggs.levels)")
+
+    println(io, "Non spatial axes:")
+    for ax in dggs.data |> values |> first |> axes
+        ax_name = DimensionalData.name(ax)
+        startswith(String(ax_name), "q2di") && continue
+
+        print(io, "  ")
+        printstyled(io, ax_name; color=:red)
+        print(io, " ")
+        print(io, eltype(ax.val))
+        println(io, "")
+    end
+
     println(io, "Bands: ")
     for a in dggs.data |> first |> x -> values(x.second.data) |> collect
         print(io, "  ")
@@ -19,7 +33,6 @@ function Base.show(io::IO, ::MIME"text/plain", dggs::DGGSPyramid)
 end
 
 Base.getindex(dggs::DGGSPyramid, i::Integer) = dggs.data[i]
-
 
 function open_dggs_pyramid(path::String)
     root_group = zopen(path)

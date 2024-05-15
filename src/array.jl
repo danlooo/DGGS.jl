@@ -11,12 +11,12 @@ end
 function show_nonspatial_axes(io::IO, arr::DGGSArray)
     non_spatial_axes = filter(x -> !startswith(String(x), "q2di"), DimensionalData.name(arr.data.axes))
     if length(non_spatial_axes) == 1
-        print(io, "(:")
-        print(io, non_spatial_axes[1])
-        print(io, ") ")
+        printstyled(io, "(:"; color=:white)
+        printstyled(io, non_spatial_axes[1]; color=:white)
+        printstyled(io, ") "; color=:white)
     elseif length(non_spatial_axes) > 1
-        print(io, non_spatial_axes)
-        print(io, " ")
+        printstyled(io, non_spatial_axes; color=:white)
+        printstyled(io, " "; color=:white)
     end
 end
 
@@ -24,30 +24,46 @@ function Base.show(io::IO, ::MIME"text/plain", arr::DGGSArray)
     printstyled(io, typeof(arr); color=:white)
     println(io, "")
     println(io, "Name:\t\t$(arr.id)")
-    if "long_name" in keys(arr.attrs)
-        println(io, "Long name:\t$(arr.attrs["long_name"])")
+
+    if "title" in keys(arr.attrs)
+        println(io, "Title:\t\t$(arr.attrs["title"])")
+    end
+
+    if "standard_name" in keys(arr.attrs)
+        println(io, "Standard name:\t$(arr.attrs["standard_name"])")
     end
     if "units" in keys(arr.attrs)
         println(io, "Units:\t\t$(arr.attrs["units"])")
     end
 
-    show_nonspatial_axes(io, arr)
+    println(io, "DGGS:\t\t$(arr.dggs)")
+    println(io, "Level:\t\t$(arr.level)")
+    println(io, "Attributes: $(length(arr.attrs))")
 
-    println(io, "\nAxes:")
+    println(io, "Non spatial axes:")
     for ax in arr.data.axes
-        print(io, "\t")
-        Base.show(io, "text/plain", ax)
+        ax_name = DimensionalData.name(ax)
+        startswith(String(ax_name), "q2di") && continue
+
+        print(io, "  ")
+        printstyled(io, ax_name; color=:red)
+        print(io, " ")
+        print(io, eltype(ax))
         println(io, "")
     end
 end
 
 function Base.show(io::IO, arr::DGGSArray)
-    ":$(arr.id) " |> x -> printstyled(io, x; color=:red)
-
+    "$(arr.id)" |> x -> printstyled(io, x; color=:red)
+    print(io, " ")
+    get(arr.attrs, "standard_name", "") |> x -> printstyled(io, x; color=:white)
+    print(io, " ")
     show_nonspatial_axes(io, arr)
-
-    get(arr.attrs, "long_name", "") |> x -> printstyled(io, x; color=:white)
-    get(arr.attrs, "units", "") |> x -> printstyled(io, " " * x; color=:blue)
+    get(arr.attrs, "units", "") |> x -> printstyled(io, x; color=:blue)
+    print(io, " ")
+    eltype(arr.data) |> x -> print(io, x)
+    print(io, " ")
+    "cell_methods" in keys(arr.attrs) && print(io, "aggregated")
 end
 
 "Apply function f after filtering of missing and NAN values"
@@ -121,4 +137,60 @@ function to_dggs_array(
     props["_DGGS"]["level"] = level
     cell_array = YAXArray(cell_array.axes, cell_array.data, props)
     DGGSArray(cell_array, id)
+end
+
+function to_geo_array(
+    a::DGGSArray,
+    longitudes=range(-180, 180; length=800),
+    latitudes=range(-90, 90; length=400);
+    cell_ids=nothing
+)
+    if isnothing(cell_ids)
+        cell_ids = transform_points(longitudes, latitudes, a.level)
+    end
+
+    geo_array = mapCube(
+        a.data,
+        cell_ids,
+        indims=InDims(:q2di_i, :q2di_j, :q2di_n),
+        outdims=OutDims(
+            Dim{:lon}(longitudes),
+            Dim{:lat}(latitudes)
+        )
+    ) do xout, xin, cell_ids
+        for (i, cell_id) in enumerate(cell_ids)
+            xout[i] = xin[cell_id.i+1, cell_id.j+1, cell_id.n+1]
+        end
+    end
+
+    return YAXArray(geo_array.axes, geo_array.data, a.attrs)
+end
+
+function Makie.plot(
+    a::DGGSArray;
+    longitudes=range(-180, 180; length=800),
+    latitudes=range(-90, 90; length=400)
+)
+    geo_array = to_geo_array(a, longitudes, latitudes)
+    non_spatial_axes = setdiff(DimensionalData.name(geo_array.axes), (:lon, :lat))
+
+    fig = Figure()
+    if length(non_spatial_axes) == 0
+        with_theme(theme_black()) do
+            heatmap(fig[1, 1], geo_array, axis=(backgroundcolor=RGBA{Float64}(0.15, 0.15, 0.15, 1), aspect=1))
+            fig
+        end
+    else
+        sliders = [(
+            label=String(key),
+            range=1:length(getproperty(geo_array, key))
+        ) for key in non_spatial_axes]
+        slider_grid = SliderGrid(fig[2, 1], sliders...)
+
+        with_theme(theme_black()) do
+            fig = Figure()
+            heatmap(fig[1, 1], geo_array, axis=(backgroundcolor=RGBA{Float64}(0.15, 0.15, 0.15, 1), aspect=1))
+            fig
+        end
+    end
 end
