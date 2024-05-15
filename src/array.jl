@@ -8,7 +8,35 @@ function DGGSArray(arr::YAXArray, name=:layer)
     DGGSArray(arr, attrs, name, level, dggs)
 end
 
-Base.show(io::IO, ::MIME"text/plain", arr::DGGSArray) = Base.show_default(io, arr)
+function Base.show(io::IO, ::MIME"text/plain", arr::DGGSArray)
+    printstyled(io, typeof(arr); color=:white)
+    println(io, "")
+    println(io, "Name:\t\t$(arr.name)")
+    if "long_name" in keys(arr.attrs)
+        println(io, "Long name:\t$(arr.attrs["long_name"])")
+    end
+    if "units" in keys(arr.attrs)
+        println(io, "Units:\t\t$(arr.attrs["units"])")
+    end
+
+    non_spatial_axes = filter(x -> !startswith(String(x), "q2di"), DimensionalData.name(arr.data.axes))
+    if length(non_spatial_axes) == 1
+        print(io, "(:")
+        print(io, non_spatial_axes[1])
+        print(io, ") ")
+    elseif length(non_spatial_axes) > 1
+        print(io, non_spatial_axes)
+        print(io, " ")
+    end
+
+
+    println(io, "\nAxes:")
+    for ax in arr.data.axes
+        print(io, "\t")
+        Base.show(io, "text/plain", ax)
+        println(io, "")
+    end
+end
 
 function Base.show(io::IO, arr::DGGSArray)
     ":$(arr.name) " |> x -> printstyled(io, x; color=:red)

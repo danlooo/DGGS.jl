@@ -58,7 +58,7 @@ end
 """
 Transforms a `YAXArrays.Dataset` in geographic lat/lon ratser to a DGGSLayer at agiven layer
 """
-function to_dggs_layer(geo_ds::Dataset, level::Integer; lon_name=:lon, lat_name=:lat)
+function to_dggs_layer(geo_ds::Dataset, level::Integer; lon_name=:lon, lat_name=:lat, verbose::Bool=true)
     level > 0 || error("Level must be positive")
 
     lon_dim = filter(x -> x isa X || name(x) == lon_name, collect(values(geo_ds.axes)))
@@ -69,10 +69,12 @@ function to_dggs_layer(geo_ds::Dataset, level::Integer; lon_name=:lon, lat_name=
     lon_dim = lon_dim[1]
     lat_dim = lat_dim[1]
 
+    verbose && @info "Transform coordinates"
     cell_ids = transform_points(lon_dim.val, lat_dim.val, level)
     data = Dict{Symbol,DGGSArray}()
     for (band, geo_arr) in geo_ds.cubes
-        data[band] = to_dggs_array(geo_arr, level; cell_ids=cell_ids)
+        verbose && @info "Tranform band $band"
+        data[band] = to_dggs_array(geo_arr, level; cell_ids=cell_ids, verbose=false)
     end
     bands = geo_ds.cubes |> keys |> collect
     DGGSLayer(data, geo_ds.properties, bands, level, DGGSGridSystem(Q2DI_DGGS_PROPS))

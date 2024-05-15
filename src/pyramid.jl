@@ -112,7 +112,7 @@ function to_dggs_pyramid(l::DGGSLayer; agg_func::Function=filter_null(mean))
                     Dim{:q2di_j}(range(0; step=1, length=2^(coarser_level - 1)))
                 )
             )
-            coarser_data[k] = DGGSArray(coarser_arr, finer_layer.attrs, k, coarser_level, finer_layer.dggs)
+            coarser_data[k] = DGGSArray(coarser_arr, arr.attrs, k, coarser_level, finer_layer.dggs)
         end
 
         pyramid[coarser_level] = DGGSLayer(coarser_data, l.attrs)
