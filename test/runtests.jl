@@ -13,9 +13,9 @@ Random.seed!(1337)
 #
 
 base_path = "https://s3.bgc-jena.mpg.de:9000/dggs/sresa1b_ncar_ccsm3-example"
-a = open_dggs_array("$base_path/3/tas")
-l = open_dggs_layer("$base_path/3")
 p = open_dggs_pyramid("$base_path")
+l = p[4]
+a = l.tas
 
 @test a.id == :tas
 @test length(p.attrs) == length(l.attrs)
@@ -60,8 +60,6 @@ dggs2 = to_dggs_pyramid(geo_ds, level)
 d = tempname()
 write_dggs_pyramid(d, dggs2)
 dggs2a = open_dggs_pyramid(d)
-l = open_dggs_layer("$d/3")
-a = open_dggs_array("$d/3/tas")
 @test dggs2.attrs == dggs2a.attrs
 @test dggs2.levels == dggs2a.levels
 @test dggs2.bands == dggs2a.bands

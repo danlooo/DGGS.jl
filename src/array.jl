@@ -8,6 +8,18 @@ function DGGSArray(arr::YAXArray, id=:layer)
     DGGSArray(arr, attrs, id, level, dggs)
 end
 
+function show_nonspatial_axes(io::IO, arr::DGGSArray)
+    non_spatial_axes = filter(x -> !startswith(String(x), "q2di"), DimensionalData.name(arr.data.axes))
+    if length(non_spatial_axes) == 1
+        print(io, "(:")
+        print(io, non_spatial_axes[1])
+        print(io, ") ")
+    elseif length(non_spatial_axes) > 1
+        print(io, non_spatial_axes)
+        print(io, " ")
+    end
+end
+
 function Base.show(io::IO, ::MIME"text/plain", arr::DGGSArray)
     printstyled(io, typeof(arr); color=:white)
     println(io, "")
@@ -19,16 +31,7 @@ function Base.show(io::IO, ::MIME"text/plain", arr::DGGSArray)
         println(io, "Units:\t\t$(arr.attrs["units"])")
     end
 
-    non_spatial_axes = filter(x -> !startswith(String(x), "q2di"), DimensionalData.name(arr.data.axes))
-    if length(non_spatial_axes) == 1
-        print(io, "(:")
-        print(io, non_spatial_axes[1])
-        print(io, ") ")
-    elseif length(non_spatial_axes) > 1
-        print(io, non_spatial_axes)
-        print(io, " ")
-    end
-
+    show_nonspatial_axes(io, arr)
 
     println(io, "\nAxes:")
     for ax in arr.data.axes
@@ -41,32 +44,10 @@ end
 function Base.show(io::IO, arr::DGGSArray)
     ":$(arr.id) " |> x -> printstyled(io, x; color=:red)
 
-    non_spatial_axes = filter(x -> !startswith(String(x), "q2di"), DimensionalData.name(arr.data.axes))
-
-    if length(non_spatial_axes) == 1
-        print(io, "(:")
-        print(io, non_spatial_axes[1])
-        print(io, ") ")
-    elseif length(non_spatial_axes) > 1
-        print(io, non_spatial_axes)
-        print(io, " ")
-    end
+    show_nonspatial_axes(io, arr)
 
     get(arr.attrs, "long_name", "") |> x -> printstyled(io, x; color=:white)
     get(arr.attrs, "units", "") |> x -> printstyled(io, " " * x; color=:blue)
-end
-
-function open_dggs_array(path::String)
-    z = zopen(path)
-    z isa ZArray || error("Path must point to a ZArray and not $(typeof(z))")
-    data = zopen(path) |> YAXArray
-    arr = YAXArray(data.axes, data, z.attrs)
-
-    # usually zarrGroup but this is a ZarrArray
-    id = get(arr.properties, "name", "layer") |> Symbol
-    id == :layer && @warn "attribute name of array not found. Defaulting to layer"
-
-    DGGSArray(arr, id)
 end
 
 "Apply function f after filtering of missing and NAN values"

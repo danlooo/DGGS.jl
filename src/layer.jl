@@ -48,13 +48,6 @@ end
 
 Base.propertynames(l::DGGSLayer) = union(l.bands, (:data, :bands, :attrs))
 
-function open_dggs_layer(path::String)
-    z = zopen(path)
-    z isa ZGroup || error("Path must point to a ZGoup and not $(typeof(z))")
-    ds = open_dataset(z)
-    DGGSLayer(ds)
-end
-
 """
 Transforms a `YAXArrays.Dataset` in geographic lat/lon ratser to a DGGSLayer at agiven layer
 """
