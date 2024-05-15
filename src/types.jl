@@ -18,7 +18,7 @@ struct DGGSGridSystem
     projection::String
 end
 
-DGGSGridSystem(d::Dict{String,Any}) = DGGSGridSystem(d["name"], d["index"], d["polygon"], d["aperture"], d["projection"])
+DGGSGridSystem(d::Dict{String,Any}) = DGGSGridSystem(d["id"], d["index"], d["polygon"], d["aperture"], d["projection"])
 
 Base.show(io::IO, ::MIME"text/plain", dggs::DGGSGridSystem) = Base.show_default(io, dggs)
 
