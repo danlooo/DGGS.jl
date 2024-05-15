@@ -61,7 +61,12 @@ function open_dggs_array(path::String)
     z isa ZArray || error("Path must point to a ZArray and not $(typeof(z))")
     data = zopen(path) |> YAXArray
     arr = YAXArray(data.axes, data, z.attrs)
-    DGGSArray(arr)
+
+    # usually zarrGroup but this is a ZarrArray
+    id = get(arr.properties, "name", "layer") |> Symbol
+    id == :layer && @warn "attribute name of array not found. Defaulting to layer"
+
+    DGGSArray(arr, id)
 end
 
 "Apply function f after filtering of missing and NAN values"

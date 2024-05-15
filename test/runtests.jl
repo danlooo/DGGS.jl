@@ -17,6 +17,7 @@ a = open_dggs_array("$base_path/3/tas")
 l = open_dggs_layer("$base_path/3")
 p = open_dggs_pyramid("$base_path")
 
+@test a.id == :tas
 @test length(p.attrs) == length(l.attrs)
 @test length(a.attrs) > length(p.attrs)
 @test (setdiff(p.attrs, l.attrs) .|> x -> x.first) == ["_DGGS"] # same global attrs expect DGGS level
