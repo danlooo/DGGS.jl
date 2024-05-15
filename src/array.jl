@@ -1,17 +1,17 @@
-function DGGSArray(arr::YAXArray, name=:layer)
+function DGGSArray(arr::YAXArray, id=:layer)
     haskey(arr.properties, "_DGGS") || error("Array is not in DGGS format")
 
     attrs = arr.properties
     level = attrs["_DGGS"]["level"]
     dggs = DGGSGridSystem(attrs["_DGGS"])
 
-    DGGSArray(arr, attrs, name, level, dggs)
+    DGGSArray(arr, attrs, id, level, dggs)
 end
 
 function Base.show(io::IO, ::MIME"text/plain", arr::DGGSArray)
     printstyled(io, typeof(arr); color=:white)
     println(io, "")
-    println(io, "Name:\t\t$(arr.name)")
+    println(io, "Name:\t\t$(arr.id)")
     if "long_name" in keys(arr.attrs)
         println(io, "Long name:\t$(arr.attrs["long_name"])")
     end
@@ -39,7 +39,7 @@ function Base.show(io::IO, ::MIME"text/plain", arr::DGGSArray)
 end
 
 function Base.show(io::IO, arr::DGGSArray)
-    ":$(arr.name) " |> x -> printstyled(io, x; color=:red)
+    ":$(arr.id) " |> x -> printstyled(io, x; color=:red)
 
     non_spatial_axes = filter(x -> !startswith(String(x), "q2di"), DimensionalData.name(arr.data.axes))
 
@@ -76,7 +76,8 @@ function to_dggs_array(
     lat_name::Symbol=:lat,
     cell_ids::Union{AbstractMatrix,Nothing}=nothing,
     agg_func::Function=filter_null(mean),
-    verbose::Bool=true
+    verbose::Bool=true,
+    id::Symbol=:layer
 )
     level > 0 || error("Level must be positive")
 
@@ -133,5 +134,5 @@ function to_dggs_array(
     props["_DGGS"] = deepcopy(Q2DI_DGGS_PROPS)
     props["_DGGS"]["level"] = level
     cell_array = YAXArray(cell_array.axes, cell_array.data, props)
-    DGGSArray(cell_array)
+    DGGSArray(cell_array, id)
 end

@@ -48,6 +48,9 @@ geo_ds = Dataset(; properties=geo_ds.properties, arrs...)
 dggs2 = to_dggs_pyramid(geo_ds, level)
 @test maximum(dggs2.levels) == level
 @test minimum(dggs2.levels) == 2
+@test dggs2.attrs == dggs2[2].attrs
+@test intersect(dggs2.attrs, dggs2[3].tas.attrs) |> length > 0
+@test length(dggs2.attrs) < length(dggs2[2].tas.attrs)
 
 #
 # Write pyramids 

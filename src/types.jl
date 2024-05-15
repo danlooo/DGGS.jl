@@ -11,7 +11,7 @@ function Base.show(io::IO, ::MIME"text/plain", i::Q2DI{T}) where {T<:Integer}
 end
 
 struct DGGSGridSystem
-    name::String
+    id::String
     index::String
     polygon::String
     aperture::Integer
@@ -30,7 +30,7 @@ end
 struct DGGSArray
     data::YAXArray
     attrs::Dict{String,Any}
-    name::Symbol
+    id::Symbol
     level::Integer
     dggs::DGGSGridSystem
 end
@@ -43,7 +43,7 @@ struct DGGSLayer
     dggs::DGGSGridSystem
 
     function DGGSLayer(data, attrs, bands, level, dggs)
-        if !(map(x -> x.dggs.name, collect(values(data))) |> allequal)
+        if !(map(x -> x.dggs.id, collect(values(data))) |> allequal)
             error("DGGS are different")
         end
 
