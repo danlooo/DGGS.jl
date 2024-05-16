@@ -56,8 +56,10 @@ end
 function Base.show(io::IO, arr::DGGSArray)
     "$(arr.id)" |> x -> printstyled(io, x; color=:red)
     print(io, " ")
-    get(arr.attrs, "standard_name", "") |> x -> printstyled(io, x; color=:white)
-    print(io, " ")
+    if "standard_name" in keys(arr.attrs)
+        printstyled(io, arr.attrs["standard_name"]; color=:white)
+        print(io, " ")
+    end
     show_nonspatial_axes(io, arr)
     get(arr.attrs, "units", "") |> x -> printstyled(io, x; color=:blue)
     print(io, " ")
@@ -172,24 +174,50 @@ function Makie.plot(
     latitudes=range(-90, 90; length=400)
 )
     geo_array = to_geo_array(a, longitudes, latitudes)
-    non_spatial_axes = setdiff(DimensionalData.name(geo_array.axes), (:lon, :lat))
+    non_spatial_axes = map(setdiff(DimensionalData.name(geo_array.axes), (:lon, :lat))) do x
+        getproperty(geo_array, x)
+    end
 
-    fig = Figure()
-    if length(non_spatial_axes) == 0
-        with_theme(theme_black()) do
-            heatmap(fig[1, 1], geo_array, axis=(backgroundcolor=RGBA{Float64}(0.15, 0.15, 0.15, 1), aspect=1))
+    arr_label = get(a.attrs, "standard_name", "$(a.id)") |> x -> replace(x, "_" => " ")
+    if "units" in keys(a.attrs)
+        arr_label *= (" (" * a.attrs["units"] * ")")
+    end
+
+    with_theme(theme_black()) do
+        fig = Figure()
+        heatmap_ax = (
+            backgroundcolor=RGBA{Float64}(0.15, 0.15, 0.15, 1),
+            aspect=1
+        )
+
+        if length(non_spatial_axes) == 0
+            h, heatmap_plt = heatmap(fig[1, 1], geo_array, axis=heatmap_ax)
+            cb = Colorbar(fig[1, 2], heatmap_plt; label=arr_label)
             fig
-        end
-    else
-        sliders = [(
-            label=String(key),
-            range=1:length(getproperty(geo_array, key))
-        ) for key in non_spatial_axes]
-        slider_grid = SliderGrid(fig[2, 1], sliders...)
+        else
+            sliders = map(non_spatial_axes) do ax
+                (
+                    label=ax |> name |> String,
+                    range=1:length(ax),
+                    format=x -> "$(ax[x])",
+                    color_inactive=RGBA{Float64}(0.15, 0.15, 0.15, 1),
+                    color_active=:white,
+                    color_active_dimmed=:white
+                )
+            end
+            slider_grid = SliderGrid(fig[2, 1], sliders...)
+            slider_observables = [s.value for s in slider_grid.sliders]
 
-        with_theme(theme_black()) do
-            fig = Figure()
-            heatmap(fig[1, 1], geo_array, axis=(backgroundcolor=RGBA{Float64}(0.15, 0.15, 0.15, 1), aspect=1))
+            texture = lift(slider_observables...) do slider_values...
+                d = Dict()
+                for (ax, val) in zip(non_spatial_axes, slider_values)
+                    d[name(ax)] = val
+                end
+                getindex(geo_array; NamedTuple(d)...)
+            end
+
+            h, heatmap_plt = heatmap(fig[1, 1], texture, axis=heatmap_ax)
+            cb = Colorbar(fig[1, 2], heatmap_plt; label=arr_label)
             fig
         end
     end

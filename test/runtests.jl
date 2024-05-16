@@ -21,6 +21,7 @@ a = l.tas
 @test length(a.attrs) > length(p.attrs)
 @test (setdiff(p.attrs, l.attrs) .|> x -> x.first) == ["_DGGS"] # same global attrs expect DGGS level
 
+
 #
 # Convert lat/lon rasters into a DGGS
 #
@@ -30,9 +31,9 @@ lat_range = Y(-90:90)
 level = 6
 data = [exp(cosd(lon)) + 3(lat / 90) for lon in lon_range, lat in lat_range]
 raster = DimArray(data, (lon_range, lat_range))
-a = to_dggs_array(raster, level)
-raster2 = to_geo_array(a, lon_range.val, lat_range.val)
-@test a.level == level
+a2 = to_dggs_array(raster, level)
+raster2 = to_geo_array(a2, lon_range.val, lat_range.val)
+@test a2.level == level
 
 # low loss after converting back
 @test all(abs.(Matrix(raster) .- Matrix(raster2)) .< 1.5)
@@ -80,3 +81,11 @@ a3 = YAXArray((X(1:5), Y(1:5)), rand(5, 5), Dict()) |> x -> to_dggs_array(x, 2)
 
 @test Raster(rand(361, 181), (X(-180:180), Y(-90:90))) |> x -> to_dggs_layer(x, 4) isa DGGSLayer
 @test Raster(rand(361, 181), (X(-180:180), Y(-90:90))) |> x -> to_dggs_pyramid(x, 4) isa DGGSPyramid
+
+#
+# plotting
+#
+
+p1 = plot(a)
+p2 = plot(a2)
+p3 = plot(l)
