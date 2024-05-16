@@ -27,53 +27,67 @@ using Pkg
 Pkg.add(url="https://github.com/danlooo/DGGS.jl.git")
 ```
 
-Load an external DGGS data cube:
 
 ```julia
 using DGGS
-dggs = GridSystem("https://s3.bgc-jena.mpg.de:9000/dggs/modis")
+p1 = open_dggs_pyramid("https://s3.bgc-jena.mpg.de:9000/dggs/sresa1b_ncar_ccsm3-example")
 ```
 ```
-DGGS GridSystem
-Levels: 2,3,4,5,6,7,8,9,10
-Dim{:q2di_i} Sampled{Int64} 0:1:15 ForwardOrdered Regular Points,
-Dim{:q2di_j} Sampled{Int64} 0:1:15 ForwardOrdered Regular Points,
-Dim{:q2di_n} Sampled{Int64} 0:1:11 ForwardOrdered Regular Points,
-Ti Sampled{Dates.DateTime} Dates.DateTime[2001-01-01T00:00:00, …, 2001-12-01T00:00:00] ForwardOrdered Irregular Points
+DGGSPyramid
+DGGS: DGGRID ISEA4H Q2DI ⬢
+Levels: Integer[5, 4, 6, 2, 3]
+Non spatial axes:
+  Time CFTime.DateTimeNoLeap
+  plev Float64
+Bands: 
+  tas air_temperature (:Time) K Union{Missing, Float32} aggregated
+  ua eastward_wind (:plev, :Time) m s-1 Union{Missing, Float32} aggregated
+  pr precipitation_flux (:Time) kg m-2 s-1 Union{Missing, Float32} aggregated
+  area meter2 Union{Missing, Float32} 
 ```
 
 Create a DGGS based on a synthetic data in a geographical grid:
 
 ```julia
-lon_range = -180:180
-lat_range = -90:90
+using DimensionalData
+lon_range = X(-180:180)
+lat_range = Y(-90:90)
 level = 6
 data = [exp(cosd(lon)) + 3(lat / 90) for lon in lon_range, lat in lat_range]
-dggs = to_cell_cube(data, lon_range, lat_range, level) |> GridSystem
+raster = DimArray(data, (lon_range, lat_range))
+p2 = to_dggs_pyramid(raster, level)
 ```
 ```
 [ Info: Step 1/2: Transform coordinates
 [ Info: Step 2/2: Re-grid the data
-DGGS GridSystem
-Levels: 2,3,4,5,6
-↓ q2di_i Sampled{Int64} 0:1:15 ForwardOrdered Regular Points,
-→ q2di_j Sampled{Int64} 0:1:15 ForwardOrdered Regular Points,
-↗ q2di_n Sampled{Int64} 0:11 ForwardOrdered Regular Points
+DGGSPyramid
+DGGS: DGGRID ISEA4H Q2DI ⬢
+Levels: Integer[5, 4, 6, 2, 3]
+Non spatial axes:
+Bands: 
+  layer  Union{Missing, Float64} 
 ```
 
 Write DGGS data to disk and load them back:
 
 ```julia
-write("example.dggs", dggs)
-dggs2 = GridSystem("example.dggs")
+write_dggs_pyramid("example.dggs", p2)
+p2a = open_dggs_pyramid("example.dggs")
 ```
 
-Visualize:
+Access individual layers and arrays:
+
+```julia
+highest_layer = p1[6]
+air_temperature = highest_layer.tas
+```
+
+Visualization:
 
 ```julia
 using GLMakie
-plot(dggs)
-plot(dggs, BBox(0,20,40,60))
+plot(p1[6].tas)
+plot(p1[6].tas; type=:map, longitudes=-180:180, latitudes=-90:90)
 ```
 
 ## Development

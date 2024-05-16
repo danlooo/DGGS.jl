@@ -394,7 +394,7 @@ function plot_map(
             end
 
             h, heatmap_plt = heatmap(fig[1, 1], texture, axis=heatmap_ax)
-            cb = Colorbar(fig[1, 2], heatmap_plt; label=arr_label)
+            cb = Colorbar(fig[1, 2], heatmap_plt; label=get_arr_label(a))
             fig
         end
     end
