@@ -86,6 +86,6 @@ a3 = YAXArray((X(1:5), Y(1:5)), rand(5, 5), Dict()) |> x -> to_dggs_array(x, 2)
 # plotting
 #
 
-p1 = plot(a)
-p2 = plot(a2)
-p3 = plot(l)
+p1 = plot(a; resolution=100)
+p2 = plot(a2; type=:map, resolution=100)
+p2 = plot(a2; type=:globe, resolution=100)
