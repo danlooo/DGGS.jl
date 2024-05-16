@@ -186,11 +186,13 @@ function plot_globe(a::DGGSArray; resolution::Integer=800)
     longitudes = range(-180, 180; length=resolution * 2)
     latitudes = range(-90, 90; length=resolution)
     geo_array = to_geo_array(a, longitudes, latitudes)
+
     non_spatial_axes = map(setdiff(DimensionalData.name(geo_array.axes), (:lon, :lat))) do x
         getproperty(geo_array, x)
     end
     min_val = filter_null(minimum)(geo_array)
     max_val = filter_null(maximum)(geo_array)
+    min_val == max_val && error("")
 
     with_theme(theme_black()) do
         fig = Figure()

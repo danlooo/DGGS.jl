@@ -69,8 +69,6 @@ dggs2a = open_dggs_pyramid(d)
 @test dggs2.bands == dggs2a.bands
 rm(d, recursive=true)
 
-# BUG: attrs inscl. _DGGS are not written to disk resulting in error during open_dggs_array
-
 #
 # Rasters
 #
@@ -86,6 +84,6 @@ a3 = YAXArray((X(1:5), Y(1:5)), rand(5, 5), Dict()) |> x -> to_dggs_array(x, 2)
 # plotting
 #
 
-p1 = plot(a; resolution=100)
-p2 = plot(a2; type=:map, resolution=100)
-p2 = plot(a2; type=:globe, resolution=100)
+@test plot(a; resolution=100) isa Figure
+@test plot(a; type=:globe, resolution=100) isa Figure
+@test plot(a2; type=:map) isa Figure
