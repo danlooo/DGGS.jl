@@ -199,7 +199,7 @@ function plot_globe(a::DGGSArray; resolution::Integer=800)
 
         if length(non_spatial_axes) == 0
             # calc texture colors
-            texture = map(geo_array |> Matrix) do val
+            texture = map(geo_array |> x -> x[1:length(x.lon), length(x.lat):-1:1]') do val
                 try
                     get(ColorSchemes.viridis, val, (min_val, max_val))
                 catch
@@ -282,7 +282,7 @@ function plot_globe(a::DGGSArray; resolution::Integer=800)
                 filtered_array = getindex(geo_array; NamedTuple(d)...)
 
                 # calc texture colors
-                map(filtered_array |> Matrix) do val
+                map(filtered_array |> x -> x[1:length(x.lon), length(x.lat):-1:1]') do val
                     try
                         get(ColorSchemes.viridis, val, (min_val, max_val))
                     catch
