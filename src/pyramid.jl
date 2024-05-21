@@ -102,8 +102,8 @@ function aggregate_dggs_layer(xout, xin, agg_func)
     end
 end
 
-function to_dggs_pyramid(geo_ds::Dataset, level::Integer; agg_func::Function=filter_null(mean))
-    l = to_dggs_layer(geo_ds, level)
+function to_dggs_pyramid(geo_ds::Dataset, level::Integer, args...; agg_func::Function=filter_null(mean), kwargs...)
+    l = to_dggs_layer(geo_ds, level, args...; kwargs...)
     dggs = to_dggs_pyramid(l)
     return dggs
 end
