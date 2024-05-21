@@ -53,7 +53,7 @@ function _transform_points(coords::AbstractVector{Q2DI{T}}, level) where {T<:Int
 end
 
 "Transforms Vector of (lon,lat) coords to DGGRID indices"
-function _transform_points(coords::AbstractVector{Tuple{T,T}}, level) where {T<:Real}
+function _transform_points(coords::AbstractVector{Tuple{U,V}}, level) where {U<:Real,V<:Real}
     points_path = tempname()
     points_string = ""
     # arrange points to match with pixels in png image
@@ -88,7 +88,7 @@ function _transform_points(lon_range, lat_range, level)
     product(lon_range, lat_range) |> collect |> vec |> sort |> x -> _transform_points(x, level) |> x -> reshape(x, length(lat_range), length(lon_range))
 end
 
-function transform_points(coords::Vector{Tuple{T,T}}, level; show_progress=true, chunk_size_points=2048) where {T<:Real}
+function transform_points(coords::Vector{Tuple{U,V}}, level; show_progress=true, chunk_size_points=2048) where {U<:Real,V<:Real}
     chunks = Iterators.partition(coords, chunk_size_points) |> collect
 
     if length(chunks) == 1
