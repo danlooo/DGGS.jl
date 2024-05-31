@@ -5,6 +5,7 @@ struct Q2DI{T<:Integer}
 end
 
 Q2DI(n::Integer, i::T, j::T) where {T<:Integer} = Q2DI(UInt8(n), T(i), T(j))
+defaultfillval(x::Q2DI) = nothing
 
 function Base.show(io::IO, ::MIME"text/plain", i::Q2DI{T}) where {T<:Integer}
     println(io, "Q2DI($(i.n), $(i.i), $(i.j))")

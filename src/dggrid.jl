@@ -98,15 +98,16 @@ function transform_points(coords::Vector{Tuple{U,V}}, level; show_progress=true,
     results = nothing
     if show_progress
         p = Progress(length(chunks))
-        results = @threaded map(chunks) do coords
-            res = _transform_points(coords, level)
+        results = Vector(undef, length(chunks))
+        Threads.@threads for i in 1:length(chunks)
+            cell_ids_mats[i] = _transform_points(chunks[i], lat_range, level)
             next!(p)
-            res
         end
         finish!(p)
     else
-        results = @threaded map(chunks) do coords
-            _transform_points(coords, level)
+        results = Vector(undef, length(chunks))
+        Threads.@threads for i in 1:length(chunks)
+            cell_ids_mats[i] = _transform_points(chunks[i], lat_range, level)
         end
     end
 
@@ -124,15 +125,18 @@ function transform_points(coords::Vector{Q2DI{T}}, level; show_progress=true, ch
     results = nothing
     if show_progress
         p = Progress(length(chunks))
-        results = @threaded map(chunks) do coords
-            res = _transform_points(coords, level)
+
+        results = Vector(undef, length(chunks))
+        Threads.@threads for i in 1:length(chunks)
+            results[i] = _transform_points(chunks[i], lat_range, level)
             next!(p)
-            res
         end
+
         finish!(p)
     else
-        results = @threaded map(chunks) do coords
-            _transform_points(coords, level)
+        results = Vector(undef, length(chunks))
+        Threads.@threads for i in 1:length(chunks)
+            results[i] = _transform_points(chunks[i], lat_range, level)
         end
     end
 
@@ -156,15 +160,18 @@ function transform_points(lon_range::AbstractVector{A}, lat_range::AbstractVecto
     cell_ids_mats = nothing
     if show_progress
         p = Progress(length(lon_chunks))
-        cell_ids_mats = @threaded map(lon_chunks) do lons
-            res = _transform_points(lons, lat_range, level)
+
+        cell_ids_mats = Vector(undef, length(lon_chunks))
+        Threads.@threads for i in 1:length(lon_chunks)
+            cell_ids_mats[i] = _transform_points(lon_chunks[i], lat_range, level)
             next!(p)
-            res
         end
+
         finish!(p)
     else
-        cell_ids_mats = @threaded map(lon_chunks) do lons
-            _transform_points(lons, lat_range, level)
+        cell_ids_mats = Vector(undef, length(lon_chunks))
+        Threads.@threads for i in 1:length(lon_chunks)
+            cell_ids_mats[i] = _transform_points(lon_chunks[i], lat_range, level)
         end
     end
 
