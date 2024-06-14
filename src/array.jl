@@ -92,6 +92,8 @@ function to_dggs_array(
     verbose::Bool=true,
     id::Symbol=:layer
 )
+    # Optimized for grids which cell_ids fit in memory
+
     level > 0 || error("Level must be positive")
 
     lon_dim = filter(x -> x isa X || name(x) == lon_name, dims(raster))
@@ -102,16 +104,13 @@ function to_dggs_array(
     lon_dim = lon_dim[1]
     lat_dim = lat_dim[1]
 
-    # data would be upside down if reversed dimensions are used
-    issorted(lon_dim) || error("Longitude must be sorted in forward ascending oder")
-    issorted(lat_dim) || error("Latitude must be sorted in forward ascending oder")
-
     -180 <= minimum(lon_dim) <= maximum(lon_dim) <= 180 || error("$(name(lon_dim)) must be within [-180, 180]")
     -90 <= minimum(lat_dim) <= maximum(lat_dim) <= 90 || error("$(name(lon_dim)) must be within [-90, 90]")
 
     verbose && @info "Step 1/2: Transform coordinates"
     cell_ids_mat = isnothing(cell_ids) ? transform_points(lon_dim.val, lat_dim.val, level) : cell_ids
 
+    # look up hash map to get list of pixels to be aggregated for each cell
     cell_ids_indexlist = Dict()
     for c in 1:size(cell_ids_mat, 2)
         for r in 1:size(cell_ids_mat, 1)
@@ -142,7 +141,8 @@ function to_dggs_array(
         outdims=OutDims(
             Dim{:q2di_i}(range(0; step=1, length=2^(level - 1))),
             Dim{:q2di_j}(range(0; step=1, length=2^(level - 1))),
-            Dim{:q2di_n}(0:11)
+            Dim{:q2di_n}(0:11),
+            path=tempname() # disable inplace
         ),
         showprog=true
     )

@@ -79,7 +79,14 @@ Base.propertynames(l::DGGSLayer) = union(l.bands, (:data, :bands, :attrs))
 """
 Transforms a `YAXArrays.Dataset` in geographic lat/lon ratser to a DGGSLayer at agiven layer
 """
-function to_dggs_layer(geo_ds::Dataset, level::Integer; lon_name::Symbol=:lon, lat_name::Symbol=:lat, verbose::Bool=true)
+function to_dggs_layer(
+    geo_ds::Dataset,
+    level::Integer;
+    lon_name::Symbol=:lon,
+    lat_name::Symbol=:lat,
+    verbose::Bool=true,
+    cell_ids::Union{AbstractMatrix,Nothing}=nothing,
+    kwargs...)
     level > 0 || error("Level must be positive")
 
     lon_dim = filter(x -> x isa X || name(x) == lon_name, collect(values(geo_ds.axes)))
@@ -91,11 +98,12 @@ function to_dggs_layer(geo_ds::Dataset, level::Integer; lon_name::Symbol=:lon, l
     lat_dim = lat_dim[1]
 
     verbose && @info "Transform coordinates"
-    cell_ids = transform_points(lon_dim.val, lat_dim.val, level)
+    cell_ids = isnothing(cell_ids) ? transform_points(lon_dim.val, lat_dim.val, level) : cell_ids
+
     data = Dict{Symbol,DGGSArray}()
     for (band, geo_arr) in geo_ds.cubes
         verbose && @info "Tranform band $band"
-        data[band] = to_dggs_array(geo_arr, level; cell_ids=cell_ids, verbose=false, lon_name=lon_name, lat_name=lat_name)
+        data[band] = to_dggs_array(geo_arr, level; cell_ids=cell_ids, verbose=false, lon_name=lon_name, lat_name=lat_name, kwargs...)
     end
     bands = geo_ds.cubes |> keys |> collect
     DGGSLayer(data, geo_ds.properties, bands, level, DGGSGridSystem(Q2DI_DGGS_PROPS))

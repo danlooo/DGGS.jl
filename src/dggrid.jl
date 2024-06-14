@@ -85,7 +85,7 @@ function _transform_points(coords::AbstractVector{Tuple{U,V}}, level) where {U<:
 end
 
 function _transform_points(lon_range, lat_range, level)
-    product(lon_range, lat_range) |> collect |> vec |> sort |> x -> _transform_points(x, level) |> x -> reshape(x, length(lat_range), length(lon_range))
+    Iterators.product(lon_range, lat_range) |> collect |> vec |> sort |> x -> _transform_points(x, level) |> x -> reshape(x, length(lat_range), length(lon_range))
 end
 
 function transform_points(coords::Vector{Tuple{U,V}}, level; show_progress=true, chunk_size_points=2048) where {U<:Real,V<:Real}
