@@ -81,6 +81,7 @@ function get_arr_label(a::DGGSArray)
     return arr_label
 end
 
+
 function to_dggs_array(
     raster::AbstractDimArray,
     level::Integer;
@@ -91,6 +92,8 @@ function to_dggs_array(
     verbose::Bool=true,
     id::Symbol=:layer
 )
+    # Optimized for grids which cell_ids fit in memory
+
     level > 0 || error("Level must be positive")
 
     lon_dim = filter(x -> x isa X || name(x) == lon_name, dims(raster))
@@ -101,14 +104,13 @@ function to_dggs_array(
     lon_dim = lon_dim[1]
     lat_dim = lat_dim[1]
 
-    lon_dim.val.order == DimensionalData.Dimensions.LookupArrays.ForwardOrdered() || error("Longitude must be sorted in forward ascending oder")
-    lat_dim.val.order == DimensionalData.Dimensions.LookupArrays.ForwardOrdered() || error("Latitude must be sorted in forward ascending oder")
     -180 <= minimum(lon_dim) <= maximum(lon_dim) <= 180 || error("$(name(lon_dim)) must be within [-180, 180]")
     -90 <= minimum(lat_dim) <= maximum(lat_dim) <= 90 || error("$(name(lon_dim)) must be within [-90, 90]")
 
     verbose && @info "Step 1/2: Transform coordinates"
     cell_ids_mat = isnothing(cell_ids) ? transform_points(lon_dim.val, lat_dim.val, level) : cell_ids
 
+    # look up hash map to get list of pixels to be aggregated for each cell
     cell_ids_indexlist = Dict()
     for c in 1:size(cell_ids_mat, 2)
         for r in 1:size(cell_ids_mat, 1)
@@ -123,24 +125,27 @@ function to_dggs_array(
     end
 
     verbose && @info "Step 2/2: Re-grid the data"
-    cell_array = mapCube(
-        # mapCube can't find axes of other AbstractDimArrays e.g. Raster
-        YAXArray(dims(raster), raster.data),
-        cell_ids_indexlist,
-        agg_func,
-        indims=InDims(lon_dim, lat_dim),
-        outdims=OutDims(
-            Dim{:q2di_i}(range(0; step=1, length=2^(level - 1))),
-            Dim{:q2di_j}(range(0; step=1, length=2^(level - 1))),
-            Dim{:q2di_n}(0:11)
-        ),
-        showprog=true
-    ) do xout, xin, cell_ids_indexlist, agg_func
+
+    function raster_to_dggs(xout, xin)
         for (cell_id, cell_indices) in cell_ids_indexlist
             # xout is not a YAXArray anymore
             xout[cell_id.i+1, cell_id.j+1, cell_id.n+1] = agg_func(view(xin, cell_indices))
         end
     end
+
+    cell_array = mapCube(
+        raster_to_dggs,
+        # mapCube can't find axes of other AbstractDimArrays e.g. Raster
+        YAXArray(dims(raster), raster.data),
+        indims=InDims(lon_dim, lat_dim),
+        outdims=OutDims(
+            Dim{:q2di_i}(range(0; step=1, length=2^(level - 1))),
+            Dim{:q2di_j}(range(0; step=1, length=2^(level - 1))),
+            Dim{:q2di_n}(0:11),
+            path=tempname() # disable inplace
+        ),
+        showprog=true
+    )
 
     props = raster |> metadata |> typeof == Dict{String,Any} ? deepcopy(metadata(raster)) : Dict{String,Any}()
     props["_DGGS"] = deepcopy(Q2DI_DGGS_PROPS)
@@ -201,7 +206,7 @@ function plot_globe(a::DGGSArray; resolution::Integer=800)
 
         if length(non_spatial_axes) == 0
             # calc texture colors
-            texture = map(geo_array |> Matrix) do val
+            texture = map(geo_array |> x -> x[1:length(x.lon), length(x.lat):-1:1]') do val
                 try
                     get(ColorSchemes.viridis, val, (min_val, max_val))
                 catch
@@ -284,7 +289,7 @@ function plot_globe(a::DGGSArray; resolution::Integer=800)
                 filtered_array = getindex(geo_array; NamedTuple(d)...)
 
                 # calc texture colors
-                map(filtered_array |> Matrix) do val
+                map(filtered_array |> x -> x[1:length(x.lon), length(x.lat):-1:1]') do val
                     try
                         get(ColorSchemes.viridis, val, (min_val, max_val))
                     catch

@@ -102,8 +102,10 @@ function aggregate_dggs_layer(xout, xin, agg_func)
     end
 end
 
-function to_dggs_pyramid(geo_ds::Dataset, level::Integer; agg_func::Function=filter_null(mean))
-    l = to_dggs_layer(geo_ds, level)
+function to_dggs_pyramid(geo_ds::Dataset, level::Integer, args...; verbose=true, kwargs...)
+    verbose && @info "Convert to DGGS layer"
+    l = to_dggs_layer(geo_ds, level, args...; kwargs...)
+    verbose && @info "Building pyramid"
     dggs = to_dggs_pyramid(l)
     return dggs
 end
@@ -122,7 +124,8 @@ function to_dggs_pyramid(l::DGGSLayer; agg_func::Function=filter_null(mean))
                 indims=InDims(:q2di_i, :q2di_j),
                 outdims=OutDims(
                     Dim{:q2di_i}(range(0; step=1, length=2^(coarser_level - 1))),
-                    Dim{:q2di_j}(range(0; step=1, length=2^(coarser_level - 1)))
+                    Dim{:q2di_j}(range(0; step=1, length=2^(coarser_level - 1))),
+                    path=tempname() # disable inplace
                 )
             )
             l_attrs_clean = filter(((k, v),) -> k != "_DGGS", l.attrs)

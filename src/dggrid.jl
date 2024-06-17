@@ -43,9 +43,9 @@ function _transform_points(coords::AbstractVector{Q2DI{T}}, level) where {T<:Int
         "output_address_type" => "GEO",
         "output_delimiter" => "\",\"",
     )
-
     call_dggrid(meta)
-    geo_coords = CSV.read(out_points_path, DataFrame; header=["lon", "lat"])
+    # Prevent spawning too many threads if called in parallel
+    geo_coords = CSV.read(out_points_path, DataFrame; header=["lon", "lat"], ntasks=1)
     geo_coords = map((lon, lat) -> (lon, lat), geo_coords.lon, geo_coords.lat)
     rm(points_path)
     rm(out_points_path)
@@ -53,7 +53,7 @@ function _transform_points(coords::AbstractVector{Q2DI{T}}, level) where {T<:Int
 end
 
 "Transforms Vector of (lon,lat) coords to DGGRID indices"
-function _transform_points(coords::AbstractVector{Tuple{T,T}}, level) where {T<:Real}
+function _transform_points(coords::AbstractVector{Tuple{U,V}}, level) where {U<:Real,V<:Real}
     points_path = tempname()
     points_string = ""
     # arrange points to match with pixels in png image
@@ -75,9 +75,9 @@ function _transform_points(coords::AbstractVector{Tuple{T,T}}, level) where {T<:
         "output_address_type" => "Q2DI",
         "output_delimiter" => "\",\"",
     )
-
     call_dggrid(meta)
-    cell_ids = CSV.read(out_points_path, DataFrame; header=["q2di_n", "q2di_i", "q2di_j"])
+    # Prevent spawning too many threads if called in parallel
+    cell_ids = CSV.read(out_points_path, DataFrame; header=["q2di_n", "q2di_i", "q2di_j"], ntasks=1)
     rm(points_path)
     rm(out_points_path)
     cell_ids_q2di = map((n, i, j) -> Q2DI(n, i, j), cell_ids.q2di_n, cell_ids.q2di_i, cell_ids.q2di_j)
@@ -85,10 +85,10 @@ function _transform_points(coords::AbstractVector{Tuple{T,T}}, level) where {T<:
 end
 
 function _transform_points(lon_range, lat_range, level)
-    product(lon_range, lat_range) |> collect |> vec |> sort |> x -> _transform_points(x, level) |> x -> reshape(x, length(lat_range), length(lon_range))
+    Iterators.product(lon_range, lat_range) |> collect |> vec |> sort |> x -> _transform_points(x, level) |> x -> reshape(x, length(lat_range), length(lon_range))
 end
 
-function transform_points(coords::Vector{Tuple{T,T}}, level; show_progress=true, chunk_size_points=2048) where {T<:Real}
+function transform_points(coords::Vector{Tuple{U,V}}, level; show_progress=true, chunk_size_points=2048) where {U<:Real,V<:Real}
     chunks = Iterators.partition(coords, chunk_size_points) |> collect
 
     if length(chunks) == 1
@@ -98,15 +98,13 @@ function transform_points(coords::Vector{Tuple{T,T}}, level; show_progress=true,
     results = nothing
     if show_progress
         p = Progress(length(chunks))
-        results = @threaded map(chunks) do coords
-            res = _transform_points(coords, level)
+        results = ThreadsX.map(chunks) do chunk
             next!(p)
-            res
+            _transform_points(chunk, lat_range, level)
         end
-        finish!(p)
     else
-        results = @threaded map(chunks) do coords
-            _transform_points(coords, level)
+        results = ThreadsX.map(chunks) do chunk
+            _transform_points(chunk, lat_range, level)
         end
     end
 
@@ -124,15 +122,13 @@ function transform_points(coords::Vector{Q2DI{T}}, level; show_progress=true, ch
     results = nothing
     if show_progress
         p = Progress(length(chunks))
-        results = @threaded map(chunks) do coords
-            res = _transform_points(coords, level)
+        results = ThreadsX.map(chunks) do chunk
             next!(p)
-            res
+            _transform_points(chunk, lat_range, level)
         end
-        finish!(p)
     else
-        results = @threaded map(chunks) do coords
-            _transform_points(coords, level)
+        results = ThreadsX.map(chunks) do chunk
+            _transform_points(chunk, lat_range, level)
         end
     end
 
@@ -156,15 +152,13 @@ function transform_points(lon_range::AbstractVector{A}, lat_range::AbstractVecto
     cell_ids_mats = nothing
     if show_progress
         p = Progress(length(lon_chunks))
-        cell_ids_mats = @threaded map(lon_chunks) do lons
-            res = _transform_points(lons, lat_range, level)
+        cell_ids_mats = ThreadsX.map(lon_chunks) do lon_chunk
             next!(p)
-            res
+            _transform_points(lon_chunk, lat_range, level)
         end
-        finish!(p)
     else
-        cell_ids_mats = @threaded map(lon_chunks) do lons
-            _transform_points(lons, lat_range, level)
+        cell_ids_mats = ThreadsX.map(lon_chunks) do lon_chunk
+            _transform_points(lon_chunk, lat_range, level)
         end
     end
 

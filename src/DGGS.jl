@@ -13,7 +13,6 @@ using FileIO
 using IterTools
 using ProgressMeter
 using Infiltrator
-using ThreadedIterables
 using Statistics
 using JSON3
 using Makie
@@ -24,6 +23,8 @@ using LinearAlgebra
 using FileIO
 using MeshIO
 using Pkg.Artifacts
+using Distributed
+using ThreadsX
 
 # must be sorted by dependency
 include("types.jl")

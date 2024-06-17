@@ -42,7 +42,7 @@ raster2 = to_geo_array(a2, lon_range.val, lat_range.val)
 # reformat lon axes from [0,360] to [-180,180]
 # skip mask
 geo_ds = open_dataset("sresa1b_ncar_ccsm3-example.nc")
-geo_ds.axes[:lon] = X(geo_ds.axes[:lon] .- 180)
+geo_ds.axes[:lon] = vcat(range(0, 180; length=128), range(-180, 0; length=128)) |> X
 arrs = Dict()
 for (k, arr) in geo_ds.cubes
     k == :msk_rgn && continue # exclude mask
