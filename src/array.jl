@@ -126,15 +126,7 @@ function to_dggs_array(
 
     verbose && @info "Step 2/2: Re-grid the data"
 
-    function raster_to_dggs(xout, xin)
-        for (cell_id, cell_indices) in cell_ids_indexlist
-            # xout is not a YAXArray anymore
-            xout[cell_id.i+1, cell_id.j+1, cell_id.n+1] = agg_func(view(xin, cell_indices))
-        end
-    end
-
     cell_array = mapCube(
-        raster_to_dggs,
         # mapCube can't find axes of other AbstractDimArrays e.g. Raster
         YAXArray(dims(raster), raster.data),
         indims=InDims(lon_dim, lat_dim),
@@ -145,7 +137,12 @@ function to_dggs_array(
             path=tempname() # disable inplace
         ),
         showprog=true
-    )
+    ) do xout, xin
+        for (cell_id, cell_indices) in cell_ids_indexlist
+            # xout is not a YAXArray anymore
+            xout[cell_id.i+1, cell_id.j+1, cell_id.n+1] = agg_func(view(xin, cell_indices))
+        end
+    end
 
     props = raster |> metadata |> typeof == Dict{String,Any} ? deepcopy(metadata(raster)) : Dict{String,Any}()
     props["_DGGS"] = deepcopy(Q2DI_DGGS_PROPS)
