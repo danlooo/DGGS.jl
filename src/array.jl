@@ -87,8 +87,8 @@ function to_dggs_array(data::AbstractArray{T,3}, level::Int; props=Dict{String,A
     i, j, n = size(data)
     i == j || error("First two dimensions must have the same length")
     n == 12 || error("Third dimension must have length 12")
-    log2(i) % 2 == 0 || error("Length of first dimension must be a power of 2")
-    log2(j) % 2 == 0 || error("Length of second dimension must be a power of 2")
+    log2(i) % 1 == 0 || error("Length of first dimension must be a power of 2")
+    log2(j) % 1 == 0 || error("Length of second dimension must be a power of 2")
 
     props["_DGGS"] = deepcopy(DGGS.Q2DI_DGGS_PROPS)
     props["_DGGS"]["level"] = level
