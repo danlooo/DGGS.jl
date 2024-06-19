@@ -70,6 +70,23 @@ dggs2a = open_dggs_pyramid(d)
 rm(d, recursive=true)
 
 #
+# Build pyramids correctly
+#
+
+# children of cell with seqnum 5 at level 2
+# parent is completeley inside quad 2
+data = zeros(4, 4, 12)
+data[:, :, 2] = [0 0 0 0; 0 1 1 0; 0 1 2 1; 0 0 1 1]
+level = 3
+a = to_dggs_array(data, level)
+p = to_dggs_pyramid(a)
+expected = [missing missing; missing 1.25]
+result = p[2].layer.data[q2di_n=2].data
+@test map(ismissing, expected) == map(ismissing, result)
+@test expected[2, 2] == result[2, 2]
+
+
+#
 # Rasters
 #
 

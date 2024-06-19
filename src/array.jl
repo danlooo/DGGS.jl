@@ -81,6 +81,22 @@ function get_arr_label(a::DGGSArray)
     return arr_label
 end
 
+"Transform an AbstractArray in Q2DI space with dimensions (i,j,n) to a DGGSArray "
+function to_dggs_array(data::AbstractArray{T,3}, level::Int; props=Dict{String,Any}()) where {T<:Any}
+    data |> size |> length == 3 || error("data array must have the 3 Q2DI dimensions (i,j,n)")
+    i, j, n = size(data)
+    i == j || error("First two dimensions must have the same length")
+    n == 12 || error("Third dimension must have length 12")
+    log2(i) % 2 == 0 || error("Length of first dimension must be a power of 2")
+    log2(j) % 2 == 0 || error("Length of second dimension must be a power of 2")
+
+    props["_DGGS"] = deepcopy(DGGS.Q2DI_DGGS_PROPS)
+    props["_DGGS"]["level"] = level
+    axs = (Dim{:q2di_i}(1:4), Dim{:q2di_j}(1:4), Dim{:q2di_n}(1:12))
+    arr = YAXArray(axs, data, props)
+    a = DGGSArray(arr)
+    return a
+end
 
 function to_dggs_array(
     raster::AbstractDimArray,
