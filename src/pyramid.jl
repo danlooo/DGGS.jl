@@ -90,14 +90,71 @@ function write_dggs_pyramid(base_path::String, dggs::DGGSPyramid)
     return nothing
 end
 
-function aggregate_dggs_layer(xout, xin, agg_func)
-    fac = ceil(Int, size(xin, 1) / size(xout, 1))
+function aggregate_pentagon(n::Integer, a::DGGSArray)
+    m = 2^(a.level - 1) # position of last row or column in a quad matrix of that level
+
+    # position of children in Q2DI space i.e. (i,j,n)
+    # see ../docs/src/assets/pentagon-children-q2di.png
+    first_square(n) = [(1, 1, n), (1, 2, n), (2, 1, n), (2, 2, n)]
+    children = Dict(
+        1 => [(1, 1, 1), (1, m, 2), (1, m, 3), (1, m, 4), (1, m, 5), (1, m, 6)],
+        2 => vcat(first_square(2), [(m, m, 6), (1, m, 11)]),
+        3 => vcat(first_square(3), [(m, m, 2), (1, m, 7)]),
+        4 => vcat(first_square(4), [(m, m, 3), (1, m, 8)]),
+        5 => vcat(first_square(5), [(m, m, 4), (1, m, 9)]),
+        6 => vcat(first_square(6), [(m, m, 5), (1, m, 10)]),
+        7 => vcat(first_square(7), [(m, 1, 2), (m, m, 11)]),
+        8 => vcat(first_square(8), [(m, m, 7), (m, 1, 3)]),
+        9 => vcat(first_square(9), [(m, m, 8), (m, 1, 4)]),
+        10 => vcat(first_square(10), [(m, m, 9), (m, 1, 5)]),
+        11 => vcat(first_square(11), [(m, m, 10), (m, 1, 6)]),
+        12 => [(1, 1, 12), (m, 1, 11), (m, 1, 10), (m, 1, 9), (m, 1, 8), (m, 1, 7)]
+    )
+    res = map(i -> a.data.data[i...], children[n]) |> mean
+    return res
+end
+
+function aggregate_multi_quad_hexagon()
+    # @infiltrate
+    # data = view(xin, irange, 1:jrange.stop)
+    return 0
+end
+
+function aggregate_single_quad_hexagon(xin, i, j)
+    # x x        x x
+    # x x x ->  x x x
+    #   x x      x x 
+    # weighting by area see Fig 2b https://www.mdpi.com/2220-9964/11/4/265
+    kernel = Float64[1 1 0; 1 2 1; 0 1 1] |> x -> x ./ sum(x)
+    kernel_stride = 2
+    offset_i = -1
+    offset_j = -1
+    irange = (i-1)*kernel_stride+1+offset_i:i*kernel_stride+1+offset_i
+    jrange = (j-1)*kernel_stride+1+offset_j:j*kernel_stride+1+offset_j
+
+    data = view(xin, irange, jrange)
+    # kernel is already normalized, just sum instead of mean
+    res = sum(data .* kernel)
+    return res
+end
+
+"""
+Spatial hexagonal convolution in Q2DI index space matching levels of DGGRID ISEA4H grids
+"""
+function aggregate_dggs_layer(xout, xin, arr::DGGSArray)
     for j in axes(xout, 2)
         for i in axes(xout, 1)
-            iview = ((i-1)*fac+1):min(size(xin, 1), (i * fac))
-            jview = ((j-1)*fac+1):min(size(xin, 2), (j * fac))
-            data = view(xin, iview, jview)
-            xout[i, j] = agg_func(data)
+            if i == j == 1
+                q2di_n = xin.indices[3]
+                xout[1, 1] = aggregate_pentagon(q2di_n, arr)
+
+                # first and last quad only host one cell
+                q2di_n in [1, 12] && return
+            elseif i == 1 || j == 1
+                xout[i, j] = aggregate_multi_quad_hexagon()
+            else
+                xout[i, j] = aggregate_single_quad_hexagon(xin, i, j)
+            end
         end
     end
 end
@@ -110,7 +167,7 @@ function to_dggs_pyramid(geo_ds::Dataset, level::Integer, args...; verbose=true,
     return dggs
 end
 
-function to_dggs_pyramid(l::DGGSLayer; agg_func::Function=filter_null(mean))
+function to_dggs_pyramid(l::DGGSLayer)
     pyramid = Dict{Int,DGGSLayer}()
     pyramid[l.level] = l
 
@@ -119,7 +176,7 @@ function to_dggs_pyramid(l::DGGSLayer; agg_func::Function=filter_null(mean))
         coarser_data = Dict{Symbol,DGGSArray}()
         for (k, arr) in finer_layer.data
             coarser_arr = mapCube(
-                (xout, xin) -> aggregate_dggs_layer(xout, xin, agg_func),
+                (xout, xin) -> aggregate_dggs_layer(xout, xin, arr),
                 arr.data;
                 indims=InDims(:q2di_i, :q2di_j),
                 outdims=OutDims(
