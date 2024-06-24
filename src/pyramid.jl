@@ -90,8 +90,11 @@ function write_dggs_pyramid(base_path::String, dggs::DGGSPyramid)
     return nothing
 end
 
-function aggregate_pentagon(n::Integer, a::DGGSArray)
-    m = 2^(a.level - 1) # position of last row or column in a quad matrix of that level
+"position of last row or column in a quad matrix of that level"
+width(level::Integer) = 2^(level - 1)
+
+function aggregate_pentagon!(xout::AbstractArray, n::Integer, a::DGGSArray)
+    m = width(a.level)
 
     # position of children in Q2DI space i.e. (i,j,n)
     # see ../docs/src/assets/pentagon-children-q2di.png
@@ -111,52 +114,81 @@ function aggregate_pentagon(n::Integer, a::DGGSArray)
         12 => [(1, 1, 12), (m, 1, 11), (m, 1, 10), (m, 1, 9), (m, 1, 8), (m, 1, 7)]
     )
     res = map(i -> a.data.data[i...], children[n]) |> mean
-    return res
+    xout[1, 1] = res
 end
 
-function aggregate_multi_quad_hexagon()
-    # @infiltrate
-    # data = view(xin, irange, 1:jrange.stop)
-    return 0
-end
+function aggregate_hexagons!(xout::AbstractArray, xin::AbstractArray, n::Integer, a::DGGSArray)
+    (1 <= n <= 12) || error("Quad number n must be between 1 and 12")
+    n in [1, 12] && return # first and last quad only contain one pentagon
 
-function aggregate_single_quad_hexagon(xin, i, j)
-    # x x        x x
-    # x x x ->  x x x
-    #   x x      x x 
-    # weighting by area see Fig 2b https://www.mdpi.com/2220-9964/11/4/265
+    # padding to fill cell of other quads
+    # Then, the convolution can run on each quad independently
+
+    m = width(a.level)
+    first_row_fwd(n) = (1, :, n)
+    first_row_rev(n) = (1, m:-1:1, n)
+    last_row_fwd(n) = (m, :, n)
+    last_row_rev(n) = (m, m:-1:1, n)
+
+    first_col_fwd(n) = (:, 1, n)
+    first_col_rev(n) = (m:-1:1, 1, n)
+    last_col_fwd(n) = (:, m, n)
+    last_col_rev(n) = (m:-1:1, m, n)
+
+    col_paddings = Dict(
+        2 => last_row_rev(6),
+        3 => last_col_fwd(7),
+        4 => last_col_fwd(8),
+        5 => last_col_fwd(9),
+        6 => last_col_fwd(10),
+        7 => last_row_rev(11),
+        8 => last_row_rev(7),
+        9 => last_row_rev(8),
+        10 => last_row_rev(9),
+        11 => last_row_rev(10),
+    )
+    row_paddings = Dict(
+        2 => first_row_fwd(3),
+        3 => last_col_rev(2),
+        4 => last_col_rev(3),
+        5 => last_col_rev(4),
+        6 => last_col_rev(5),
+        7 => last_row_fwd(2),
+        8 => last_row_fwd(3),
+        9 => last_row_fwd(4),
+        10 => last_row_fwd(5),
+        11 => last_row_fwd(6),
+    )
+    padded_xin = hcat(xin.parent[col_paddings[n]...], xin) # i=1
+    padded_xin = vcat(vcat([missing], xin.parent[row_paddings[n]...])', padded_xin) # j=1
+
     kernel = Float64[1 1 0; 1 2 1; 0 1 1] |> x -> x ./ sum(x)
     kernel_stride = 2
     offset_i = -1
     offset_j = -1
-    irange = (i-1)*kernel_stride+1+offset_i:i*kernel_stride+1+offset_i
-    jrange = (j-1)*kernel_stride+1+offset_j:j*kernel_stride+1+offset_j
+    padding = 1
 
-    data = view(xin, irange, jrange)
-    # kernel is already normalized, just sum instead of mean
-    res = sum(data .* kernel)
-    return res
+    for j in 1:size(xout, 2)
+        for i in 1:size(xout, 1)
+            irange = (i-1)*kernel_stride+1+offset_i+padding:i*kernel_stride+1+offset_i+padding
+            jrange = (j-1)*kernel_stride+1+offset_j+padding:j*kernel_stride+1+offset_j+padding
+
+            data = view(padded_xin, irange, jrange)
+            # kernel is already normalized, just sum instead of mean
+            xout[i, j] = sum(data .* kernel)
+        end
+    end
+
+    xout[1, 1] = missing  # pentagons are handled separateley (different kernel)
 end
 
 """
 Spatial hexagonal convolution in Q2DI index space matching levels of DGGRID ISEA4H grids
 """
 function aggregate_dggs_layer(xout, xin, arr::DGGSArray)
-    for j in axes(xout, 2)
-        for i in axes(xout, 1)
-            if i == j == 1
-                q2di_n = xin.indices[3]
-                xout[1, 1] = aggregate_pentagon(q2di_n, arr)
-
-                # first and last quad only host one cell
-                q2di_n in [1, 12] && return
-            elseif i == 1 || j == 1
-                xout[i, j] = aggregate_multi_quad_hexagon()
-            else
-                xout[i, j] = aggregate_single_quad_hexagon(xin, i, j)
-            end
-        end
-    end
+    n = xin.indices[3]
+    aggregate_hexagons!(xout, xin, n, arr)
+    aggregate_pentagon!(xout, n, arr)
 end
 
 function to_dggs_pyramid(geo_ds::Dataset, level::Integer, args...; verbose=true, kwargs...)
