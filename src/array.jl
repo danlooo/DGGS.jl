@@ -82,7 +82,7 @@ function get_arr_label(a::DGGSArray)
 end
 
 "Transform an AbstractArray in Q2DI space with dimensions (i,j,n) to a DGGSArray "
-function to_dggs_array(data::AbstractArray{T,3}, level::Int; props::Dict{String,Any}=Dict{String,Any}()) where {T<:Any}
+function to_dggs_array(data::AbstractArray{T,3}, level::Int, props::Dict{String,Any}=Dict{String,Any}()) where {T<:Any}
     data |> size |> length == 3 || error("data array must have the 3 Q2DI dimensions (i,j,n)")
     i, j, n = size(data)
     i == j || error("First two dimensions must have the same length")
