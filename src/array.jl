@@ -111,8 +111,8 @@ function to_dggs_array(
 
     # look up hash map to get list of pixels to be aggregated for each cell
     cell_ids_indexlist = Dict()
-    for c in 1:size(cell_ids_mat, 2)
-        for r in 1:size(cell_ids_mat, 1)
+    for c in axes(cell_ids_mat, 2)
+        for r in axes(cell_ids_mat, 1)
             cell_id = cell_ids_mat[r, c]
             if cell_id in keys(cell_ids_indexlist)
                 # multiple pixels per cell

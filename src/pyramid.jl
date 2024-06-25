@@ -187,8 +187,8 @@ function aggregate_hexagons!(xout::AbstractArray, xin::AbstractArray, n::Integer
     offset_j = -1
     padding = 1
 
-    for j in 1:size(xout, 2)
-        for i in 1:size(xout, 1)
+    for j in axes(xout, 2)
+        for i in axes(xout, 1)
             irange = (i-1)*kernel_stride+1+offset_i+padding:i*kernel_stride+1+offset_i+padding
             jrange = (j-1)*kernel_stride+1+offset_j+padding:j*kernel_stride+1+offset_j+padding
 
