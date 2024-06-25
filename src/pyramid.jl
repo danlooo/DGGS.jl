@@ -121,7 +121,7 @@ function aggregate_pentagon!(xout::AbstractArray, xin::AbstractArray, n::Integer
         idx[3] = n
         xin.parent[idx...]
     end
-    res = mean(vals)
+    res = filter_null(mean)(vals)
     xout[1, 1] = res
 end
 
@@ -193,8 +193,13 @@ function aggregate_hexagons!(xout::AbstractArray, xin::AbstractArray, n::Integer
             jrange = (j-1)*kernel_stride+1+offset_j+padding:j*kernel_stride+1+offset_j+padding
 
             data = view(padded_xin, irange, jrange)
+            if all(ismissing.(data) .| isnan.(data))
+                xout[i, j] = missing
+                continue
+            end
+
             # kernel is already normalized, just sum instead of mean
-            xout[i, j] = sum(data .* kernel)
+            xout[i, j] = filter_null(sum)(data .* kernel)
         end
     end
 
