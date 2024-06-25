@@ -73,14 +73,15 @@ rm(d, recursive=true)
 # Build pyramids correctly
 #
 
-# children of cell with seqnum 5 at level 2
-# parent is completeley inside quad 2
 data = zeros(4, 4, 12)
-data[:, :, 2] = [0 0 0 0; 0 1 1 0; 0 1 2 1; 0 0 1 1]
+data[:, :, 2] = [0 0 0 0; 0 0 0 0; 0 0 1 1; 0 0 1 1]
 level = 3
-a = to_dggs_array(data, level)
+axs = (Dim{:q2di_i}(1:4), Dim{:q2di_j}(1:4), Dim{:q2di_n}(1:12))
+props = Dict("_DGGS" => deepcopy(DGGS.Q2DI_DGGS_PROPS))
+props["_DGGS"]["level"] = level
+a = YAXArray(axs, data, props) |> DGGSArray
 p = to_dggs_pyramid(a)
-expected = [missing missing; missing 1.25]
+expected = [0 0; 0 0.625]
 result = p[2].layer.data[q2di_n=2].data
 @test map(ismissing, expected) == map(ismissing, result)
 @test expected[2, 2] == result[2, 2]
