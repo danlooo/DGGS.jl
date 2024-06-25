@@ -87,7 +87,6 @@ function to_dggs_layer(
     verbose::Bool=true,
     cell_ids::Union{AbstractMatrix,Nothing}=nothing,
     kwargs...)
-    level > 0 || error("Level must be positive")
 
     lon_dim = filter(x -> x isa X || name(x) == lon_name, collect(values(geo_ds.axes)))
     lat_dim = filter(x -> x isa Y || name(x) == lat_name, collect(values(geo_ds.axes)))

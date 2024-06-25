@@ -70,6 +70,24 @@ dggs2a = open_dggs_pyramid(d)
 rm(d, recursive=true)
 
 #
+# Build pyramids correctly
+#
+
+data = zeros(4, 4, 12)
+data[:, :, 2] = [0 0 0 0; 0 0 0 0; 0 0 1 1; 0 0 1 1]
+level = 3
+axs = (Dim{:q2di_i}(1:4), Dim{:q2di_j}(1:4), Dim{:q2di_n}(1:12))
+props = Dict("_DGGS" => deepcopy(DGGS.Q2DI_DGGS_PROPS))
+props["_DGGS"]["level"] = level
+a = YAXArray(axs, data, props) |> DGGSArray
+p = to_dggs_pyramid(a)
+expected = [0 0; 0 0.625]
+result = p[2].layer.data[q2di_n=2].data
+@test map(ismissing, expected) == map(ismissing, result)
+@test expected[2, 2] == result[2, 2]
+
+
+#
 # Rasters
 #
 
