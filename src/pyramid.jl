@@ -93,7 +93,7 @@ end
 "position of last row or column in a quad matrix of that level"
 width(level::Integer) = 2^(level - 1)
 
-function aggregate_pentagon!(xout::AbstractArray, n::Integer, a::DGGSArray)
+function aggregate_pentagon!(xout::AbstractArray, xin::AbstractArray, n::Integer, a::DGGSArray)
     m = width(a.level)
 
     # position of children in Q2DI space i.e. (i,j,n)
@@ -113,7 +113,15 @@ function aggregate_pentagon!(xout::AbstractArray, n::Integer, a::DGGSArray)
         11 => vcat(first_square(11), [(m, m, 10), (m, 1, 6)]),
         12 => [(1, 1, 12), (m, 1, 11), (m, 1, 10), (m, 1, 9), (m, 1, 8), (m, 1, 7)]
     )
-    res = map(i -> a.data.data[i...], children[n]) |> mean
+
+    vals = map(children[n]) do (i, j, n)
+        idx = collect(xin.indices)
+        idx[1] = i
+        idx[2] = j
+        idx[3] = n
+        xin.parent[idx...]
+    end
+    res = mean(vals)
     xout[1, 1] = res
 end
 
@@ -159,8 +167,19 @@ function aggregate_hexagons!(xout::AbstractArray, xin::AbstractArray, n::Integer
         10 => last_row_fwd(5),
         11 => last_row_fwd(6),
     )
-    padded_xin = hcat(xin.parent[col_paddings[n]...], xin) # i=1
-    padded_xin = vcat(vcat([missing], xin.parent[row_paddings[n]...])', padded_xin) # j=1
+
+    col_idx = collect(xin.indices)
+    col_idx[1] = col_paddings[n][1]
+    col_idx[2] = col_paddings[n][2]
+    col_idx[3] = col_paddings[n][3]
+
+    row_idx = collect(xin.indices)
+    row_idx[1] = row_paddings[n][1]
+    row_idx[2] = row_paddings[n][2]
+    row_idx[3] = row_paddings[n][3]
+
+    padded_xin = hcat(xin.parent[col_idx...], xin)
+    padded_xin = vcat(vcat([missing], xin.parent[row_idx...])', padded_xin)
 
     kernel = Float64[1 1 0; 1 2 1; 0 1 1] |> x -> x ./ sum(x)
     kernel_stride = 2
@@ -188,7 +207,7 @@ Spatial hexagonal convolution in Q2DI index space matching levels of DGGRID ISEA
 function aggregate_dggs_layer(xout, xin, arr::DGGSArray)
     n = xin.indices[3]
     aggregate_hexagons!(xout, xin, n, arr)
-    aggregate_pentagon!(xout, n, arr)
+    aggregate_pentagon!(xout, xin, n, arr)
 end
 
 function to_dggs_pyramid(geo_ds::Dataset, level::Integer, args...; verbose=true, kwargs...)

@@ -35,6 +35,18 @@ struct DGGSArray
     id::Symbol
     level::Integer
     dggs::DGGSGridSystem
+
+    function DGGSArray(data, attrs, id, level, dggs)
+        dims(data, :q2di_i) |> isnothing && error("Dimension :q2di_i not found")
+        dims(data, :q2di_j) |> isnothing && error("Dimension :q2di_j not found")
+        dims(data, :q2di_n) |> isnothing && error("Dimension :q2di_n not found")
+        length(data.q2di_n) == 12 || error("Dimension :q2di_n must have length 12")
+        log2(length(data.q2di_i)) % 1 == 0 || error("Dimension :q2di_i must have a length of a power of 2")
+        log2(length(data.q2di_j)) % 1 == 0 || error("Dimension :q2di_j must have a length of a power of 2")
+        length(data.q2di_i) == length(data.q2di_j) || error("Dimensions :q2di_i and :q2di_j must have the same length")
+
+        new(data, attrs, id, level, dggs)
+    end
 end
 
 struct DGGSLayer
@@ -45,6 +57,8 @@ struct DGGSLayer
     dggs::DGGSGridSystem
 
     function DGGSLayer(data, attrs, bands, level, dggs)
+        level > 0 || error("Level must be positive")
+
         if !(map(x -> x.dggs.id, collect(values(data))) |> allequal)
             error("DGGS are different")
         end
