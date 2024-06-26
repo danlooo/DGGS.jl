@@ -192,8 +192,8 @@ function plot_globe(a::DGGSArray; resolution::Integer=800)
     non_spatial_axes = filter(x -> !(name(x) in [:q2di_i, :q2di_j, :q2di_n]), a.data.axes)
     geo_array = to_geo_array(a, cell_ids)
 
-    min_val = filter_null(minimum)(geo_array) # BUG: Will delete geo_array if its the default dempt dor
-    max_val = filter_null(maximum)(geo_array)
+    min_val = filter_null(minimum)(deepcopy(geo_array))
+    max_val = filter_null(maximum)(deepcopy(geo_array))
 
     with_theme(theme_black()) do
         fig = Figure()
