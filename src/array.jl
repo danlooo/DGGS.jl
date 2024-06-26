@@ -22,6 +22,18 @@ function show_nonspatial_axes(io::IO, arr::DGGSArray)
     end
 end
 
+is_spatial(ax) = ax |> name |> String |> x -> startswith(x, "q2di_")
+
+function show_axis(io, ax; hide_if_spatial=true)
+    hide_if_spatial & is_spatial(ax) && return
+
+    print(io, "  ")
+    printstyled(io, name(ax); color=:red)
+    print(io, " $(length(ax)) ")
+    print(io, eltype(ax))
+    println(io, " points")
+end
+
 function Base.show(io::IO, ::MIME"text/plain", arr::DGGSArray)
     printstyled(io, typeof(arr); color=:white)
     println(io, "")
@@ -44,14 +56,7 @@ function Base.show(io::IO, ::MIME"text/plain", arr::DGGSArray)
 
     println(io, "Non spatial axes:")
     for ax in arr.data.axes
-        ax_name = DimensionalData.name(ax)
-        startswith(String(ax_name), "q2di") && continue
-
-        print(io, "  ")
-        printstyled(io, ax_name; color=:red)
-        print(io, " ")
-        print(io, eltype(ax))
-        println(io, "")
+        show_axis(io, ax)
     end
 end
 

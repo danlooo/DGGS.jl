@@ -14,14 +14,7 @@ function Base.show(io::IO, ::MIME"text/plain", dggs::DGGSPyramid)
 
     println(io, "Non spatial axes:")
     for ax in dggs.data |> values |> first |> axes
-        ax_name = DimensionalData.name(ax)
-        startswith(String(ax_name), "q2di") && continue
-
-        print(io, "  ")
-        printstyled(io, ax_name; color=:red)
-        print(io, " ")
-        print(io, eltype(ax.val))
-        println(io, "")
+        show_axis(io, ax)
     end
 
     println(io, "Bands: ")

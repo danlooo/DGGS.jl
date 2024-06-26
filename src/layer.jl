@@ -45,15 +45,9 @@ function Base.show(io::IO, ::MIME"text/plain", l::DGGSLayer)
     println(io, "Level: $(l.level)")
 
     println(io, "Non spatial axes:")
-    for ax in axes(l)
-        ax_name = DimensionalData.name(ax)
-        startswith(String(ax_name), "q2di") && continue
 
-        print(io, "  ")
-        printstyled(io, ax_name; color=:red)
-        print(io, " ")
-        print(io, eltype(ax.val))
-        println(io, "")
+    for ax in axes(l)
+        show_axis(io, ax)
     end
 
     println(io, "Bands: ")
