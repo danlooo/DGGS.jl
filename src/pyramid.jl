@@ -241,8 +241,9 @@ function to_dggs_pyramid(l::DGGSLayer)
                     path=tempname() # disable inplace
                 )
             )
-            l_attrs_clean = filter(((k, v),) -> k != "_DGGS", l.attrs)
-            attrs = merge(l_attrs_clean, arr.attrs)
+            attrs = deepcopy(arr.attrs)
+            attrs["_DGGS"]["level"] = coarser_level
+            coarser_arr = YAXArray(coarser_arr.axes, coarser_arr.data, attrs)
             coarser_data[k] = DGGSArray(coarser_arr, attrs, k, coarser_level, finer_layer.dggs)
         end
 

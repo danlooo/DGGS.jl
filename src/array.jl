@@ -8,6 +8,8 @@ function DGGSArray(arr::YAXArray, id=:layer)
     DGGSArray(arr, attrs, id, level, dggs)
 end
 
+Base.getindex(a::DGGSArray, args...; kwargs...) = DGGSArray(getindex(a.data, args...; kwargs...), a.id)
+
 function show_nonspatial_axes(io::IO, arr::DGGSArray)
     non_spatial_axes = filter(x -> !startswith(String(x), "q2di"), DimensionalData.name(arr.data.axes))
     if length(non_spatial_axes) == 1
@@ -150,23 +152,14 @@ function to_dggs_array(
     DGGSArray(cell_array, id)
 end
 
-function to_geo_array(
-    a::DGGSArray,
-    longitudes=range(-180, 180; length=800),
-    latitudes=range(-90, 90; length=400);
-    cell_ids=nothing
-)
-    if isnothing(cell_ids)
-        cell_ids = transform_points(longitudes, latitudes, a.level)
-    end
-
+function to_geo_array(a::DGGSArray, cell_ids::DimArray)
     geo_array = mapCube(
         a.data,
         cell_ids,
         indims=InDims(:q2di_i, :q2di_j, :q2di_n),
         outdims=OutDims(
-            Dim{:lon}(longitudes),
-            Dim{:lat}(latitudes)
+            Dim{:lon}(dims(cell_ids, :X).val),
+            Dim{:lat}(dims(cell_ids, :Y).val)
         )
     ) do xout, xin, cell_ids
         for (i, cell_id) in enumerate(cell_ids)
@@ -175,6 +168,15 @@ function to_geo_array(
     end
 
     return YAXArray(geo_array.axes, geo_array.data, a.attrs)
+end
+
+function to_geo_array(
+    a::DGGSArray,
+    longitudes=range(-180, 180; length=800),
+    latitudes=range(-90, 90; length=400);
+)
+    cell_ids = transform_points(longitudes, latitudes, a.level)
+    to_geo_array(a, cell_ids)
 end
 
 function Makie.plot(a::DGGSArray, args...; type=:globe, kwargs...)
@@ -186,14 +188,12 @@ end
 function plot_globe(a::DGGSArray; resolution::Integer=800)
     longitudes = range(-180, 180; length=resolution * 2)
     latitudes = range(-90, 90; length=resolution)
-    geo_array = to_geo_array(a, longitudes, latitudes)
+    cell_ids = transform_points(longitudes, latitudes, a.level)
+    non_spatial_axes = filter(x -> !(name(x) in [:q2di_i, :q2di_j, :q2di_n]), a.data.axes)
+    geo_array = to_geo_array(a, cell_ids)
 
-    non_spatial_axes = map(setdiff(DimensionalData.name(geo_array.axes), (:lon, :lat))) do x
-        getproperty(geo_array, x)
-    end
-    min_val = filter_null(minimum)(geo_array)
+    min_val = filter_null(minimum)(geo_array) # BUG: Will delete geo_array if its the default dempt dor
     max_val = filter_null(maximum)(geo_array)
-    min_val == max_val && error("")
 
     with_theme(theme_black()) do
         fig = Figure()
