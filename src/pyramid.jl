@@ -1,25 +1,18 @@
 
-function DGGSPyramid(data::Dict{Int,DGGSLayer}, attrs=Dict{String,Any}())
+function DGGSPyramid(data::AbstractDict{Int,DGGSLayer}, attrs=Dict{String,Any}())
     levels = data |> keys |> collect
-    bands = data |> values |> first |> x -> x.bands
     dggs = data |> values |> first |> x -> x.dggs
-    DGGSPyramid(data, attrs, levels, bands, dggs)
+    DGGSPyramid(data, attrs, levels, dggs)
 end
 
 function Base.show(io::IO, ::MIME"text/plain", dggs::DGGSPyramid)
     printstyled(io, typeof(dggs); color=:white)
     println(io, "")
     println(io, "DGGS: $(dggs.dggs)")
-    println(io, "Levels: $(dggs.levels)")
+    println(io, "Levels: $([x for x in dggs.levels])")
 
     show_axes(io, dggs.data |> values |> first |> axes)
-
-    printstyled(io, "Bands:\n"; color=:white)
-    for a in dggs.data |> first |> x -> values(x.second.data) |> collect
-        print(io, "  ")
-        Base.show(io, a)
-        println(io, "")
-    end
+    show_arrays(io, dggs.data |> first |> x -> values(x.second.data) |> collect)
 end
 
 Base.getindex(dggs::DGGSPyramid, i::Integer) = dggs.data[i]
@@ -29,10 +22,11 @@ function open_dggs_pyramid(path::String)
     haskey(root_group.attrs, "_DGGS") || error("Zarr store is not in DGGS format")
 
     pyramid = Dict{Int,DGGSLayer}()
-    for level in root_group.attrs["_DGGS"]["levels"]
+    for level in sort(root_group.attrs["_DGGS"]["levels"])
         layer_ds = open_dataset(root_group.groups["$level"])
         pyramid[level] = DGGSLayer(layer_ds)
     end
+    pyramid = sort(pyramid)
 
     return DGGSPyramid(pyramid, root_group.attrs)
 end

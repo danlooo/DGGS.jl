@@ -11,17 +11,15 @@ function DGGSLayer(data::YAXArrays.Dataset)
 end
 
 function DGGSLayer(data::Dict{Symbol,DGGSArray}, attrs=Dict{String,Any}())
-    bands = keys(data) |> collect
     level = data |> values |> first |> x -> x.level
     dggs = data |> values |> first |> x -> x.dggs
-    DGGSLayer(data, attrs, bands, level, dggs)
+    DGGSLayer(data, attrs, level, dggs)
 end
 
 function DGGSLayer(arr::DGGSArray)
-    bands = [:layer]
     data = Dict{Symbol,DGGSArray}()
     data[:layer] = arr
-    DGGSLayer(data, arr.attrs, bands, arr.level, arr.dggs)
+    DGGSLayer(data, arr.attrs, arr.level, arr.dggs)
 end
 
 function Base.axes(l::DGGSLayer)
@@ -31,6 +29,16 @@ function Base.axes(l::DGGSLayer)
     end
     unique!(axes)
     return axes
+end
+
+function show_arrays(io::IO, arrs::Vector{DGGSArray})
+    printstyled(io, "Arrays:\n"; color=:white)
+
+    for a in arrs
+        print(io, "  ")
+        Base.show(io, a)
+        println(io, "")
+    end
 end
 
 function Base.show(io::IO, ::MIME"text/plain", l::DGGSLayer)
@@ -43,26 +51,19 @@ function Base.show(io::IO, ::MIME"text/plain", l::DGGSLayer)
 
     println(io, "DGGS:\t$(l.dggs) at level $(l.level)")
     show_axes(io, axes(l))
-
-    printstyled(io, "Bands:\n"; color=:white)
-    for a in values(l.data) |> collect
-        print(io, "  ")
-        Base.show(io, a)
-        println(io, "")
-    end
+    show_arrays(io, l.data |> values |> collect)
 end
 
-Base.getindex(l::DGGSLayer, band::Symbol) = l.data[band]
-
 function Base.getproperty(l::DGGSLayer, v::Symbol)
-    if v in getfield(l, :bands) # prevent stack overflow
-        return l.data[v]
+    arrs = getfield(l, :data)
+    if v in keys(arrs)
+        return arrs[v]
     else
         return getfield(l, v)
     end
 end
 
-Base.propertynames(l::DGGSLayer) = union(l.bands, (:data, :bands, :attrs))
+Base.propertynames(l::DGGSLayer) = union(l.data |> keys, (:data, :attrs))
 
 """
 Transforms a `YAXArrays.Dataset` in geographic lat/lon ratser to a DGGSLayer at agiven layer
@@ -92,8 +93,7 @@ function to_dggs_layer(
         verbose && @info "Tranform band $band"
         data[band] = to_dggs_array(geo_arr, level; cell_ids=cell_ids, verbose=false, lon_name=lon_name, lat_name=lat_name, kwargs...)
     end
-    bands = geo_ds.cubes |> keys |> collect
-    DGGSLayer(data, geo_ds.properties, bands, level, DGGSGridSystem(Q2DI_DGGS_PROPS))
+    DGGSLayer(data, geo_ds.properties, level, DGGSGridSystem(Q2DI_DGGS_PROPS))
 end
 
 to_dggs_layer(raster::AbstractDimArray, level::Integer; kw...) = to_dggs_array(raster, level, kw...) |> DGGSLayer
