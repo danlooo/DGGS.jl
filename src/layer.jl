@@ -41,16 +41,10 @@ function Base.show(io::IO, ::MIME"text/plain", l::DGGSLayer)
         println(io, "Title:\t$(l.attrs["title"])")
     end
 
-    println(io, "DGGS: $(l.dggs)")
-    println(io, "Level: $(l.level)")
+    println(io, "DGGS:\t$(l.dggs) at level $(l.level)")
+    show_axes(io, axes(l))
 
-    println(io, "Non spatial axes:")
-
-    for ax in axes(l)
-        show_axis(io, ax)
-    end
-
-    println(io, "Bands: ")
+    printstyled(io, "Bands:\n"; color=:white)
     for a in values(l.data) |> collect
         print(io, "  ")
         Base.show(io, a)

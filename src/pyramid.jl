@@ -12,12 +12,9 @@ function Base.show(io::IO, ::MIME"text/plain", dggs::DGGSPyramid)
     println(io, "DGGS: $(dggs.dggs)")
     println(io, "Levels: $(dggs.levels)")
 
-    println(io, "Non spatial axes:")
-    for ax in dggs.data |> values |> first |> axes
-        show_axis(io, ax)
-    end
+    show_axes(io, dggs.data |> values |> first |> axes)
 
-    println(io, "Bands: ")
+    printstyled(io, "Bands:\n"; color=:white)
     for a in dggs.data |> first |> x -> values(x.second.data) |> collect
         print(io, "  ")
         Base.show(io, a)

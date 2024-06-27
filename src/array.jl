@@ -24,14 +24,17 @@ end
 
 is_spatial(ax) = ax |> name |> String |> x -> startswith(x, "q2di_")
 
-function show_axis(io, ax; hide_if_spatial=true)
-    hide_if_spatial & is_spatial(ax) && return
+function show_axes(io, axs; hide_if_spatial=true)
+    printstyled(io, "Non spatial axes:\n"; color=:white)
+    for ax in axs
+        hide_if_spatial & is_spatial(ax) && continue
 
-    print(io, "  ")
-    printstyled(io, name(ax); color=:red)
-    print(io, " $(length(ax)) ")
-    print(io, eltype(ax))
-    println(io, " points")
+        print(io, "  ")
+        printstyled(io, name(ax); color=:red)
+        print(io, " $(length(ax)) ")
+        print(io, eltype(ax))
+        println(io, " points")
+    end
 end
 
 function Base.show(io::IO, ::MIME"text/plain", arr::DGGSArray)
@@ -50,14 +53,10 @@ function Base.show(io::IO, ::MIME"text/plain", arr::DGGSArray)
         println(io, "Units:\t\t$(arr.attrs["units"])")
     end
 
-    println(io, "DGGS:\t\t$(arr.dggs)")
-    println(io, "Level:\t\t$(arr.level)")
-    println(io, "Attributes: $(length(arr.attrs))")
+    println(io, "DGGS:\t\t$(arr.dggs) at level $(arr.level)")
+    println(io, "Attributes:\t$(length(arr.attrs))")
 
-    println(io, "Non spatial axes:")
-    for ax in arr.data.axes
-        show_axis(io, ax)
-    end
+    show_axes(io, arr.data.axes)
 end
 
 function Base.show(io::IO, arr::DGGSArray)
