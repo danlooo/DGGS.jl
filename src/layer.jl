@@ -48,7 +48,6 @@ function Base.show(io::IO, ::MIME"text/plain", l::DGGSLayer)
     if "title" in keys(l.attrs)
         println(io, "Title:\t$(l.attrs["title"])")
     end
-
     println(io, "DGGS:\t$(l.dggs) at level $(l.level)")
     show_axes(io, axes(l))
     show_arrays(io, l.data |> values |> collect)

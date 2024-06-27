@@ -95,7 +95,8 @@ function to_dggs_array(
     cell_ids::Union{AbstractMatrix,Nothing}=nothing,
     agg_func::Function=filter_null(mean),
     verbose::Bool=true,
-    id::Symbol=:layer
+    id::Symbol=:layer,
+    path::String=tempname()
 )
     # Optimized for grids which cell_ids fit in memory
 
@@ -139,7 +140,7 @@ function to_dggs_array(
             Dim{:q2di_i}(range(0; step=1, length=2^(level - 1))),
             Dim{:q2di_j}(range(0; step=1, length=2^(level - 1))),
             Dim{:q2di_n}(0:11),
-            path=tempname() # disable inplace
+            path=path
         ),
         showprog=true
     ) do xout, xin
