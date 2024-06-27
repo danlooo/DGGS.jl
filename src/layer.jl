@@ -63,6 +63,8 @@ function Base.getproperty(l::DGGSLayer, v::Symbol)
     end
 end
 
+Base.getindex(l::DGGSLayer, array::Symbol) = l.data[array]
+
 Base.propertynames(l::DGGSLayer) = union(l.data |> keys, (:data, :attrs))
 
 """
