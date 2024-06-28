@@ -1,35 +1,18 @@
 
-function DGGSPyramid(data::Dict{Int,DGGSLayer}, attrs=Dict{String,Any}())
+function DGGSPyramid(data::AbstractDict{Int,DGGSLayer}, attrs=Dict{String,Any}())
     levels = data |> keys |> collect
-    bands = data |> values |> first |> x -> x.bands
     dggs = data |> values |> first |> x -> x.dggs
-    DGGSPyramid(data, attrs, levels, bands, dggs)
+    DGGSPyramid(data, attrs, levels, dggs)
 end
 
 function Base.show(io::IO, ::MIME"text/plain", dggs::DGGSPyramid)
     printstyled(io, typeof(dggs); color=:white)
     println(io, "")
     println(io, "DGGS: $(dggs.dggs)")
-    println(io, "Levels: $(dggs.levels)")
+    println(io, "Levels: $([x for x in dggs.levels])")
 
-    println(io, "Non spatial axes:")
-    for ax in dggs.data |> values |> first |> axes
-        ax_name = DimensionalData.name(ax)
-        startswith(String(ax_name), "q2di") && continue
-
-        print(io, "  ")
-        printstyled(io, ax_name; color=:red)
-        print(io, " ")
-        print(io, eltype(ax.val))
-        println(io, "")
-    end
-
-    println(io, "Bands: ")
-    for a in dggs.data |> first |> x -> values(x.second.data) |> collect
-        print(io, "  ")
-        Base.show(io, a)
-        println(io, "")
-    end
+    show_axes(io, dggs.data |> values |> first |> axes)
+    show_arrays(io, dggs.data |> first |> x -> values(x.second.data) |> collect)
 end
 
 Base.getindex(dggs::DGGSPyramid, i::Integer) = dggs.data[i]
@@ -39,10 +22,11 @@ function open_dggs_pyramid(path::String)
     haskey(root_group.attrs, "_DGGS") || error("Zarr store is not in DGGS format")
 
     pyramid = Dict{Int,DGGSLayer}()
-    for level in root_group.attrs["_DGGS"]["levels"]
+    for level in sort(root_group.attrs["_DGGS"]["levels"])
         layer_ds = open_dataset(root_group.groups["$level"])
         pyramid[level] = DGGSLayer(layer_ds)
     end
+    pyramid = sort!(OrderedDict(pyramid))
 
     return DGGSPyramid(pyramid, root_group.attrs)
 end
@@ -223,7 +207,7 @@ function to_dggs_pyramid(geo_ds::Dataset, level::Integer, args...; verbose=true,
     return dggs
 end
 
-function to_dggs_pyramid(l::DGGSLayer)
+function to_dggs_pyramid(l::DGGSLayer; base_path=tempname())
     pyramid = Dict{Int,DGGSLayer}()
     pyramid[l.level] = l
 
@@ -238,18 +222,19 @@ function to_dggs_pyramid(l::DGGSLayer)
                 outdims=OutDims(
                     Dim{:q2di_i}(range(0; step=1, length=2^(coarser_level - 1))),
                     Dim{:q2di_j}(range(0; step=1, length=2^(coarser_level - 1))),
-                    path=tempname() # disable inplace
+                    path=joinpath(base_path, "$(coarser_level)/$(k)")
                 )
             )
-            l_attrs_clean = filter(((k, v),) -> k != "_DGGS", l.attrs)
-            attrs = merge(l_attrs_clean, arr.attrs)
+            attrs = deepcopy(arr.attrs)
+            attrs["_DGGS"]["level"] = coarser_level
+            coarser_arr = YAXArray(coarser_arr.axes, coarser_arr.data, attrs)
             coarser_data[k] = DGGSArray(coarser_arr, attrs, k, coarser_level, finer_layer.dggs)
         end
 
         pyramid[coarser_level] = DGGSLayer(coarser_data, l.attrs)
     end
-
-    return DGGSPyramid(pyramid, l.attrs)
+    p = sort!(OrderedDict(pyramid))
+    return DGGSPyramid(p, l.attrs)
 end
 
 to_dggs_pyramid(a::DGGSArray; kw...) = a |> DGGSLayer |> l -> to_dggs_pyramid(l; kw...)

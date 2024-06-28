@@ -29,7 +29,7 @@ function Base.show(io::IO, dggs::DGGSGridSystem)
     print(io, "$(dggs.id) $(get(polygons, dggs.polygon, "?"))")
 end
 
-struct DGGSArray
+struct DGGSArray{T,L}
     data::YAXArray
     attrs::Dict{String,Any}
     id::Symbol
@@ -45,18 +45,17 @@ struct DGGSArray
         log2(length(data.q2di_j)) % 1 == 0 || error("Dimension :q2di_j must have a length of a power of 2")
         length(data.q2di_i) == length(data.q2di_j) || error("Dimensions :q2di_i and :q2di_j must have the same length")
 
-        new(data, attrs, id, level, dggs)
+        new{eltype(data.data),level}(data, attrs, id, level, dggs)
     end
 end
 
-struct DGGSLayer
+struct DGGSLayer{L}
     data::Dict{Symbol,DGGSArray}
     attrs::Dict{String,Any}
-    bands::Vector{Symbol}
     level::Integer
     dggs::DGGSGridSystem
 
-    function DGGSLayer(data, attrs, bands, level, dggs)
+    function DGGSLayer(data, attrs, level, dggs)
         level > 0 || error("Level must be positive")
 
         if !(map(x -> x.dggs.id, collect(values(data))) |> allequal)
@@ -71,7 +70,7 @@ struct DGGSLayer
             error("Grid Systems are different")
         end
 
-        new(data, attrs, bands, level, dggs)
+        new{level}(data, attrs, level, dggs)
     end
 end
 
@@ -79,19 +78,18 @@ struct DGGSPyramid
     data::Dict{Int,DGGSLayer}
     attrs::Dict{String,Any}
     levels::Vector{Integer}
-    bands::Vector{Symbol}
     dggs::DGGSGridSystem
 
-    function DGGSPyramid(data, attrs, levels, bands, dggs)
-        if !(map(l -> l.bands, collect(values(data))) |> allequal)
-            error("Bands are different")
+    function DGGSPyramid(data, attrs, levels, dggs)
+        if !(map(l -> l.data |> keys, collect(values(data))) |> allequal)
+            error("Arrays are different")
         end
 
         if !(map(l -> l.dggs, collect(values(data))) |> allequal)
             error("Grid Systems are different")
         end
 
-        new(data, attrs, levels, bands, dggs)
+        new(data, attrs, levels, dggs)
     end
 end
 

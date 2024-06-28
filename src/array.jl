@@ -1,4 +1,4 @@
-function DGGSArray(arr::YAXArray, id=:layer)
+function DGGSArray(arr::YAXArray, id::Symbol)
     haskey(arr.properties, "_DGGS") || error("Array is not in DGGS format")
 
     attrs = arr.properties
@@ -7,6 +7,13 @@ function DGGSArray(arr::YAXArray, id=:layer)
 
     DGGSArray(arr, attrs, id, level, dggs)
 end
+
+function DGGSArray(arr::YAXArray)
+    id = get(arr.properties, "name", "layer") |> Symbol
+    DGGSArray(arr, id)
+end
+
+Base.getindex(a::DGGSArray, args...; kwargs...) = DGGSArray(getindex(a.data, args...; kwargs...), a.id)
 
 function show_nonspatial_axes(io::IO, arr::DGGSArray)
     non_spatial_axes = filter(x -> !startswith(String(x), "q2di"), DimensionalData.name(arr.data.axes))
@@ -17,6 +24,21 @@ function show_nonspatial_axes(io::IO, arr::DGGSArray)
     elseif length(non_spatial_axes) > 1
         printstyled(io, non_spatial_axes; color=:white)
         printstyled(io, " "; color=:white)
+    end
+end
+
+is_spatial(ax) = ax |> name |> String |> x -> startswith(x, "q2di_")
+
+function show_axes(io, axs; hide_if_spatial=true)
+    printstyled(io, "Non spatial axes:\n"; color=:white)
+    for ax in axs
+        hide_if_spatial & is_spatial(ax) && continue
+
+        print(io, "  ")
+        printstyled(io, name(ax); color=:red)
+        print(io, " $(length(ax)) ")
+        print(io, eltype(ax))
+        println(io, " points")
     end
 end
 
@@ -36,21 +58,10 @@ function Base.show(io::IO, ::MIME"text/plain", arr::DGGSArray)
         println(io, "Units:\t\t$(arr.attrs["units"])")
     end
 
-    println(io, "DGGS:\t\t$(arr.dggs)")
-    println(io, "Level:\t\t$(arr.level)")
-    println(io, "Attributes: $(length(arr.attrs))")
+    println(io, "DGGS:\t\t$(arr.dggs) at level $(arr.level)")
+    println(io, "Attributes:\t$(length(arr.attrs))")
 
-    println(io, "Non spatial axes:")
-    for ax in arr.data.axes
-        ax_name = DimensionalData.name(ax)
-        startswith(String(ax_name), "q2di") && continue
-
-        print(io, "  ")
-        printstyled(io, ax_name; color=:red)
-        print(io, " ")
-        print(io, eltype(ax))
-        println(io, "")
-    end
+    show_axes(io, arr.data.axes)
 end
 
 function Base.show(io::IO, arr::DGGSArray)
@@ -89,7 +100,8 @@ function to_dggs_array(
     cell_ids::Union{AbstractMatrix,Nothing}=nothing,
     agg_func::Function=filter_null(mean),
     verbose::Bool=true,
-    id::Symbol=:layer
+    id::Symbol=:layer,
+    path::String=tempname()
 )
     # Optimized for grids which cell_ids fit in memory
 
@@ -133,7 +145,7 @@ function to_dggs_array(
             Dim{:q2di_i}(range(0; step=1, length=2^(level - 1))),
             Dim{:q2di_j}(range(0; step=1, length=2^(level - 1))),
             Dim{:q2di_n}(0:11),
-            path=tempname() # disable inplace
+            path=path
         ),
         showprog=true
     ) do xout, xin
@@ -150,23 +162,14 @@ function to_dggs_array(
     DGGSArray(cell_array, id)
 end
 
-function to_geo_array(
-    a::DGGSArray,
-    longitudes=range(-180, 180; length=800),
-    latitudes=range(-90, 90; length=400);
-    cell_ids=nothing
-)
-    if isnothing(cell_ids)
-        cell_ids = transform_points(longitudes, latitudes, a.level)
-    end
-
+function to_geo_array(a::DGGSArray, cell_ids::DimArray)
     geo_array = mapCube(
         a.data,
         cell_ids,
         indims=InDims(:q2di_i, :q2di_j, :q2di_n),
         outdims=OutDims(
-            Dim{:lon}(longitudes),
-            Dim{:lat}(latitudes)
+            Dim{:lon}(dims(cell_ids, :X).val),
+            Dim{:lat}(dims(cell_ids, :Y).val)
         )
     ) do xout, xin, cell_ids
         for (i, cell_id) in enumerate(cell_ids)
@@ -175,6 +178,15 @@ function to_geo_array(
     end
 
     return YAXArray(geo_array.axes, geo_array.data, a.attrs)
+end
+
+function to_geo_array(
+    a::DGGSArray,
+    longitudes=range(-180, 180; length=800),
+    latitudes=range(-90, 90; length=400);
+)
+    cell_ids = transform_points(longitudes, latitudes, a.level)
+    to_geo_array(a, cell_ids)
 end
 
 function Makie.plot(a::DGGSArray, args...; type=:globe, kwargs...)
@@ -186,14 +198,12 @@ end
 function plot_globe(a::DGGSArray; resolution::Integer=800)
     longitudes = range(-180, 180; length=resolution * 2)
     latitudes = range(-90, 90; length=resolution)
-    geo_array = to_geo_array(a, longitudes, latitudes)
+    cell_ids = transform_points(longitudes, latitudes, a.level)
+    non_spatial_axes = filter(x -> !(name(x) in [:q2di_i, :q2di_j, :q2di_n]), a.data.axes)
+    geo_array = to_geo_array(a, cell_ids)
 
-    non_spatial_axes = map(setdiff(DimensionalData.name(geo_array.axes), (:lon, :lat))) do x
-        getproperty(geo_array, x)
-    end
-    min_val = filter_null(minimum)(geo_array)
-    max_val = filter_null(maximum)(geo_array)
-    min_val == max_val && error("")
+    min_val = filter_null(minimum)(deepcopy(geo_array))
+    max_val = filter_null(maximum)(deepcopy(geo_array))
 
     with_theme(theme_black()) do
         fig = Figure()
@@ -398,5 +408,31 @@ function plot_map(
             cb = Colorbar(fig[1, 2], heatmap_plt; label=get_arr_label(a))
             fig
         end
+    end
+end
+
+#
+# Arithmetics
+#
+
+import Base: broadcasted, +, -, *, /, \
+
+function Base.broadcasted(f::Function, a::DGGSArray, number::Real)
+    data = f.(a.data, number)
+
+    # meta data may be invalidated after transformation
+    properties = Dict("_DGGS" => deepcopy(data.properties["_DGGS"]))
+    array = YAXArray(data.axes, data.data, properties)
+
+    res = DGGSArray(array)
+    return res
+end
+
+for f in (:/, :\, :*)
+    if f !== :/
+        @eval ($f)(number::Number, a::DGGSArray) = Base.broadcasted($f, a, number)
+    end
+    if f !== :\
+        @eval ($f)(a::DGGSArray, number::Number) = Base.broadcasted($f, a, number)
     end
 end
