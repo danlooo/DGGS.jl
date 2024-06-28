@@ -1,4 +1,4 @@
-function DGGSArray(arr::YAXArray, id::Symbol=:layer)
+function DGGSArray(arr::YAXArray, id::Symbol)
     haskey(arr.properties, "_DGGS") || error("Array is not in DGGS format")
 
     attrs = arr.properties

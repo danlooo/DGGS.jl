@@ -26,7 +26,7 @@ function open_dggs_pyramid(path::String)
         layer_ds = open_dataset(root_group.groups["$level"])
         pyramid[level] = DGGSLayer(layer_ds)
     end
-    pyramid = sort(pyramid)
+    pyramid = sort!(OrderedDict(pyramid))
 
     return DGGSPyramid(pyramid, root_group.attrs)
 end
@@ -233,8 +233,8 @@ function to_dggs_pyramid(l::DGGSLayer; base_path=tempname())
 
         pyramid[coarser_level] = DGGSLayer(coarser_data, l.attrs)
     end
-
-    return DGGSPyramid(pyramid, l.attrs)
+    p = sort!(OrderedDict(pyramid))
+    return DGGSPyramid(p, l.attrs)
 end
 
 to_dggs_pyramid(a::DGGSArray; kw...) = a |> DGGSLayer |> l -> to_dggs_pyramid(l; kw...)
