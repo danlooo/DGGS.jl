@@ -1,4 +1,4 @@
-function DGGSArray(arr::YAXArray, id=:layer)
+function DGGSArray(arr::YAXArray, id::Symbol=:layer)
     haskey(arr.properties, "_DGGS") || error("Array is not in DGGS format")
 
     attrs = arr.properties
@@ -6,6 +6,11 @@ function DGGSArray(arr::YAXArray, id=:layer)
     dggs = DGGSGridSystem(attrs["_DGGS"])
 
     DGGSArray(arr, attrs, id, level, dggs)
+end
+
+function DGGSArray(arr::YAXArray)
+    id = get(arr.properties, "name", "layer") |> Symbol
+    DGGSArray(arr, id)
 end
 
 Base.getindex(a::DGGSArray, args...; kwargs...) = DGGSArray(getindex(a.data, args...; kwargs...), a.id)
@@ -403,5 +408,31 @@ function plot_map(
             cb = Colorbar(fig[1, 2], heatmap_plt; label=get_arr_label(a))
             fig
         end
+    end
+end
+
+#
+# Arithmetics
+#
+
+import Base: broadcasted, +, -, *, /, \
+
+function Base.broadcasted(f::Function, a::DGGSArray, number::Real)
+    data = f.(a.data, number)
+
+    # meta data may be invalidated after transformation
+    properties = Dict("_DGGS" => deepcopy(data.properties["_DGGS"]))
+    array = YAXArray(data.axes, data.data, properties)
+
+    res = DGGSArray(array)
+    return res
+end
+
+for f in (:/, :\, :*)
+    if f !== :/
+        @eval ($f)(number::Number, a::DGGSArray) = Base.broadcasted($f, a, number)
+    end
+    if f !== :\
+        @eval ($f)(a::DGGSArray, number::Number) = Base.broadcasted($f, a, number)
     end
 end

@@ -106,3 +106,16 @@ a3 = YAXArray((X(1:5), Y(1:5)), rand(5, 5), Dict()) |> x -> to_dggs_array(x, 2)
 @test plot(a; type=:globe, resolution=100) isa Figure
 @test plot(a2; type=:map) isa Figure
 @test plot(a; type=:map, longitudes=-180:5:180, latitudes=-90:5:90) isa Figure
+
+
+#
+# Arithmetics
+#
+
+@test (a .+ 5) isa DGGSArray{Union{Missing,Float32},4}
+@test (a * 5) isa DGGSArray{Union{Missing,Float32},4}
+@test (a .* 5) isa DGGSArray{Union{Missing,Float32},4}
+@test (a .> 5) isa DGGSArray{Union{Missing,Bool},4}
+
+@test length(a.attrs) > length((a * 5).attrs) # meta data invalidated after transformation
+@test map(x -> x.data.data |> collect, [a * 5, 5 * a]) |> allequal
