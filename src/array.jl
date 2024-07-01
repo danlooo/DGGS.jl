@@ -13,6 +13,21 @@ function DGGSArray(arr::YAXArray)
     DGGSArray(arr, id)
 end
 
+function DGGSArray(arr::AbstractArray, level::Integer, id=:layer)
+    axs = (
+        Dim{:q2di_i}(range(0; step=1, length=2^(level - 1))),
+        Dim{:q2di_j}(range(0; step=1, length=2^(level - 1))),
+        Dim{:q2di_n}(0:11),
+    )
+    props = Dict{String,Any}(
+        "name" => id,
+        "_DGGS" => DGGS.Q2DI_DGGS_PROPS
+    )
+    props["_DGGS"]["level"] = level
+    data = YAXArray(axs, arr, props)
+    DGGSArray(data)
+end
+
 Base.getindex(a::DGGSArray, args...; kwargs...) = DGGSArray(getindex(a.data, args...; kwargs...), a.id)
 
 function show_nonspatial_axes(io::IO, arr::DGGSArray)
