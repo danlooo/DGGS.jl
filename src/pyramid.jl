@@ -140,7 +140,7 @@ function aggregate_hexagons!(xout::AbstractArray, xin::AbstractArray, n::Integer
         11 => last_row_rev(10),
     )
     row_paddings = Dict(
-        2 => first_row_fwd(3),
+        2 => last_col_rev(6),
         3 => last_col_rev(2),
         4 => last_col_rev(3),
         5 => last_col_rev(4),
