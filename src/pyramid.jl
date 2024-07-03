@@ -16,13 +16,17 @@ function Base.show(io::IO, ::MIME"text/plain", dggs::DGGSPyramid)
 end
 
 Base.getindex(dggs::DGGSPyramid, level::Integer) = dggs.data[level]
-Base.getindex(dggs::DGGSPyramid; level::Integer) = dggs.data[level]
-function Base.getindex(dggs::DGGSPyramid; level::Integer, id::Symbol, kwargs...)
-    if isempty(kwargs)
-        return dggs.data[level][id]
-    else
-        return Base.getindex(dggs.data[level][id]; kwargs...)
-    end
+function Base.getindex(dggs::DGGSPyramid; kwargs...)
+    level = get(kwargs, :level, nothing)
+    isnothing(level) && error("level not provided")
+    length(kwargs) == 1 && return dggs[level]
+
+    id = get(kwargs, :id, nothing)
+    isnothing(id) && error("Array id not provided.")
+
+    other_args = filter(x -> !(x.first in [:id, :level]), kwargs)
+    isempty(other_args) && return dggs.data[level][id]
+    Base.getindex(dggs.data[level][id]; other_args...)
 end
 
 function open_dggs_pyramid(path::String)
