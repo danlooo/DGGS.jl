@@ -15,7 +15,15 @@ function Base.show(io::IO, ::MIME"text/plain", dggs::DGGSPyramid)
     show_arrays(io, dggs.data |> first |> x -> values(x.second.data) |> collect)
 end
 
-Base.getindex(dggs::DGGSPyramid, i::Integer) = dggs.data[i]
+Base.getindex(dggs::DGGSPyramid, level::Integer) = dggs.data[level]
+Base.getindex(dggs::DGGSPyramid; level::Integer) = dggs.data[level]
+function Base.getindex(dggs::DGGSPyramid; level::Integer, id::Symbol, kwargs...)
+    if isempty(kwargs)
+        return dggs.data[level][id]
+    else
+        return Base.getindex(dggs.data[level][id]; kwargs...)
+    end
+end
 
 function open_dggs_pyramid(path::String)
     root_group = zopen(path)

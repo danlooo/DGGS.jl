@@ -204,6 +204,8 @@ function to_geo_array(
     to_geo_array(a, cell_ids)
 end
 
+Base.collect(a::DGGSArray) = Base.collect(a.data)
+
 function Makie.plot(a::DGGSArray, args...; type=:globe, kwargs...)
     type == :globe && return plot_globe(a; kwargs...)
     type == :map && return plot_map(a, args...; kwargs...)
