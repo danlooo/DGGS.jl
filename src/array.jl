@@ -211,14 +211,12 @@ function Makie.plot(a::DGGSArray, args...; type=:globe, kwargs...)
 end
 
 function plot_globe(a::DGGSArray; resolution::Integer=800)
+    # get grid points
     longitudes = range(-180, 180; length=resolution * 2)
     latitudes = range(-90, 90; length=resolution)
     cell_ids = transform_points(longitudes, latitudes, a.level)
-    non_spatial_axes = filter(x -> !(name(x) in [:q2di_i, :q2di_j, :q2di_n]), a.data.axes)
-    geo_array = to_geo_array(a, cell_ids)
 
-    min_val = filter_null(minimum)(deepcopy(geo_array))
-    max_val = filter_null(maximum)(deepcopy(geo_array))
+    non_spatial_axes = filter(x -> !(name(x) in [:q2di_i, :q2di_j, :q2di_n]), a.data.axes)
 
     with_theme(theme_black()) do
         fig = Figure()
@@ -226,19 +224,20 @@ function plot_globe(a::DGGSArray; resolution::Integer=800)
         side_panel = fig[1, 2] = GridLayout()
 
         if length(non_spatial_axes) == 0
-            # calc texture colors
-            texture = map(geo_array |> x -> x[1:length(x.lon), length(x.lat):-1:1]') do val
-                try
-                    get(ColorSchemes.viridis, val, (min_val, max_val))
-                catch
-                    RGBA{Float64}(0.15, 0.15, 0.15, 1)
-                end
-            end
-            mesh = Sphere(Point3f(0), 1) |> x -> Tesselation(x, 128) |> uv_mesh
+            geo_array = to_geo_array(a, cell_ids)
+            min_val = filter_null(minimum)(geo_array)
+            max_val = filter_null(maximum)(geo_array)
+            texture = geo_array |>
+                      x -> x[1:length(x.lon), length(x.lat):-1:1]' |>
+                           collect .|>
+                           x -> ismissing(x) ? NaN : x
+
+            msh = Sphere(Point3f(0), 1) |> x -> Tesselation(x, 128) |> uv_mesh
             m_plt = mesh!(
                 ax,
-                mesh,
+                msh,
                 color=texture,
+                nan_color=RGBA{Float64}(0.15, 0.15, 0.15, 1),
                 interpolate=true,
                 shading=Makie.NoShading,
             )
@@ -285,7 +284,6 @@ function plot_globe(a::DGGSArray; resolution::Integer=800)
             north_up_btn.labelcolor_hover = :white
 
             cb = Colorbar(side_panel[1, 1]; limits=(min_val, max_val), label=get_arr_label(a))
-
             fig
         else
             sliders = map(non_spatial_axes) do ax
@@ -301,28 +299,30 @@ function plot_globe(a::DGGSArray; resolution::Integer=800)
             slider_grid = SliderGrid(fig[2, 1], sliders...)
             slider_observables = [s.value for s in slider_grid.sliders]
 
-            texture = lift(slider_observables...) do slider_values...
+            geo_array = lift(slider_observables...) do slider_values...
                 # filter to selected dimensions
                 d = Dict()
                 for (ax, val) in zip(non_spatial_axes, slider_values)
                     d[name(ax)] = val
                 end
-                filtered_array = getindex(geo_array; NamedTuple(d)...)
 
-                # calc texture colors
-                map(filtered_array |> x -> x[1:length(x.lon), length(x.lat):-1:1]') do val
-                    try
-                        get(ColorSchemes.viridis, val, (min_val, max_val))
-                    catch
-                        RGBA{Float64}(0.15, 0.15, 0.15, 1)
-                    end
-                end
+                getindex(a; NamedTuple(d)...) |> x -> to_geo_array(x, cell_ids)
             end
-            mesh = Sphere(Point3f(0), 1) |> x -> Tesselation(x, 128) |> uv_mesh
+
+            min_val = @lift filter_null(minimum)($geo_array)
+            max_val = @lift filter_null(maximum)($geo_array)
+
+            texture = @lift $geo_array |>
+                            x -> x[1:length(x.lon), length(x.lat):-1:1]' |>
+                                 collect .|>
+                                 x -> ismissing(x) ? NaN : x
+
+            msh = Sphere(Point3f(0), 1) |> x -> Tesselation(x, 128) |> uv_mesh
             m_plt = mesh!(
                 ax,
-                mesh,
+                msh,
                 color=texture,
+                nan_color=RGBA{Float64}(0.15, 0.15, 0.15, 1),
                 interpolate=true,
                 shading=Makie.NoShading,
             )
@@ -368,8 +368,7 @@ function plot_globe(a::DGGSArray; resolution::Integer=800)
             north_up_btn.buttoncolor_hover = :black
             north_up_btn.labelcolor_hover = :white
 
-            cb = Colorbar(side_panel[1, 1]; limits=(min_val, max_val), label=get_arr_label(a))
-
+            cb = Colorbar(side_panel[1, 1]; limits=@lift(($min_val, $max_val)), label=get_arr_label(a))
             fig
         end
     end
