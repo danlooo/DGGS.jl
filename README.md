@@ -39,7 +39,7 @@ Levels: Integer[5, 4, 6, 2, 3]
 Non spatial axes:
   Time CFTime.DateTimeNoLeap
   plev Float64
-Bands: 
+Arrays: 
   tas air_temperature (:Time) K Union{Missing, Float32} aggregated
   ua eastward_wind (:plev, :Time) m s-1 Union{Missing, Float32} aggregated
   pr precipitation_flux (:Time) kg m-2 s-1 Union{Missing, Float32} aggregated
@@ -64,7 +64,7 @@ DGGSPyramid
 DGGS: DGGRID ISEA4H Q2DI ⬢
 Levels: Integer[5, 4, 6, 2, 3]
 Non spatial axes:
-Bands: 
+Arrays: 
   layer  Union{Missing, Float64} 
 ```
 
@@ -80,6 +80,7 @@ Access individual layers and arrays:
 ```julia
 highest_layer = p1[6]
 air_temperature = highest_layer.tas
+temperature_map = collect(p1[level=2, id=:tas, Time=1])
 ```
 
 Visualization:

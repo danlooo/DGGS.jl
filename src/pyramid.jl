@@ -15,7 +15,19 @@ function Base.show(io::IO, ::MIME"text/plain", dggs::DGGSPyramid)
     show_arrays(io, dggs.data |> first |> x -> values(x.second.data) |> collect)
 end
 
-Base.getindex(dggs::DGGSPyramid, i::Integer) = dggs.data[i]
+Base.getindex(dggs::DGGSPyramid, level::Integer) = dggs.data[level]
+function Base.getindex(dggs::DGGSPyramid; kwargs...)
+    level = get(kwargs, :level, nothing)
+    isnothing(level) && error("level not provided")
+    length(kwargs) == 1 && return dggs[level]
+
+    id = get(kwargs, :id, nothing)
+    isnothing(id) && error("Array id not provided.")
+
+    other_args = filter(x -> !(x.first in [:id, :level]), kwargs)
+    isempty(other_args) && return dggs.data[level][id]
+    Base.getindex(dggs.data[level][id]; other_args...)
+end
 
 function open_dggs_pyramid(path::String)
     root_group = zopen(path)
@@ -140,7 +152,7 @@ function aggregate_hexagons!(xout::AbstractArray, xin::AbstractArray, n::Integer
         11 => last_row_rev(10),
     )
     row_paddings = Dict(
-        2 => first_row_fwd(3),
+        2 => last_col_rev(6),
         3 => last_col_rev(2),
         4 => last_col_rev(3),
         5 => last_col_rev(4),
