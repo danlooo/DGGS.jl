@@ -392,7 +392,7 @@ function plot_map(
         fig = Figure()
         heatmap_ax = (
             backgroundcolor=RGBA{Float64}(0.15, 0.15, 0.15, 1),
-            aspect=1
+            aspect=2
         )
 
         if length(non_spatial_axes) == 0
