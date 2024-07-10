@@ -25,6 +25,7 @@ using MeshIO
 using Pkg.Artifacts
 using Distributed
 using ThreadsX
+using Pkg.Artifacts
 
 # must be sorted by dependency
 include("types.jl")
