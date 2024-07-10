@@ -113,6 +113,7 @@ a3 = YAXArray((X(1:5), Y(1:5)), rand(5, 5), Dict()) |> x -> to_dggs_array(x, 2)
 
 @test plot(a; resolution=100) isa Figure
 @test plot(a; type=:globe, resolution=100) isa Figure
+@test plot(a; type=:native) isa Figure
 @test plot(a2; type=:map) isa Figure
 @test plot(a; type=:map, longitudes=-180:5:180, latitudes=-90:5:90) isa Figure
 

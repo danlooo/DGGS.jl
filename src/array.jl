@@ -209,7 +209,8 @@ Base.collect(a::DGGSArray) = Base.collect(a.data)
 function Makie.plot(a::DGGSArray, args...; type=:globe, kwargs...)
     type == :globe && return plot_globe(a; kwargs...)
     type == :map && return plot_map(a, args...; kwargs...)
-    error("Plot type :$type must be one of [:globe, :map]")
+    type == :native && return plot_native(a, args...; kwargs...)
+    error("Plot type :$type must be one of [:globe, :map, :native]")
 end
 
 function plot_globe(a::DGGSArray; resolution::Integer=800)
@@ -425,6 +426,166 @@ function plot_map(
             fig
         end
     end
+end
+
+"""
+Plot a DGGSArray nativeley on a icosahedron
+"""
+function plot_native(a::DGGSArray)
+    non_spatial_axes = filter(x -> !(name(x) in [:q2di_i, :q2di_j, :q2di_n]), a.data.axes)
+
+    with_theme(theme_black()) do
+        fig = Figure()
+        ax = fig[1, 1] = LScene(fig[1, 1], show_axis=false)
+        side_panel = fig[1, 2] = GridLayout()
+
+        if length(non_spatial_axes) == 0
+            native_array = a.data[q2di_n=2:11] |> collect # ignore 2 vertices at quad 1 and 12
+            min_val = filter_null(minimum)(native_array)
+            max_val = filter_null(maximum)(native_array)
+            texture = native_array |>
+                      x -> reshape(x, size(x)[1], 10 * size(x)[1]) .|>
+                           x -> ismissing(x) ? NaN : x
+            msh = load(artifact"isea-obj" * "/isea.obj")
+            m_plt = mesh!(
+                ax,
+                msh,
+                color=texture,
+                nan_color=RGBA{Float64}(0.15, 0.15, 0.15, 1),
+                interpolate=true,
+                shading=Makie.NoShading,
+            )
+            center!(ax.scene)
+            cam = Camera3D(
+                ax.scene,
+                projectiontype=Makie.Perspective,
+                cad=true, # prevent dithering
+                fixed_axis=true,
+                lookat=[0, 0, 0],
+                upvector=[0, 0, 1],
+
+                # disable translation
+                forward_key=Keyboard.unknown,
+                backward_key=Keyboard.unknown,
+                up_key=Keyboard.unknown,
+                down_key=Keyboard.unknown,
+                left_key=Keyboard.unknown,
+                right_key=Keyboard.unknown,
+                translation_button=Mouse.none,
+                pan_left_key=Keyboard.left,
+                pan_right_key=Keyboard.right,
+                tilt_up_key=Keyboard.up,
+                tilt_down_key=Keyboard.down
+            )
+
+            north_up_btn = Button(side_panel[2, 1]; label="N↑")
+            on(north_up_btn.clicks) do c
+                update_cam!(ax.scene, cam.eyeposition[], cam.lookat[], (0.0, 0.0, 1.0))
+            end
+
+            # prevent view inside of earth    
+            on(cam.eyeposition) do eyeposition
+                dist_to_earth_center = norm(cam.eyeposition[])
+                min_zoom = 1.1
+                if dist_to_earth_center < min_zoom
+                    zoom!(ax.scene, min_zoom)
+                end
+            end
+
+            # north_up_btn.labelcolor = :red
+            north_up_btn.buttoncolor = :black
+            north_up_btn.buttoncolor_hover = :black
+            north_up_btn.labelcolor_hover = :white
+
+            cb = Colorbar(side_panel[1, 1]; limits=(min_val, max_val), label=get_arr_label(a))
+            fig
+        else
+            sliders = map(non_spatial_axes) do ax
+                (
+                    label=ax |> name |> String,
+                    range=1:length(ax),
+                    format=x -> "$(ax[x])",
+                    color_inactive=RGBA{Float64}(0.15, 0.15, 0.15, 1),
+                    color_active=:white,
+                    color_active_dimmed=:white
+                )
+            end
+            slider_grid = SliderGrid(fig[2, 1], sliders...)
+            slider_observables = [s.value for s in slider_grid.sliders]
+
+            native_array = lift(slider_observables...) do slider_values...
+                # filter to selected dimensions
+                d = Dict()
+                for (ax, val) in zip(non_spatial_axes, slider_values)
+                    d[name(ax)] = val
+                end
+
+                getindex(a; NamedTuple(d)...) |> x -> x.data[q2di_n=2:11] |> collect
+            end
+
+            min_val = @lift filter_null(minimum)($native_array)
+            max_val = @lift filter_null(maximum)($native_array)
+
+            texture = @lift $native_array |>
+                            x -> reshape(x, size(x)[1], 10 * size(x)[1]) .|>
+                                 x -> ismissing(x) ? NaN : x
+
+            msh = load(artifact"isea-obj" * "/isea.obj")
+            m_plt = mesh!(
+                ax,
+                msh,
+                color=texture,
+                nan_color=RGBA{Float64}(0.15, 0.15, 0.15, 1),
+                interpolate=true,
+                shading=Makie.NoShading,
+            )
+            center!(ax.scene)
+            cam = Camera3D(
+                ax.scene,
+                projectiontype=Makie.Perspective,
+                cad=true, # prevent dithering
+                fixed_axis=true,
+                lookat=[0, 0, 0],
+                upvector=[0, 0, 1],
+
+                # disable translation
+                forward_key=Keyboard.unknown,
+                backward_key=Keyboard.unknown,
+                up_key=Keyboard.unknown,
+                down_key=Keyboard.unknown,
+                left_key=Keyboard.unknown,
+                right_key=Keyboard.unknown,
+                translation_button=Mouse.none,
+                pan_left_key=Keyboard.left,
+                pan_right_key=Keyboard.right,
+                tilt_up_key=Keyboard.up,
+                tilt_down_key=Keyboard.down
+            )
+
+            north_up_btn = Button(side_panel[2, 1]; label="N↑")
+            on(north_up_btn.clicks) do c
+                update_cam!(ax.scene, cam.eyeposition[], cam.lookat[], (0.0, 0.0, 1.0))
+            end
+
+            # prevent view inside of earth    
+            on(cam.eyeposition) do eyeposition
+                dist_to_earth_center = norm(cam.eyeposition[])
+                min_zoom = 1.1
+                if dist_to_earth_center < min_zoom
+                    zoom!(ax.scene, min_zoom)
+                end
+            end
+
+            # north_up_btn.labelcolor = :red
+            north_up_btn.buttoncolor = :black
+            north_up_btn.buttoncolor_hover = :black
+            north_up_btn.labelcolor_hover = :white
+
+            cb = Colorbar(side_panel[1, 1]; limits=@lift(($min_val, $max_val)), label=get_arr_label(a))
+            fig
+        end
+    end
+
 end
 
 #
