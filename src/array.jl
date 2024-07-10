@@ -210,7 +210,7 @@ function Makie.plot(a::DGGSArray, args...; type=:globe, kwargs...)
     type == :globe && return plot_globe(a; kwargs...)
     type == :map && return plot_map(a, args...; kwargs...)
     type == :native && return plot_native(a, args...; kwargs...)
-    error("Plot type :$type must be one of [:globe, :map]")
+    error("Plot type :$type must be one of [:globe, :map, :native]")
 end
 
 function plot_globe(a::DGGSArray; resolution::Integer=800)
