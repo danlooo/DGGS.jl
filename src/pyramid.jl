@@ -211,11 +211,11 @@ function aggregate_dggs_layer(xout, xin, arr::DGGSArray)
     aggregate_pentagon!(xout, xin, n, arr)
 end
 
-function to_dggs_pyramid(geo_ds::Dataset, level::Integer, args...; verbose=true, kwargs...)
+function to_dggs_pyramid(geo_ds::Dataset, level::Integer, args...; verbose=true, base_path=tempname(), kwargs...)
     verbose && @info "Convert to DGGS layer"
     l = to_dggs_layer(geo_ds, level, args...; kwargs...)
     verbose && @info "Building pyramid"
-    dggs = to_dggs_pyramid(l)
+    dggs = to_dggs_pyramid(l; base_path=base_path)
     return dggs
 end
 
@@ -246,6 +246,7 @@ function to_dggs_pyramid(l::DGGSLayer; base_path=tempname())
         pyramid[coarser_level] = DGGSLayer(coarser_data, l.attrs)
     end
     p = sort!(OrderedDict(pyramid))
+    @warn "Pyramid may not be persistent on disk. Use write_dggs_pyramid for this."
     return DGGSPyramid(p, l.attrs)
 end
 
