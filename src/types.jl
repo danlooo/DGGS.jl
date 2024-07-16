@@ -55,7 +55,7 @@ struct DGGSLayer{L}
     level::Integer
     dggs::DGGSGridSystem
 
-    function DGGSLayer(data, attrs, level, dggs)
+    function DGGSLayer(data, level, attrs=Dict{String,Any}(), dggs=DGGSGridSystem(Q2DI_DGGS_PROPS))
         level > 0 || error("Level must be positive")
 
         if !(map(x -> x.dggs.id, collect(values(data))) |> allequal)

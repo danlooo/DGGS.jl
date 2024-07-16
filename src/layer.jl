@@ -13,13 +13,13 @@ end
 function DGGSLayer(data::Dict{Symbol,DGGSArray}, attrs=Dict{String,Any}())
     level = data |> values |> first |> x -> x.level
     dggs = data |> values |> first |> x -> x.dggs
-    DGGSLayer(data, attrs, level, dggs)
+    DGGSLayer(data, level, attrs, dggs)
 end
 
 function DGGSLayer(arr::DGGSArray)
     data = Dict{Symbol,DGGSArray}()
     data[:layer] = arr
-    DGGSLayer(data, arr.attrs, arr.level, arr.dggs)
+    DGGSLayer(data, arr.level, arr.attrs, arr.dggs)
 end
 
 function Base.axes(l::DGGSLayer)
