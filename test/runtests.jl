@@ -21,6 +21,8 @@ a = l.tas
 @test length(a.attrs) > length(p.attrs)
 @test (setdiff(p.attrs, l.attrs) .|> x -> x.first) == ["_DGGS"] # same global attrs expect DGGS level
 
+@test a[10, 1, 1] isa YAXArray
+@test (a[10, 1, 1] .== a[Q2DI(10, 1, 1)]) |> collect |> all
 
 #
 # Convert lat/lon rasters into a DGGS

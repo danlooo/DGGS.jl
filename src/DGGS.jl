@@ -38,6 +38,7 @@ export
     DGGSArray,
     DGGSLayer,
     DGGSPyramid,
+    Q2DI,
     open_dggs_array,
     open_dggs_layer,
     open_dggs_pyramid,
