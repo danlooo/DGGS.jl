@@ -205,7 +205,7 @@ end
 """
 Spatial hexagonal convolution in Q2DI index space matching levels of DGGRID ISEA4H grids
 """
-function aggregate_dggs_layer(xout, xin, arr::DGGSArray)
+function aggregate_dggs_array(xout, xin, arr::DGGSArray)
     n = xin.indices[3]
     aggregate_hexagons!(xout, xin, n, arr)
     aggregate_pentagon!(xout, xin, n, arr)
@@ -228,7 +228,7 @@ function to_dggs_pyramid(l::DGGSLayer; base_path=tempname())
         coarser_data = Dict{Symbol,DGGSArray}()
         for (k, arr) in finer_layer.data
             coarser_arr = mapCube(
-                (xout, xin) -> aggregate_dggs_layer(xout, xin, arr),
+                (xout, xin) -> aggregate_dggs_array(xout, xin, arr),
                 arr.data;
                 indims=InDims(:q2di_i, :q2di_j),
                 outdims=OutDims(
