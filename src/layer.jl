@@ -22,6 +22,13 @@ function DGGSLayer(arr::DGGSArray)
     DGGSLayer(data, arr.level, arr.attrs, arr.dggs)
 end
 
+function DGGSLayer(arrs::Vector{DGGSArray{T,L}}) where {T,L}
+    [x.id for x in arrs] |> allunique || error("IDs of arrays must be different")
+    arr = first(arrs)
+    data = Dict(x.id => x for x in arrs)
+    DGGSLayer(data, arr.level, arr.attrs, arr.dggs)
+end
+
 function Base.axes(l::DGGSLayer)
     axes = Vector()
     for arr in values(l.data)
