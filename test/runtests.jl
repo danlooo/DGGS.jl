@@ -69,6 +69,10 @@ l2 = dggs2[2]
 @test l2[id=:tas, Time=1] isa DGGSArray
 @test l2[id=:tas, Time=1].data |> size == (2, 2, 12)
 
+@test DGGSLayer([l2.tas, l2.pr]) isa DGGSLayer
+@test_throws ErrorException [p[4].tas, p[5].pr] |> DGGSLayer
+@test_throws ErrorException [p[4].tas, p[4].tas] |> DGGSLayer
+
 #
 # Write pyramids 
 #

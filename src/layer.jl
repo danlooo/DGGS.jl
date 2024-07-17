@@ -24,10 +24,14 @@ end
 
 function DGGSLayer(arrs::Vector{DGGSArray{T,L}}) where {T,L}
     [x.id for x in arrs] |> allunique || error("IDs of arrays must be different")
+    [x.level for x in arrs] |> allequal || error("Level of arrays must be the same")
+
     arr = first(arrs)
     data = Dict(x.id => x for x in arrs)
     DGGSLayer(data, arr.level, arr.attrs, arr.dggs)
 end
+
+DGGSLayer(::Vector{DGGSArray{T}}) where {T} = error("Level of arrays must be the same")
 
 function Base.axes(l::DGGSLayer)
     axes = Vector()
@@ -107,7 +111,7 @@ function to_dggs_layer(
         verbose && @info "Tranform band $band"
         data[band] = to_dggs_array(geo_arr, level; cell_ids=cell_ids, verbose=false, lon_name=lon_name, lat_name=lat_name, kwargs...)
     end
-    DGGSLayer(data, geo_ds.properties, level, DGGSGridSystem(Q2DI_DGGS_PROPS))
+    DGGSLayer(data, level, geo_ds.properties, DGGSGridSystem(Q2DI_DGGS_PROPS))
 end
 
 to_dggs_layer(raster::AbstractDimArray, level::Integer; kw...) = to_dggs_array(raster, level, kw...) |> DGGSLayer
