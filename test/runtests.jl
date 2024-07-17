@@ -12,7 +12,7 @@ Random.seed!(1337)
 # Ppen arrays, layers, and pyramids
 #
 
-p = open_dggs_pyramid("https://s3.bgc-jena.mpg.de:9000/dggs/sresa1b_ncar_ccsm3-example")
+p = open_dggs_pyramid("https://s3.bgc-jena.mpg.de:9000/dggs/example-ccsm3.zarr")
 l = p[4]
 a = l.tas
 
@@ -135,3 +135,17 @@ a3 = YAXArray((X(1:5), Y(1:5)), rand(5, 5), Dict()) |> x -> to_dggs_array(x, 2)
 
 @test length(a.attrs) >= length((a * 5).attrs) # meta data invalidated after transformation
 @test map(x -> x.data.data |> collect, [a * 5, 5 * a]) |> allequal
+
+#
+# Neighbors, rings and disks
+#
+
+p_test = open_dggs_pyramid("https://s3.bgc-jena.mpg.de:9000/dggs/test.zarr")
+l_test = p_test[6]
+
+for n in 2:11
+    d = disk(l_test.quads, Q2DI(n, 6, 6), 3)
+    r = ring(l_test.quads, Q2DI(n, 6, 6), 3)
+    @test isnan.(d) == isnan.([n n n NaN NaN; n n n n NaN; n n n n n; NaN n n n n; NaN NaN n n n])
+    @test isnan.(r) == isnan.([n n n NaN NaN; n NaN NaN n NaN; n NaN NaN NaN n; NaN n NaN NaN n; NaN NaN n n n])
+end
