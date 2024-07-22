@@ -137,15 +137,48 @@ a3 = YAXArray((X(1:5), Y(1:5)), rand(5, 5), Dict()) |> x -> to_dggs_array(x, 2)
 @test map(x -> x.data.data |> collect, [a * 5, 5 * a]) |> allequal
 
 #
-# Neighbors, rings and disks
+# Neighbors
 #
 
 p_test = open_dggs_pyramid("https://s3.bgc-jena.mpg.de:9000/dggs/test.zarr")
-l_test = p_test[6]
+a = p_test[6].rings
 
-for n in 2:11
-    d = disk(l_test.quads, Q2DI(n, 6, 6), 3)
-    r = ring(l_test.quads, Q2DI(n, 6, 6), 3)
-    @test isnan.(d) == isnan.([n n n NaN NaN; n n n n NaN; n n n n n; NaN n n n n; NaN NaN n n n])
-    @test isnan.(r) == isnan.([n n n NaN NaN; n NaN NaN n NaN; n NaN NaN NaN n; NaN n NaN NaN n; NaN NaN n n n])
+for n in 4:2:10
+    # just the pentagons
+    @test window(a, Q2DI(n, 1, 1), 1) |> collect .== 1
+
+    # within quad disks
+    @test window(a, Q2DI(n, 4, 4), 2) |> collect == [
+        1 1 0
+        1 1 1
+        0 1 1
+    ]
+
+    @test window(a, Q2DI(n, 9, 9), 3) |> collect == [
+        1 1 1 0 0
+        1 1 1 1 0
+        1 1 1 1 1
+        0 1 1 1 1
+        0 0 1 1 1
+    ]
+end
+
+for n in 3:2:9
+    # just the pentagons
+    @test window(a, Q2DI(n, 1, 1), 1) |> collect .== 1
+
+    # within quad rings
+    @test window(a, Q2DI(n, 4, 4), 2) |> collect == [
+        1 1 0
+        1 0 1
+        0 1 1
+    ]
+
+    @test window(a, Q2DI(n, 9, 9), 3) |> collect == [
+        1 1 1 0 0
+        1 0 0 1 0
+        1 0 0 0 1
+        0 1 0 0 1
+        0 0 1 1 1
+    ]
 end

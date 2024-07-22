@@ -42,6 +42,8 @@ export
     Q2DI,
     ring,
     disk,
+    window,
+    transform_points,
     open_dggs_pyramid,
     write_dggs_pyramid,
     to_geo_array,
