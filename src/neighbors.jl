@@ -20,7 +20,11 @@ function ring_mask(ring_size::Integer)
     return res
 end
 
-window_mask(disk_size) = (2 * disk_size - 1) |> x -> fill(true, x, x)
+function window_mask(disk_size::Integer)
+    mask_size = 2 * disk_size - 1
+    res = fill(true, mask_size, mask_size)
+    return res
+end
 
 """
 clip range that may lie in padding to quad boundaries
@@ -51,13 +55,13 @@ function get_window_pad_j_start(a::DGGSArray, center::Q2DI, disk_size::Integer)
     non_spatial_axes = filter(x -> !startswith(String(DimensionalData.name(x)), "q2di"), a.data.axes)
     padding = YAXArray((
             main.q2di_i,
-            Dim{:q2di_j}(jrange.start:0),
+            Dim{:q2di_j}(jrange.start-1:-1),
             non_spatial_axes...
         ),
         a.data[q2di_n=11, q2di_i=21:29, q2di_j=29:32],
         Dict()
     )
-    padded = cat(padding, main, dims=Dim{:q2di_j}(jrange))
+    padded = cat(padding, main, dims=:q2di_j)
     return padded
 end
 
@@ -71,11 +75,15 @@ function get_window_pad_i_start(a::DGGSArray, center::Q2DI, disk_size::Integer)
     ]
     non_spatial_axes = filter(x -> !startswith(String(DimensionalData.name(x)), "q2di"), a.data.axes)
     padding = YAXArray((
-            Dim{:q2di_j}(9:17),
-            Dim{:q2di_i}(-3:0),
+            main.q2di_j,
+            Dim{:q2di_i}(irange.start-1:-1),
             non_spatial_axes...
         ),
-        a.data[q2di_n=6, q2di_i=reverse(16:24), q2di_j=29:32].data,
+        a.data[
+            q2di_n=6,
+            q2di_i=range(length=mask_size, start=quad_size - pad_size - center.j + 2) |> reverse,
+            q2di_j=range(length=length(irange.start:0), stop=width(a.level))
+        ].data,
         Dict()
     )
 
@@ -87,7 +95,7 @@ function get_window_pad_i_start(a::DGGSArray, center::Q2DI, disk_size::Integer)
     else
         padding = permutedims(padding, (2, 1, 3:3+length(non_spatial_axes)...))
     end
-    padded = cat(padding, main, dims=Dim{:q2di_i}(irange))
+    padded = cat(padding, main, dims=:q2di_i)
     return padded
 end
 
@@ -97,7 +105,7 @@ function Base.getindex(a::DGGSArray, center::Q2DI, disk_size::Integer, type=:dis
     mask = Dict(
         :disk => disk_mask(disk_size),
         :ring => ring_mask(disk_size),
-        :window => window_mask(disk_mask)
+        :window => window_mask(disk_size)
     )[type]
 
     irange = center.i-(disk_size-1):center.i+(disk_size-1)
