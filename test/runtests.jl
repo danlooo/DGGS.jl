@@ -141,44 +141,10 @@ a3 = YAXArray((X(1:5), Y(1:5)), rand(5, 5), Dict()) |> x -> to_dggs_array(x, 2)
 #
 
 p_test = open_dggs_pyramid("https://s3.bgc-jena.mpg.de:9000/dggs/test.zarr")
-a = p_test[6].rings
-
-for n in 4:2:10
-    # just the pentagons
-    @test window(a, Q2DI(n, 1, 1), 1) |> collect .== 1
-
-    # within quad disks
-    @test window(a, Q2DI(n, 4, 4), 2) |> collect == [
-        1 1 0
-        1 1 1
-        0 1 1
-    ]
-
-    @test window(a, Q2DI(n, 9, 9), 3) |> collect == [
-        1 1 1 0 0
-        1 1 1 1 0
-        1 1 1 1 1
-        0 1 1 1 1
-        0 0 1 1 1
-    ]
-end
-
-for n in 3:2:9
-    # just the pentagons
-    @test window(a, Q2DI(n, 1, 1), 1) |> collect .== 1
-
-    # within quad rings
-    @test window(a, Q2DI(n, 4, 4), 2) |> collect == [
-        1 1 0
-        1 0 1
-        0 1 1
-    ]
-
-    @test window(a, Q2DI(n, 9, 9), 3) |> collect == [
-        1 1 1 0 0
-        1 0 0 1 0
-        1 0 0 0 1
-        0 1 0 0 1
-        0 0 1 1 1
-    ]
-end
+c = Q2DI(2, 1, 14)
+a = p_test[6].quads
+@test a[-52.0978195, 49.5172566, 5] == a[Q2DI(2, 1, 14), 5]
+@test length(a[c, 5, :ring]) < length(a[c, 5, :disk]) < length(a[c, 5, :window])
+@test p_test[6].quads[Q2DI(2, 1, 14), 5] |> size == (61,)
+@test p_test[6].quads[Q2DI(2, 1, 14), 5] |> unique == [2, 6]
+@test p_test[6].quads[Q2DI(2, 25, 1), 5] |> unique == [11, 2]
