@@ -20,6 +20,8 @@ function ring_mask(ring_size::Integer)
     return res
 end
 
+window_mask(disk_size) = (2 * disk_size - 1) |> x -> fill(true, x, x)
+
 """
 clip range that may lie in padding to quad boundaries
 """
@@ -95,7 +97,7 @@ function Base.getindex(a::DGGSArray, center::Q2DI, disk_size::Integer, type=:dis
     mask = Dict(
         :disk => disk_mask(disk_size),
         :ring => ring_mask(disk_size),
-        :window => (2 * disk_size - 1) |> x -> fill(true, x, x)
+        :window => window_mask(disk_mask)
     )[type]
 
     irange = center.i-(disk_size-1):center.i+(disk_size-1)
