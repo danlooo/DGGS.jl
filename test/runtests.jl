@@ -143,8 +143,30 @@ a3 = YAXArray((X(1:5), Y(1:5)), rand(5, 5), Dict()) |> x -> to_dggs_array(x, 2)
 p_test = open_dggs_pyramid("https://s3.bgc-jena.mpg.de:9000/dggs/test.zarr")
 c = Q2DI(2, 1, 14)
 a = p_test[6].quads
-@test a[-52.0978195, 49.5172566, 5] == a[Q2DI(2, 1, 14), 5]
+@test a[-52.0978195, 49.5172566, 5, :disk] == a[Q2DI(2, 1, 14), 5, :disk]
+@test a[Q2DI(2, 1, 14), 5] == a[Q2DI(2, 1, 14), 5:5]
+@test a[-52.0978195, 49.5172566, 5] == a[-52.0978195, 49.5172566, 5:5]
 @test length(a[c, 5, :ring]) < length(a[c, 5, :disk]) < length(a[c, 5, :window])
-@test p_test[6].quads[Q2DI(2, 1, 14), 5] |> size == (61,)
-@test p_test[6].quads[Q2DI(2, 1, 14), 5] |> unique == [2, 6]
-@test p_test[6].quads[Q2DI(2, 25, 1), 5] |> unique == [11, 2]
+@test p_test[6].quads[Q2DI(2, 1, 14), 5, :disk] |> size == (61,)
+@test p_test[6].quads[Q2DI(2, 1, 14), 5, :disk] |> unique == [2, 6]
+@test p_test[6].quads[Q2DI(2, 25, 1), 5, :disk] |> unique == [11, 2]
+
+
+#
+# setindex
+#
+
+lon_range = X(-180:180)
+lat_range = Y(-90:90)
+time_range = Ti(1:10)
+level = 6
+data = [exp(cosd(lon)) + t * (lat / 90) for lon in lon_range, lat in lat_range, t in time_range]
+geo_arr = YAXArray((lon_range, lat_range, time_range), data, Dict())
+a = to_dggs_array(geo_arr, level)
+
+a[Q2DI(2, 10, 10)] .= 5
+a[Q2DI(3, 10, 10), Ti=1] = 5
+
+@test all(collect(a[Q2DI(2, 10, 10)]) .== 5)
+@test collect(a[Q2DI(3, 10, 10), Ti=1])[1] == 5
+@test collect(a[Q2DI(4, 10, 10), Ti=1])[1] != 5

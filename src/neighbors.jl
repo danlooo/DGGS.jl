@@ -43,31 +43,11 @@ function get_window_pad_nothing(a::DGGSArray, center::Q2DI, disk_size::Integer)
     return a.data[q2di_n=center.n, q2di_i=irange, q2di_j=jrange]
 end
 
-function get_window_pad_j_start(a::DGGSArray, center::Q2DI, disk_size::Integer)
+function get_window_pad_j_start(a::DGGSArray, center::Q2DI, disk_size::Integer, mask::Matrix{Bool})
     irange = center.i-(disk_size-1):center.i+(disk_size-1)
     jrange = center.j-(disk_size-1):center.j+(disk_size-1)
+    quad_size = width(a.level)
 
-    main = a.data[
-        q2di_n=center.n,
-        q2di_i=DGGS.clip(irange, a.level),
-        q2di_j=DGGS.clip(jrange, a.level)
-    ]
-    non_spatial_axes = filter(x -> !startswith(String(DimensionalData.name(x)), "q2di"), a.data.axes)
-    padding = YAXArray((
-            main.q2di_i,
-            Dim{:q2di_j}(jrange.start-1:-1),
-            non_spatial_axes...
-        ),
-        a.data[q2di_n=11, q2di_i=21:29, q2di_j=29:32],
-        Dict()
-    )
-    padded = cat(padding, main, dims=:q2di_j)
-    return padded
-end
-
-function get_window_pad_i_start(a::DGGSArray, center::Q2DI, disk_size::Integer)
-    irange = center.i-(disk_size-1):center.i+(disk_size-1)
-    jrange = center.j-(disk_size-1):center.j+(disk_size-1)
     main = a.data[
         q2di_n=center.n,
         q2di_i=clip(irange, a.level),
@@ -75,12 +55,43 @@ function get_window_pad_i_start(a::DGGSArray, center::Q2DI, disk_size::Integer)
     ]
     non_spatial_axes = filter(x -> !startswith(String(DimensionalData.name(x)), "q2di"), a.data.axes)
     padding = YAXArray((
+            main.q2di_i,
+            Dim{:q2di_j}(jrange.start-1:-1),
+            non_spatial_axes...
+        ),
+        a.data[
+            q2di_n=Dict(2 => 11)[center.n],
+            q2di_i=irange,
+            q2di_j=range(length=length(jrange) - length(main.q2di_j), stop=quad_size)
+        ],
+        Dict()
+    )
+    padded = cat(padding, main, dims=:q2di_j)
+    return padded
+end
+
+function get_window_pad_i_start(a::DGGSArray, center::Q2DI, disk_size::Integer, mask::Matrix{Bool})
+    irange = center.i-(disk_size-1):center.i+(disk_size-1)
+    jrange = center.j-(disk_size-1):center.j+(disk_size-1)
+    quad_size = width(a.level)
+    pad_size = length(irange.start-1:-1)
+    mask_size = size(mask)[1]
+
+    main = a.data[
+        q2di_n=center.n,
+        q2di_i=clip(irange, a.level),
+        q2di_j=clip(jrange, a.level)
+    ]
+    non_spatial_axes = filter(x -> !startswith(String(DimensionalData.name(x)), "q2di"), a.data.axes)
+
+    padding = YAXArray((
             main.q2di_j,
             Dim{:q2di_i}(irange.start-1:-1),
             non_spatial_axes...
         ),
         a.data[
-            q2di_n=6,
+            # last reversed rows of neighboring quads
+            q2di_n=Dict(2 => 6, 7 => 11, 8 => 7, 9 => 8, 10 => 9, 11 => 10)[center.n],
             q2di_i=range(length=mask_size, start=quad_size - pad_size - center.j + 2) |> reverse,
             q2di_j=range(length=length(irange.start:0), stop=width(a.level))
         ].data,
@@ -99,7 +110,7 @@ function get_window_pad_i_start(a::DGGSArray, center::Q2DI, disk_size::Integer)
     return padded
 end
 
-function Base.getindex(a::DGGSArray, center::Q2DI, disk_size::Integer, type=:disk)
+function Base.getindex(a::DGGSArray, center::Q2DI, disk_size::Integer, type::Symbol)
     type in [:disk, :ring, :window] || error("type not supported")
 
     mask = Dict(
@@ -117,14 +128,16 @@ function Base.getindex(a::DGGSArray, center::Q2DI, disk_size::Integer, type=:dis
     if i_is_in_same_quad & j_is_in_same_quad
         window = get_window_pad_nothing(a, center, disk_size)
     elseif (irange.start < 1) & j_is_in_same_quad
-        window = get_window_pad_i_start(a, center, disk_size)
+        window = get_window_pad_i_start(a, center, disk_size, mask)
         mask_size = size(mask)[1]
         mask = vcat(mask[1:disk_size-1, mask_size:-1:1], mask[disk_size:mask_size, :])
     elseif i_is_in_same_quad & (jrange.start < 1)
-        window = get_window_pad_j_start(a, center, disk_size)
+        window = get_window_pad_j_start(a, center, disk_size, mask)
     else
         error("edge case not implemented")
     end
+
+    type == :window && return window
 
     masked = mapCube(
         (xout, xin) -> xout .= xin[mask],
@@ -135,8 +148,25 @@ function Base.getindex(a::DGGSArray, center::Q2DI, disk_size::Integer, type=:dis
     return masked
 end
 
-function Base.getindex(a::DGGSArray, lon::Real, lat::Real, disk_size::Integer, type=:disk)
+function Base.getindex(a::DGGSArray, center::Q2DI, radii::UnitRange{Int64})
+    if radii.start == 1
+        a[center, radii.stop, :disk]
+    elseif radii.start == radii.stop
+        a[center, radii.stop, :ring]
+    else
+        error("annulus not implemented")
+    end
+end
+
+Base.getindex(a::DGGSArray, center::Q2DI, radius::Int) = a[center, radius, :ring]
+
+"""
+Get neighbors arround a geographic coordinate
+
+args: see [`Base.getindex(::DGGSArray, ::Q2DI, ::Integer, ::Symbol)`](@ref)
+"""
+function Base.getindex(a::DGGSArray, lon::Real, lat::Real, args...)
     center = transform_points([(lon, lat)], a.level)[1]
-    res = a[center, disk_size, type]
+    res = a[center, args...]
     return res
 end

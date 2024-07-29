@@ -29,8 +29,11 @@ function DGGSArray(arr::AbstractArray, level::Integer, id=:layer)
 end
 
 Base.getindex(a::DGGSArray, args...; kwargs...) = DGGSArray(getindex(a.data, args...; kwargs...), a.id)
-Base.getindex(a::DGGSArray, i::Q2DI) = getindex(a.data, q2di_n=i.n, q2di_i=i.i, q2di_j=i.j)
-Base.getindex(a::DGGSArray, n::Integer, i::Integer, j::Integer) = getindex(a.data, q2di_n=n, q2di_i=i, q2di_j=j)
+Base.getindex(a::DGGSArray, i::Q2DI, args...; kwargs...) = getindex(a.data, q2di_n=i.n, q2di_i=i.i, q2di_j=i.j, args...; kwargs...)
+Base.getindex(a::DGGSArray, n::Integer, i::Integer, j::Integer, args...; kwargs...) = getindex(a.data, q2di_n=n, q2di_i=i, q2di_j=j, args...; kwargs...)
+
+Base.setindex!(a::DGGSArray, val, i::Q2DI; kwargs...) = Base.setindex!(a.data, val, q2di_n=i.n, q2di_i=i.i, q2di_j=i.j; kwargs...)
+Base.setindex!(a::DGGSArray, val, n::Integer, i::Integer, j::Integer; kwargs...) = Base.setindex!(a.data, val, q2di_n=n, q2di_i=i, q2di_j=j; kwargs...)
 
 function show_nonspatial_axes(io::IO, arr::DGGSArray)
     non_spatial_axes = filter(x -> !startswith(String(x), "q2di"), DimensionalData.name(arr.data.axes))
