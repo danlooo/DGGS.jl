@@ -148,17 +148,17 @@ a = p_test[6].quads
 @test a[-52.0978195, 49.5172566, 5] == a[-52.0978195, 49.5172566, 5:5]
 @test length(a[c, 5, :ring]) < length(a[c, 5, :disk]) < length(a[c, 5, :window])
 @test p_test[6].quads[Q2DI(2, 1, 14), 5, :disk] |> size == (61,)
-@test p_test[6].quads[Q2DI(2, 1, 14), 5, :disk] |> unique == [2, 6]
+@test p_test[6].quads[Q2DI(2, 1, 14), 5, :disk] |> unique == [6, 2]
 @test p_test[6].quads[Q2DI(2, 25, 1), 5, :disk] |> unique == [11, 2]
 
 @test all(p_test[6].edge_disks[Q2DI(3, 28, 1), 1:5] .== 1)
 @test all(p_test[6].edge_disks[Q2DI(3, 5, 1), 1:5] .== 1)
 @test all(p_test[6].edge_disks[Q2DI(3, 1, 28), 1:5] .== 1)
 @test all(p_test[6].edge_disks[Q2DI(3, 32, 28), 1:5] .== 1)
-# @test all(p_test[6].edge_disks[Q2DI(5, 18, 1), 1:5] .== 1)
-# @test all(p_test[6].edge_disks[Q2DI(5, 18, 32), 1:5] .== 1)
-# @test all(p_test[6].edge_disks[Q2DI(5, 28, 16), 1:5] .== 1)
-# @test all(p_test[6].edge_disks[Q2DI(5, 1, 26), 1:5] .== 1)
+@test all(p_test[6].edge_disks[Q2DI(5, 18, 1), 1:5] .== 1)
+@test all(p_test[6].edge_disks[Q2DI(5, 18, 32), 1:5] .== 1)
+@test all(p_test[6].edge_disks[Q2DI(5, 32, 12), 1:5] .== 1)
+@test all(p_test[6].edge_disks[Q2DI(5, 1, 18), 1:5] .== 1)
 
 #
 # setindex
