@@ -24,9 +24,23 @@ function Base.getindex(dggs::DGGSPyramid; kwargs...)
     id = get(kwargs, :id, nothing)
     isnothing(id) && error("Array id not provided.")
 
+    center = get(kwargs, :center, nothing)
+    lon = get(kwargs, :lon, nothing)
+    lat = get(kwargs, :lat, nothing)
+
     other_args = filter(x -> !(x.first in [:id, :level]), kwargs)
     isempty(other_args) && return dggs.data[level][id]
-    Base.getindex(dggs.data[level][id]; other_args...)
+    a = Base.getindex(dggs.data[level][id]; other_args...)
+
+    if !isnothing(center) & isnothing(lon) & isnothing(lat)
+        isnothing(range) && error("range must be supplied")
+        a = a[center, range]
+    elseif isnothing(center) & !isnothing(lon) & !isnothing(lat)
+        isnothing(range) && error("range must be supplied")
+        a = a[lon, lat, range]
+    end
+
+    return a
 end
 
 function open_dggs_pyramid(path::String)

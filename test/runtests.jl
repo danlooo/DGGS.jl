@@ -137,12 +137,31 @@ a3 = YAXArray((X(1:5), Y(1:5)), rand(5, 5), Dict()) |> x -> to_dggs_array(x, 2)
 @test map(x -> x.data.data |> collect, [a * 5, 5 * a]) |> allequal
 
 #
+# getindex 
+#
+
+p_test = open_dggs_pyramid("https://s3.bgc-jena.mpg.de:9000/dggs/test.zarr")
+a = p_test[level=6, id=:cos]
+c = Q2DI(2, 1, 14)
+@test a isa DGGSArray
+
+@test a[c].data |> size == (10,)
+@test a[c, 5].data |> size == (24, 10)
+@test a[c, 1:5].data |> size == (61, 10)
+
+@test a[c, Time=[1, 3]].data |> size == (2,)
+@test a[c, 5, Time=[1, 3]].data |> size == (24, 2)
+@test a[c, 1:5, Time=[1, 3]].data |> size == (61, 2)
+@test a[Time=[1, 3]].data |> size == (32, 32, 12, 2)
+
+#
 # Neighbors
 #
 
 p_test = open_dggs_pyramid("https://s3.bgc-jena.mpg.de:9000/dggs/test.zarr")
 c = Q2DI(2, 1, 14)
 a = p_test[6].quads
+@test p_test[level=6, id=:cos, Time=[1, 2, 3], center=Q2DI(5, 1, 18), range=1:5] |> size == (61, 3)
 @test a[-52.0978195, 49.5172566, 5, :disk] == a[Q2DI(2, 1, 14), 5, :disk]
 @test a[Q2DI(2, 1, 14), 5] == a[Q2DI(2, 1, 14), 5:5]
 @test a[-52.0978195, 49.5172566, 5] == a[-52.0978195, 49.5172566, 5:5]

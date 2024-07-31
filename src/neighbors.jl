@@ -238,25 +238,3 @@ function Base.getindex(a::DGGSArray, center::Q2DI, disk_size::Integer, type::Sym
     return masked
 end
 
-function Base.getindex(a::DGGSArray, center::Q2DI, radii::UnitRange{Int64})
-    if radii.start == 1
-        a[center, radii.stop, :disk]
-    elseif radii.start == radii.stop
-        a[center, radii.stop, :ring]
-    else
-        error("annulus not implemented")
-    end
-end
-
-Base.getindex(a::DGGSArray, center::Q2DI, radius::Int) = a[center, radius, :ring]
-
-"""
-Get neighbors arround a geographic coordinate
-
-args: see [`Base.getindex(::DGGSArray, ::Q2DI, ::Integer, ::Symbol)`](@ref)
-"""
-function Base.getindex(a::DGGSArray, lon::Real, lat::Real, args...)
-    center = transform_points([(lon, lat)], a.level)[1]
-    res = a[center, args...]
-    return res
-end

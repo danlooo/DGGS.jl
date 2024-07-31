@@ -28,9 +28,43 @@ function DGGSArray(arr::AbstractArray, level::Integer, id=:layer)
     DGGSArray(data)
 end
 
-Base.getindex(a::DGGSArray, args...; kwargs...) = DGGSArray(getindex(a.data, args...; kwargs...), a.id)
-Base.getindex(a::DGGSArray, i::Q2DI, args...; kwargs...) = getindex(a.data, q2di_n=i.n, q2di_i=i.i, q2di_j=i.j, args...; kwargs...)
-Base.getindex(a::DGGSArray, n::Integer, i::Integer, j::Integer, args...; kwargs...) = getindex(a.data, q2di_n=n, q2di_i=i, q2di_j=j, args...; kwargs...)
+"filter any dimension of a DGGSArray"
+Base.getindex(a::DGGSArray, args...; kwargs...) = getindex(a.data, args...; kwargs...) |> DGGSArray
+
+"get a cell of a DGGSArray"
+Base.getindex(a::DGGSArray, center::Q2DI; kwargs...) = getindex(a.data, q2di_n=center.n, q2di_i=center.i, q2di_j=center.j; kwargs...)
+
+"get a ring of a DGGArray"
+function Base.getindex(a::DGGSArray, center::Q2DI, radius::Integer; kwargs...)
+    radius >= 1 || error("radius must not be negative")
+
+    res = a
+    if length(kwargs) >= 1
+        res = getindex(res; kwargs...)
+    end
+    res = getindex(res, center, radius, :ring)
+    return res
+end
+
+"get a disk of a DGGArray"
+function Base.getindex(a::DGGSArray, center::Q2DI, range::UnitRange{R}; kwargs...) where {R<:Integer}
+    range.start >= 1 || error("Range must start with a positive number")
+    range.start == 1 || error("annulus not supported")
+
+    res = a
+    if length(kwargs) >= 1
+        res = getindex(res; kwargs...)
+    end
+    res = getindex(res, center, range.stop, :disk)
+    return res
+end
+
+function Base.getindex(a::DGGSArray, lon::Real, lat::Real, args...; kwargs...)
+    center = transform_points([(lon, lat)], a.level)[1]
+    res = getindex(a, center, args...; kwargs...)
+    return res
+end
+
 
 Base.setindex!(a::DGGSArray, val, i::Q2DI; kwargs...) = Base.setindex!(a.data, val, q2di_n=i.n, q2di_i=i.i, q2di_j=i.j; kwargs...)
 Base.setindex!(a::DGGSArray, val, n::Integer, i::Integer, j::Integer; kwargs...) = Base.setindex!(a.data, val, q2di_n=n, q2di_i=i, q2di_j=j; kwargs...)
