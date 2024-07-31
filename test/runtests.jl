@@ -151,6 +151,14 @@ a = p_test[6].quads
 @test p_test[6].quads[Q2DI(2, 1, 14), 5, :disk] |> unique == [2, 6]
 @test p_test[6].quads[Q2DI(2, 25, 1), 5, :disk] |> unique == [11, 2]
 
+@test all(p_test[6].edge_disks[Q2DI(3, 28, 1), 1:5] .== 1)
+@test all(p_test[6].edge_disks[Q2DI(3, 5, 1), 1:5] .== 1)
+@test all(p_test[6].edge_disks[Q2DI(3, 1, 28), 1:5] .== 1)
+@test all(p_test[6].edge_disks[Q2DI(3, 32, 28), 1:5] .== 1)
+# @test all(p_test[6].edge_disks[Q2DI(5, 18, 1), 1:5] .== 1)
+# @test all(p_test[6].edge_disks[Q2DI(5, 18, 32), 1:5] .== 1)
+# @test all(p_test[6].edge_disks[Q2DI(5, 28, 16), 1:5] .== 1)
+# @test all(p_test[6].edge_disks[Q2DI(5, 1, 26), 1:5] .== 1)
 
 #
 # setindex
