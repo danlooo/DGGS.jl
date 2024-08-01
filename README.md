@@ -46,6 +46,22 @@ Arrays:
   area meter2 Union{Missing, Float32} 
 ```
 
+Get temperature in Kelvin at the first time point of a hexagonal center cell and its 6 direct neighbors around a given coordinate at spatial resolution level 6:
+
+```julia
+p1[level=6, id=:tas, Time=1, lon=11.586, lat=50.927, radii=1:2] |> collect
+```
+```
+7-element Vector{Union{Missing, Float32}}:
+ 282.60416f0
+ 282.3016f0
+ 282.34818f0
+ 281.85855f0
+ 281.90802f0
+ 282.06424f0
+ 282.39597f0
+```
+
 Create a DGGS based on a synthetic data in a geographical grid:
 
 ```julia

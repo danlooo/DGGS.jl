@@ -73,13 +73,26 @@ function Base.getproperty(l::DGGSLayer, v::Symbol)
     end
 end
 
-Base.getindex(l::DGGSLayer, array::Symbol) = l.data[array]
-function Base.getindex(l::DGGSLayer; id::Symbol, kwargs...)
-    if isempty(kwargs)
+Base.getindex(l::DGGSLayer, id::Symbol) = l.data[id]
+
+function Base.getindex(l::DGGSLayer, args...; kwargs...)
+    id = get(kwargs, :id, nothing)
+    isnothing(id) && error("Array id not provided.")
+
+    center = get(kwargs, :center, nothing)
+    lon = get(kwargs, :lon, nothing)
+    lat = get(kwargs, :lat, nothing)
+    radii = get(kwargs, :radii, nothing)
+
+    args = filter(!isnothing, (center, lon, lat, radii))
+    kwargs = filter(x -> !(x.first in [:id, :level, :center, :lat, :lon, :radii]), kwargs)
+
+    if isempty(args) & isempty(kwargs)
         return l[id]
     else
-        return Base.getindex(l[id]; kwargs...)
+        return getindex(l[id], args...; kwargs...)
     end
+
 end
 Base.propertynames(l::DGGSLayer) = union(l.data |> keys, (:data, :attrs))
 
