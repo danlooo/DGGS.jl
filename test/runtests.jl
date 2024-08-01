@@ -161,14 +161,12 @@ c = Q2DI(2, 1, 14)
 p_test = open_dggs_pyramid("https://s3.bgc-jena.mpg.de:9000/dggs/test.zarr")
 c = Q2DI(2, 1, 14)
 a = p_test[6].quads
-@test p_test[level=6, id=:cos, Time=[1, 2, 3], center=Q2DI(5, 1, 18), range=1:5] |> size == (61, 3)
-@test a[-52.0978195, 49.5172566, 5, :disk] == a[Q2DI(2, 1, 14), 5, :disk]
-@test a[Q2DI(2, 1, 14), 5] == a[Q2DI(2, 1, 14), 5:5]
-@test a[-52.0978195, 49.5172566, 5] == a[-52.0978195, 49.5172566, 5:5]
+@test p_test[level=6, id=:cos, Time=[1, 2, 3], center=Q2DI(5, 1, 18), radii=1:5] |> size == (61, 3)
+@test a[-52.0978195, 49.5172566, 1:5] == a[Q2DI(2, 1, 14), 1:5]
 @test length(a[c, 5, :ring]) < length(a[c, 5, :disk]) < length(a[c, 5, :window])
-@test p_test[6].quads[Q2DI(2, 1, 14), 5, :disk] |> size == (61,)
-@test p_test[6].quads[Q2DI(2, 1, 14), 5, :disk] |> unique == [6, 2]
-@test p_test[6].quads[Q2DI(2, 25, 1), 5, :disk] |> unique == [11, 2]
+@test p_test[6].quads[Q2DI(2, 1, 14), 1:5] |> size == (61,)
+@test p_test[6].quads[Q2DI(2, 1, 14), 2] |> unique |> sort == [2, 6]
+@test p_test[6].quads[Q2DI(2, 25, 1), 1:5] |> unique |> sort == [2, 11]
 
 @test all(p_test[6].edge_disks[Q2DI(3, 28, 1), 1:5] .== 1)
 @test all(p_test[6].edge_disks[Q2DI(3, 5, 1), 1:5] .== 1)

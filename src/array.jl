@@ -34,6 +34,13 @@ Base.getindex(a::DGGSArray, args...; kwargs...) = getindex(a.data, args...; kwar
 "get a cell of a DGGSArray"
 Base.getindex(a::DGGSArray, center::Q2DI; kwargs...) = getindex(a.data, q2di_n=center.n, q2di_i=center.i, q2di_j=center.j; kwargs...)
 
+
+"get a cell of a DGGSArray"
+function Base.getindex(a::DGGSArray, n::T, i::U, j::V, args...; kwargs...) where {T<:Integer,U<:Integer,V<:Integer}
+    center = Q2DI(n, i, j)
+    return getindex(a, center, args...; kwargs...)
+end
+
 "get a ring of a DGGArray"
 function Base.getindex(a::DGGSArray, center::Q2DI, radius::Integer; kwargs...)
     radius >= 1 || error("radius must not be negative")
@@ -47,15 +54,15 @@ function Base.getindex(a::DGGSArray, center::Q2DI, radius::Integer; kwargs...)
 end
 
 "get a disk of a DGGArray"
-function Base.getindex(a::DGGSArray, center::Q2DI, range::UnitRange{R}; kwargs...) where {R<:Integer}
-    range.start >= 1 || error("Range must start with a positive number")
-    range.start == 1 || error("annulus not supported")
+function Base.getindex(a::DGGSArray, center::Q2DI, radii::UnitRange{R}; kwargs...) where {R<:Integer}
+    radii.start >= 1 || error("Range must start with a positive number")
+    radii.start == 1 || error("annulus not supported")
 
     res = a
     if length(kwargs) >= 1
         res = getindex(res; kwargs...)
     end
-    res = getindex(res, center, range.stop, :disk)
+    res = getindex(res, center, radii.stop, :disk)
     return res
 end
 

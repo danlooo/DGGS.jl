@@ -16,10 +16,11 @@ function Base.show(io::IO, ::MIME"text/plain", dggs::DGGSPyramid)
 end
 
 Base.getindex(dggs::DGGSPyramid, level::Integer) = dggs.data[level]
-function Base.getindex(dggs::DGGSPyramid; kwargs...)
+
+function Base.getindex(p::DGGSPyramid; kwargs...)
     level = get(kwargs, :level, nothing)
     isnothing(level) && error("level not provided")
-    length(kwargs) == 1 && return dggs[level]
+    length(kwargs) == 1 && return p[level]
 
     id = get(kwargs, :id, nothing)
     isnothing(id) && error("Array id not provided.")
@@ -27,20 +28,16 @@ function Base.getindex(dggs::DGGSPyramid; kwargs...)
     center = get(kwargs, :center, nothing)
     lon = get(kwargs, :lon, nothing)
     lat = get(kwargs, :lat, nothing)
+    radii = get(kwargs, :radii, nothing)
 
-    other_args = filter(x -> !(x.first in [:id, :level]), kwargs)
-    isempty(other_args) && return dggs.data[level][id]
-    a = Base.getindex(dggs.data[level][id]; other_args...)
+    args = filter(!isnothing, (center, lon, lat, radii))
+    kwargs = filter(x -> !(x.first in [:id, :level, :center, :lat, :lon, :radii]), kwargs)
 
-    if !isnothing(center) & isnothing(lon) & isnothing(lat)
-        isnothing(range) && error("range must be supplied")
-        a = a[center, range]
-    elseif isnothing(center) & !isnothing(lon) & !isnothing(lat)
-        isnothing(range) && error("range must be supplied")
-        a = a[lon, lat, range]
+    if isempty(args) & isempty(kwargs)
+        return p.data[level][id]
+    else
+        return getindex(p.data[level][id], args...; kwargs...)
     end
-
-    return a
 end
 
 function open_dggs_pyramid(path::String)
