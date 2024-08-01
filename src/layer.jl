@@ -13,14 +13,25 @@ end
 function DGGSLayer(data::Dict{Symbol,DGGSArray}, attrs=Dict{String,Any}())
     level = data |> values |> first |> x -> x.level
     dggs = data |> values |> first |> x -> x.dggs
-    DGGSLayer(data, attrs, level, dggs)
+    DGGSLayer(data, level, attrs, dggs)
 end
 
 function DGGSLayer(arr::DGGSArray)
     data = Dict{Symbol,DGGSArray}()
     data[:layer] = arr
-    DGGSLayer(data, arr.attrs, arr.level, arr.dggs)
+    DGGSLayer(data, arr.level, arr.attrs, arr.dggs)
 end
+
+function DGGSLayer(arrs::Vector{DGGSArray{T,L}}) where {T,L}
+    [x.id for x in arrs] |> allunique || error("IDs of arrays must be different")
+    [x.level for x in arrs] |> allequal || error("Level of arrays must be the same")
+
+    arr = first(arrs)
+    data = Dict(x.id => x for x in arrs)
+    DGGSLayer(data, arr.level, arr.attrs, arr.dggs)
+end
+
+DGGSLayer(::Vector{DGGSArray{T}}) where {T} = error("Level of arrays must be the same")
 
 function Base.axes(l::DGGSLayer)
     axes = Vector()
@@ -62,13 +73,26 @@ function Base.getproperty(l::DGGSLayer, v::Symbol)
     end
 end
 
-Base.getindex(l::DGGSLayer, array::Symbol) = l.data[array]
-function Base.getindex(l::DGGSLayer; id::Symbol, kwargs...)
-    if isempty(kwargs)
+Base.getindex(l::DGGSLayer, id::Symbol) = l.data[id]
+
+function Base.getindex(l::DGGSLayer, args...; kwargs...)
+    id = get(kwargs, :id, nothing)
+    isnothing(id) && error("Array id not provided.")
+
+    center = get(kwargs, :center, nothing)
+    lon = get(kwargs, :lon, nothing)
+    lat = get(kwargs, :lat, nothing)
+    radii = get(kwargs, :radii, nothing)
+
+    args = filter(!isnothing, (center, lon, lat, radii))
+    kwargs = filter(x -> !(x.first in [:id, :level, :center, :lat, :lon, :radii]), kwargs)
+
+    if isempty(args) & isempty(kwargs)
         return l[id]
     else
-        return Base.getindex(l[id]; kwargs...)
+        return getindex(l[id], args...; kwargs...)
     end
+
 end
 Base.propertynames(l::DGGSLayer) = union(l.data |> keys, (:data, :attrs))
 
@@ -100,7 +124,7 @@ function to_dggs_layer(
         verbose && @info "Tranform band $band"
         data[band] = to_dggs_array(geo_arr, level; cell_ids=cell_ids, verbose=false, lon_name=lon_name, lat_name=lat_name, kwargs...)
     end
-    DGGSLayer(data, geo_ds.properties, level, DGGSGridSystem(Q2DI_DGGS_PROPS))
+    DGGSLayer(data, level, geo_ds.properties, DGGSGridSystem(Q2DI_DGGS_PROPS))
 end
 
 to_dggs_layer(raster::AbstractDimArray, level::Integer; kw...) = to_dggs_array(raster, level, kw...) |> DGGSLayer

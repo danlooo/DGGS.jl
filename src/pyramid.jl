@@ -16,17 +16,28 @@ function Base.show(io::IO, ::MIME"text/plain", dggs::DGGSPyramid)
 end
 
 Base.getindex(dggs::DGGSPyramid, level::Integer) = dggs.data[level]
-function Base.getindex(dggs::DGGSPyramid; kwargs...)
+
+function Base.getindex(p::DGGSPyramid; kwargs...)
     level = get(kwargs, :level, nothing)
     isnothing(level) && error("level not provided")
-    length(kwargs) == 1 && return dggs[level]
+    length(kwargs) == 1 && return p[level]
 
     id = get(kwargs, :id, nothing)
     isnothing(id) && error("Array id not provided.")
 
-    other_args = filter(x -> !(x.first in [:id, :level]), kwargs)
-    isempty(other_args) && return dggs.data[level][id]
-    Base.getindex(dggs.data[level][id]; other_args...)
+    center = get(kwargs, :center, nothing)
+    lon = get(kwargs, :lon, nothing)
+    lat = get(kwargs, :lat, nothing)
+    radii = get(kwargs, :radii, nothing)
+
+    args = filter(!isnothing, (center, lon, lat, radii))
+    kwargs = filter(x -> !(x.first in [:id, :level, :center, :lat, :lon, :radii]), kwargs)
+
+    if isempty(args) & isempty(kwargs)
+        return p.data[level][id]
+    else
+        return getindex(p.data[level][id], args...; kwargs...)
+    end
 end
 
 function open_dggs_pyramid(path::String)
@@ -205,7 +216,7 @@ end
 """
 Spatial hexagonal convolution in Q2DI index space matching levels of DGGRID ISEA4H grids
 """
-function aggregate_dggs_layer(xout, xin, arr::DGGSArray)
+function aggregate_dggs_array(xout, xin, arr::DGGSArray)
     n = xin.indices[3]
     aggregate_hexagons!(xout, xin, n, arr)
     aggregate_pentagon!(xout, xin, n, arr)
@@ -228,7 +239,7 @@ function to_dggs_pyramid(l::DGGSLayer; base_path=tempname())
         coarser_data = Dict{Symbol,DGGSArray}()
         for (k, arr) in finer_layer.data
             coarser_arr = mapCube(
-                (xout, xin) -> aggregate_dggs_layer(xout, xin, arr),
+                (xout, xin) -> aggregate_dggs_array(xout, xin, arr),
                 arr.data;
                 indims=InDims(:q2di_i, :q2di_j),
                 outdims=OutDims(

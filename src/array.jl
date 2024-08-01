@@ -28,7 +28,53 @@ function DGGSArray(arr::AbstractArray, level::Integer, id=:layer)
     DGGSArray(data)
 end
 
-Base.getindex(a::DGGSArray, args...; kwargs...) = DGGSArray(getindex(a.data, args...; kwargs...), a.id)
+"filter any dimension of a DGGSArray"
+Base.getindex(a::DGGSArray, args...; kwargs...) = getindex(a.data, args...; kwargs...) |> DGGSArray
+
+"get a cell of a DGGSArray"
+Base.getindex(a::DGGSArray, center::Q2DI; kwargs...) = getindex(a.data, q2di_n=center.n, q2di_i=center.i, q2di_j=center.j; kwargs...)
+
+
+"get a cell of a DGGSArray"
+function Base.getindex(a::DGGSArray, n::T, i::U, j::V, args...; kwargs...) where {T<:Integer,U<:Integer,V<:Integer}
+    center = Q2DI(n, i, j)
+    return getindex(a, center, args...; kwargs...)
+end
+
+"get a ring of a DGGArray"
+function Base.getindex(a::DGGSArray, center::Q2DI, radius::Integer; kwargs...)
+    radius >= 1 || error("radius must not be negative")
+
+    res = a
+    if length(kwargs) >= 1
+        res = getindex(res; kwargs...)
+    end
+    res = getindex(res, center, radius, :ring)
+    return res
+end
+
+"get a disk of a DGGArray"
+function Base.getindex(a::DGGSArray, center::Q2DI, radii::UnitRange{R}; kwargs...) where {R<:Integer}
+    radii.start >= 1 || error("Range must start with a positive number")
+    radii.start == 1 || error("annulus not supported")
+
+    res = a
+    if length(kwargs) >= 1
+        res = getindex(res; kwargs...)
+    end
+    res = getindex(res, center, radii.stop, :disk)
+    return res
+end
+
+function Base.getindex(a::DGGSArray, lon::Real, lat::Real, args...; kwargs...)
+    center = transform_points([(lon, lat)], a.level)[1]
+    res = getindex(a, center, args...; kwargs...)
+    return res
+end
+
+
+Base.setindex!(a::DGGSArray, val, i::Q2DI; kwargs...) = Base.setindex!(a.data, val, q2di_n=i.n, q2di_i=i.i, q2di_j=i.j; kwargs...)
+Base.setindex!(a::DGGSArray, val, n::Integer, i::Integer, j::Integer; kwargs...) = Base.setindex!(a.data, val, q2di_n=n, q2di_i=i, q2di_j=j; kwargs...)
 
 function show_nonspatial_axes(io::IO, arr::DGGSArray)
     non_spatial_axes = filter(x -> !startswith(String(x), "q2di"), DimensionalData.name(arr.data.axes))

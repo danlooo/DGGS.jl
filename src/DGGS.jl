@@ -30,6 +30,7 @@ using Pkg.Artifacts
 # must be sorted by dependency
 include("types.jl")
 include("dggrid.jl")
+include("neighbors.jl")
 include("array.jl")
 include("layer.jl")
 include("pyramid.jl")
@@ -38,8 +39,10 @@ export
     DGGSArray,
     DGGSLayer,
     DGGSPyramid,
-    open_dggs_array,
-    open_dggs_layer,
+    Q2DI,
+    get_ring,
+    getindex,
+    transform_points,
     open_dggs_pyramid,
     write_dggs_pyramid,
     to_geo_array,

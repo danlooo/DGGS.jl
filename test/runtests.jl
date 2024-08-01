@@ -12,7 +12,7 @@ Random.seed!(1337)
 # Ppen arrays, layers, and pyramids
 #
 
-p = open_dggs_pyramid("https://s3.bgc-jena.mpg.de:9000/dggs/sresa1b_ncar_ccsm3-example")
+p = open_dggs_pyramid("https://s3.bgc-jena.mpg.de:9000/dggs/example-ccsm3.zarr")
 l = p[4]
 a = l.tas
 
@@ -21,6 +21,8 @@ a = l.tas
 @test length(a.attrs) > length(p.attrs)
 @test (setdiff(p.attrs, l.attrs) .|> x -> x.first) == ["_DGGS"] # same global attrs expect DGGS level
 
+@test a[10, 1, 1] isa YAXArray
+@test (a[10, 1, 1] .== a[Q2DI(10, 1, 1)]) |> collect |> all
 
 #
 # Convert lat/lon rasters into a DGGS
@@ -66,6 +68,10 @@ l2 = dggs2[2]
 @test l2[id=:tas] isa DGGSArray
 @test l2[id=:tas, Time=1] isa DGGSArray
 @test l2[id=:tas, Time=1].data |> size == (2, 2, 12)
+
+@test DGGSLayer([l2.tas, l2.pr]) isa DGGSLayer
+@test_throws ErrorException [p[4].tas, p[5].pr] |> DGGSLayer
+@test_throws ErrorException [p[4].tas, p[4].tas] |> DGGSLayer
 
 #
 # Write pyramids 
@@ -129,3 +135,74 @@ a3 = YAXArray((X(1:5), Y(1:5)), rand(5, 5), Dict()) |> x -> to_dggs_array(x, 2)
 
 @test length(a.attrs) >= length((a * 5).attrs) # meta data invalidated after transformation
 @test map(x -> x.data.data |> collect, [a * 5, 5 * a]) |> allequal
+
+#
+# getindex 
+#
+
+p_test = open_dggs_pyramid("https://s3.bgc-jena.mpg.de:9000/dggs/test.zarr")
+l = p_test[6]
+a = p_test[level=6, id=:cos]
+c = Q2DI(2, 1, 14)
+
+@test p_test isa DGGSPyramid
+@test l isa DGGSLayer
+@test a isa DGGSArray
+
+@test l.cos == l[:cos] == l[id=:cos]
+@test l[id=:cos, Time=[1, 3]] isa DGGSArray
+@test l[id=:cos, center=c, Time=[1, 3]].data |> size == (2,)
+@test l[id=:cos, center=c, radii=5, Time=[1, 3]].data |> size == (24, 2)
+@test l[id=:cos, center=c, radii=1:5, Time=[1, 3]].data |> size == (61, 2)
+@test l[id=:cos, Time=[1, 3]].data |> size == (32, 32, 12, 2)
+
+@test a[c].data |> size == (10,)
+@test a[c, 5].data |> size == (24, 10)
+@test a[c, 1:5].data |> size == (61, 10)
+
+@test a[c, Time=[1, 3]].data |> size == (2,)
+@test a[c, 5, Time=[1, 3]].data |> size == (24, 2)
+@test a[c, 1:5, Time=[1, 3]].data |> size == (61, 2)
+@test a[Time=[1, 3]].data |> size == (32, 32, 12, 2)
+
+#
+# Neighbors
+#
+
+p_test = open_dggs_pyramid("https://s3.bgc-jena.mpg.de:9000/dggs/test.zarr")
+c = Q2DI(2, 1, 14)
+a = p_test[6].quads
+@test p_test[level=6, id=:cos, Time=[1, 2, 3], center=Q2DI(5, 1, 18), radii=1:5] |> size == (61, 3)
+@test a[-52.0978195, 49.5172566, 1:5] == a[Q2DI(2, 1, 14), 1:5]
+@test length(a[c, 5, :ring]) < length(a[c, 5, :disk]) < length(a[c, 5, :window])
+@test p_test[6].quads[Q2DI(2, 1, 14), 1:5] |> size == (61,)
+@test p_test[6].quads[Q2DI(2, 1, 14), 2] |> unique |> sort == [2, 6]
+@test p_test[6].quads[Q2DI(2, 25, 1), 1:5] |> unique |> sort == [2, 11]
+
+@test all(p_test[6].edge_disks[Q2DI(3, 28, 1), 1:5] .== 1)
+@test all(p_test[6].edge_disks[Q2DI(3, 5, 1), 1:5] .== 1)
+@test all(p_test[6].edge_disks[Q2DI(3, 1, 28), 1:5] .== 1)
+@test all(p_test[6].edge_disks[Q2DI(3, 32, 28), 1:5] .== 1)
+@test all(p_test[6].edge_disks[Q2DI(5, 18, 1), 1:5] .== 1)
+@test all(p_test[6].edge_disks[Q2DI(5, 18, 32), 1:5] .== 1)
+@test all(p_test[6].edge_disks[Q2DI(5, 32, 12), 1:5] .== 1)
+@test all(p_test[6].edge_disks[Q2DI(5, 1, 18), 1:5] .== 1)
+
+#
+# setindex
+#
+
+lon_range = X(-180:180)
+lat_range = Y(-90:90)
+time_range = Ti(1:10)
+level = 6
+data = [exp(cosd(lon)) + t * (lat / 90) for lon in lon_range, lat in lat_range, t in time_range]
+geo_arr = YAXArray((lon_range, lat_range, time_range), data, Dict())
+a = to_dggs_array(geo_arr, level)
+
+a[Q2DI(2, 10, 10)] .= 5
+a[Q2DI(3, 10, 10), Ti=1] = 5
+
+@test all(collect(a[Q2DI(2, 10, 10)]) .== 5)
+@test collect(a[Q2DI(3, 10, 10), Ti=1])[1] == 5
+@test collect(a[Q2DI(4, 10, 10), Ti=1])[1] != 5
