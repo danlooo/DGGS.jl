@@ -29,7 +29,28 @@ function DGGSArray(arr::AbstractArray, level::Integer, id=:layer)
 end
 
 "filter any dimension of a DGGSArray"
-Base.getindex(a::DGGSArray, args...; kwargs...) = getindex(a.data, args...; kwargs...) |> DGGSArray
+function Base.getindex(a::DGGSArray; kwargs...)
+    center = get(kwargs, :center, nothing)
+    lon = get(kwargs, :lon, nothing)
+    lat = get(kwargs, :lat, nothing)
+    radii = get(kwargs, :radii, nothing)
+
+    args = filter(!isnothing, (center, lon, lat, radii))
+    kwargs = filter(x -> !(x.first in [:id, :level, :center, :lat, :lon, :radii]), kwargs)
+
+    if isempty(args)
+        # try to return it as a global DGGSArray
+        arr = getindex(a.data; kwargs...)
+        try
+            return arr |> DGGSArray
+        catch e
+            return arr
+        end
+    else
+        # further dispatch
+        return getindex(a, args...; kwargs...)
+    end
+end
 
 "get a cell of a DGGSArray"
 Base.getindex(a::DGGSArray, center::Q2DI; kwargs...) = getindex(a.data, q2di_n=center.n, q2di_i=center.i, q2di_j=center.j; kwargs...)
@@ -44,10 +65,11 @@ end
 "get a ring of a DGGArray"
 function Base.getindex(a::DGGSArray, center::Q2DI, radius::Integer; kwargs...)
     radius >= 1 || error("radius must not be negative")
+    radius == 1 && return getindex(a, center; kwargs...)
 
     res = a
     if length(kwargs) >= 1
-        res = getindex(res; kwargs...)
+        res = getindex(res; kwargs...) # filter before padding
     end
     res = getindex(res, center, radius, :ring)
     return res
@@ -60,7 +82,7 @@ function Base.getindex(a::DGGSArray, center::Q2DI, radii::UnitRange{R}; kwargs..
 
     res = a
     if length(kwargs) >= 1
-        res = getindex(res; kwargs...)
+        res = getindex(res; kwargs...) # filter before padding
     end
     res = getindex(res, center, radii.stop, :disk)
     return res
@@ -75,6 +97,8 @@ end
 
 Base.setindex!(a::DGGSArray, val, i::Q2DI; kwargs...) = Base.setindex!(a.data, val, q2di_n=i.n, q2di_i=i.i, q2di_j=i.j; kwargs...)
 Base.setindex!(a::DGGSArray, val, n::Integer, i::Integer, j::Integer; kwargs...) = Base.setindex!(a.data, val, q2di_n=n, q2di_i=i, q2di_j=j; kwargs...)
+
+Base.size(a::DGGSArray) = size(a.data)
 
 function show_nonspatial_axes(io::IO, arr::DGGSArray)
     non_spatial_axes = filter(x -> !startswith(String(x), "q2di"), DimensionalData.name(arr.data.axes))

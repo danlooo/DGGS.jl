@@ -149,21 +149,28 @@ c = Q2DI(2, 1, 14)
 @test l isa DGGSLayer
 @test a isa DGGSArray
 
+@test p_test[level=6, id=:cos, center=c, radii=1:2, Time=[1, 3]] |> size == (7, 2)
+
 @test l.cos == l[:cos] == l[id=:cos]
-@test l[id=:cos, Time=[1, 3]] isa DGGSArray
-@test l[id=:cos, center=c, Time=[1, 3]].data |> size == (2,)
-@test l[id=:cos, center=c, radii=5, Time=[1, 3]].data |> size == (24, 2)
-@test l[id=:cos, center=c, radii=1:5, Time=[1, 3]].data |> size == (61, 2)
-@test l[id=:cos, Time=[1, 3]].data |> size == (32, 32, 12, 2)
+@test l[id=:cos, center=c, Time=[1, 3]] |> size == (2,)
+@test l[id=:cos, center=c, radii=5, Time=[1, 3]] |> size == (24, 2)
+@test l[id=:cos, center=c, radii=1:5, Time=[1, 3]] |> size == (61, 2)
+@test l[id=:cos, Time=[1, 3]] |> size == (32, 32, 12, 2)
 
-@test a[c].data |> size == (10,)
-@test a[c, 5].data |> size == (24, 10)
-@test a[c, 1:5].data |> size == (61, 10)
+@test a[c] |> size == (10,)
+@test a[c, 5] |> size == (24, 10)
+@test a[c, 1:5] |> size == (61, 10)
 
-@test a[c, Time=[1, 3]].data |> size == (2,)
-@test a[c, 5, Time=[1, 3]].data |> size == (24, 2)
-@test a[c, 1:5, Time=[1, 3]].data |> size == (61, 2)
-@test a[Time=[1, 3]].data |> size == (32, 32, 12, 2)
+@test a[c, Time=[1, 3]] |> size == (2,)
+@test a[c, 5, Time=[1, 3]] |> size == (24, 2)
+@test a[c, 1:5, Time=[1, 3]] |> size == (61, 2)
+@test a[Time=[1, 3]] |> size == (32, 32, 12, 2)
+
+@test a[11.586, 50.927] == a[lon=11.586, lat=50.927]
+@test a[11.586, 50.927, 1:2] |> size == (7, 10)
+@test a[11.586, 50.927, 1:2, Time=[1, 3]] |> size == (7, 2)
+@test a[Time=1] |> size == (32, 32, 12)
+@test a[Time=1, q2di_n=3] |> size == (32, 32)
 
 #
 # Neighbors
