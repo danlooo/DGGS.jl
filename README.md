@@ -30,7 +30,7 @@ Pkg.add(url="https://github.com/danlooo/DGGS.jl.git")
 
 ```julia
 using DGGS
-p1 = open_dggs_pyramid("https://s3.bgc-jena.mpg.de:9000/dggs/sresa1b_ncar_ccsm3-example")
+p1 = open_dggs_pyramid("https://s3.bgc-jena.mpg.de:9000/dggs/example-ccsm3")
 ```
 ```
 DGGSPyramid

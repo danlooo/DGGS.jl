@@ -196,33 +196,33 @@ function get_window_pad_j_end(a, center, disk_size, mask)
     return padded
 end
 
-function Base.getindex(a::DGGSArray, center::Q2DI, disk_size::Integer, type::Symbol)
+function Base.getindex(a::DGGSArray, center::Q2DI, span::Integer, type::Symbol)
     type in [:disk, :ring, :window] || error("type not supported")
 
     mask = Dict(
-        :disk => disk_mask(disk_size),
-        :ring => ring_mask(disk_size),
-        :window => window_mask(disk_size)
+        :disk => disk_mask(span),
+        :ring => ring_mask(span),
+        :window => window_mask(span)
     )[type]
 
-    irange = center.i-(disk_size-1):center.i+(disk_size-1)
-    jrange = center.j-(disk_size-1):center.j+(disk_size-1)
+    irange = center.i-(span-1):center.i+(span-1)
+    jrange = center.j-(span-1):center.j+(span-1)
     quad_size = width(a.level)
     i_is_in_same_quad = 1 <= irange.start <= irange.stop <= quad_size
     j_is_in_same_quad = 1 <= jrange.start <= jrange.stop <= quad_size
 
     if i_is_in_same_quad & j_is_in_same_quad
-        window = get_window_pad_nothing(a, center, disk_size)
+        window = get_window_pad_nothing(a, center, span)
     elseif (irange.start < 1 <= irange.stop <= quad_size) & j_is_in_same_quad
-        window = get_window_pad_i_start(a, center, disk_size, mask)
+        window = get_window_pad_i_start(a, center, span, mask)
         mask_size = size(mask)[1]
-        mask = vcat(mask[1:disk_size-1, mask_size:-1:1], mask[disk_size:mask_size, :])
+        mask = vcat(mask[1:span-1, mask_size:-1:1], mask[span:mask_size, :])
     elseif i_is_in_same_quad & (jrange.start < 1 <= jrange.stop <= quad_size)
-        window = get_window_pad_j_start(a, center, disk_size)
+        window = get_window_pad_j_start(a, center, span)
     elseif (1 <= irange.start <= quad_size < irange.stop) & j_is_in_same_quad
-        window = get_window_pad_i_end(a, center, disk_size, mask)
+        window = get_window_pad_i_end(a, center, span, mask)
     elseif i_is_in_same_quad & (1 <= jrange.start <= quad_size < jrange.stop)
-        window = get_window_pad_j_end(a, center, disk_size, mask)
+        window = get_window_pad_j_end(a, center, span, mask)
     else
         error("edge case not implemented")
     end

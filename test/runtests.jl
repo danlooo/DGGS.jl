@@ -12,7 +12,7 @@ Random.seed!(1337)
 # Ppen arrays, layers, and pyramids
 #
 
-p = open_dggs_pyramid("https://s3.bgc-jena.mpg.de:9000/dggs/example-ccsm3.zarr")
+p = open_dggs_pyramid("https://s3.bgc-jena.mpg.de:9000/dggs/example-ccsm3")
 l = p[4]
 a = l.tas
 
@@ -140,7 +140,7 @@ a3 = YAXArray((X(1:5), Y(1:5)), rand(5, 5), Dict()) |> x -> to_dggs_array(x, 2)
 # getindex 
 #
 
-p_test = open_dggs_pyramid("https://s3.bgc-jena.mpg.de:9000/dggs/test.zarr")
+p_test = open_dggs_pyramid("https://s3.bgc-jena.mpg.de:9000/dggs/test")
 l = p_test[6]
 a = p_test[level=6, id=:cos]
 c = Q2DI(2, 1, 14)
@@ -176,7 +176,7 @@ c = Q2DI(2, 1, 14)
 # Neighbors
 #
 
-p_test = open_dggs_pyramid("https://s3.bgc-jena.mpg.de:9000/dggs/test.zarr")
+p_test = open_dggs_pyramid("https://s3.bgc-jena.mpg.de:9000/dggs/test")
 c = Q2DI(2, 1, 14)
 a = p_test[6].quads
 @test p_test[level=6, id=:cos, Time=[1, 2, 3], center=Q2DI(5, 1, 18), radii=1:5] |> size == (61, 3)
