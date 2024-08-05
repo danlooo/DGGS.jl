@@ -176,7 +176,7 @@ function transform_points(
     end
 
     cell_ids_mat = hcat(cell_ids_mats...) |> permutedims
-    cell_ids = DimArray(cell_ids_mat, (lon_range |> X, lat_range |> Y))
+    cell_ids = DimArray(cell_ids_mat, (Dim{:lon}(lon_range), Dim{:lat}(lat_range)))
     return cell_ids
 end
 

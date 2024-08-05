@@ -107,9 +107,8 @@ function to_dggs_layer(
     verbose::Bool=true,
     cell_ids::Union{AbstractMatrix,Nothing}=nothing,
     kwargs...)
-
-    lon_dim = filter(x -> x isa X || name(x) == lon_name, collect(values(geo_ds.axes)))
-    lat_dim = filter(x -> x isa Y || name(x) == lat_name, collect(values(geo_ds.axes)))
+    lon_dim = filter(x -> name(x) in [:lon, lon_name], dims(raster))
+    lat_dim = filter(x -> name(x) in [:lat, lat_name], dims(raster))
 
     isempty(lon_dim) && error("Longitude dimension not found")
     isempty(lat_dim) && error("Latitude dimension not found")

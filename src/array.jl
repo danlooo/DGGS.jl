@@ -192,8 +192,8 @@ function to_dggs_array(
 
     level > 0 || error("Level must be positive")
 
-    lon_dim = filter(x -> x isa X || name(x) == lon_name, dims(raster))
-    lat_dim = filter(x -> x isa Y || name(x) == lat_name, dims(raster))
+    lon_dim = filter(x -> name(x) in [:lon, lon_name], dims(raster))
+    lat_dim = filter(x -> name(x) in [:lat, lat_name], dims(raster))
 
     isempty(lon_dim) && error("Longitude dimension not found")
     isempty(lat_dim) && error("Latitude dimension not found")
@@ -253,8 +253,8 @@ function to_geo_array(a::DGGSArray, cell_ids::DimArray)
         cell_ids,
         indims=InDims(:q2di_i, :q2di_j, :q2di_n),
         outdims=OutDims(
-            Dim{:lon}(dims(cell_ids, :X).val),
-            Dim{:lat}(dims(cell_ids, :Y).val)
+            dims(cell_ids, :lon),
+            dims(cell_ids, :lat)
         )
     ) do xout, xin, cell_ids
         for (i, cell_id) in enumerate(cell_ids)
