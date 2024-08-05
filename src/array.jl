@@ -267,8 +267,8 @@ end
 
 function to_geo_array(
     a::DGGSArray,
-    longitudes=range(-180, 180; length=800),
-    latitudes=range(-90, 90; length=400);
+    longitudes=range(-180, 180; length=2048),
+    latitudes=range(-90, 90; length=1024);
 )
     cell_ids = transform_points(longitudes, latitudes, a.level)
     to_geo_array(a, cell_ids)
@@ -283,7 +283,7 @@ function Makie.plot(a::DGGSArray, args...; type=:globe, kwargs...)
     error("Plot type :$type must be one of [:globe, :map, :native]")
 end
 
-function plot_globe(a::DGGSArray; resolution::Integer=800)
+function plot_globe(a::DGGSArray; resolution::Integer=1024)
     # get grid points
     longitudes = range(-180, 180; length=resolution * 2)
     latitudes = range(-90, 90; length=resolution)
@@ -449,14 +449,11 @@ end
 
 function plot_map(
     a::DGGSArray;
-    longitudes=range(-180, 180; length=800),
-    latitudes=range(-90, 90; length=400)
+    longitudes=range(-180, 180; length=2048),
+    latitudes=range(-90, 90; length=1024)
 )
-    #TODO: convert to geo_array lazyly only after slider values were selected
-    geo_array = to_geo_array(a, longitudes, latitudes)
-    non_spatial_axes = map(setdiff(DimensionalData.name(geo_array.axes), (:lon, :lat))) do x
-        getproperty(geo_array, x)
-    end
+    non_spatial_axes = filter(x -> !(name(x) in [:q2di_i, :q2di_j, :q2di_n]), a.data.axes)
+    cell_ids = transform_points(longitudes, latitudes, a.level)
 
     with_theme(theme_black()) do
         fig = Figure()
@@ -466,6 +463,7 @@ function plot_map(
         )
 
         if length(non_spatial_axes) == 0
+            geo_array = to_geo_array(a, longitudes, latitudes)
             h, heatmap_plt = heatmap(fig[1, 1], geo_array, axis=heatmap_ax)
             cb = Colorbar(fig[1, 2], heatmap_plt; label=get_arr_label(a))
             fig
@@ -483,13 +481,20 @@ function plot_map(
             slider_grid = SliderGrid(fig[2, 1], sliders...)
             slider_observables = [s.value for s in slider_grid.sliders]
 
-            texture = lift(slider_observables...) do slider_values...
+            geo_array = lift(slider_observables...) do slider_values...
+                # filter to selected dimensions
                 d = Dict()
                 for (ax, val) in zip(non_spatial_axes, slider_values)
                     d[name(ax)] = val
                 end
-                getindex(geo_array; NamedTuple(d)...)
+
+                getindex(a; NamedTuple(d)...) |> x -> to_geo_array(x, cell_ids)
             end
+
+            min_val = @lift filter_null(minimum)($geo_array)
+            max_val = @lift filter_null(maximum)($geo_array)
+
+            texture = @lift $geo_array |> x -> ismissing(x) ? NaN : x
 
             h, heatmap_plt = heatmap(fig[1, 1], texture, axis=heatmap_ax)
             cb = Colorbar(fig[1, 2], heatmap_plt; label=get_arr_label(a))
