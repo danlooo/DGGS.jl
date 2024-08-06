@@ -29,7 +29,28 @@ function DGGSArray(arr::AbstractArray, level::Integer, id=:layer)
 end
 
 "filter any dimension of a DGGSArray"
-Base.getindex(a::DGGSArray, args...; kwargs...) = getindex(a.data, args...; kwargs...) |> DGGSArray
+function Base.getindex(a::DGGSArray; kwargs...)
+    center = get(kwargs, :center, nothing)
+    lon = get(kwargs, :lon, nothing)
+    lat = get(kwargs, :lat, nothing)
+    radii = get(kwargs, :radii, nothing)
+
+    args = filter(!isnothing, (center, lon, lat, radii))
+    kwargs = filter(x -> !(x.first in [:id, :level, :center, :lat, :lon, :radii]), kwargs)
+
+    if isempty(args)
+        # try to return it as a global DGGSArray
+        arr = getindex(a.data; kwargs...)
+        try
+            return arr |> DGGSArray
+        catch e
+            return arr
+        end
+    else
+        # further dispatch
+        return getindex(a, args...; kwargs...)
+    end
+end
 
 "get a cell of a DGGSArray"
 Base.getindex(a::DGGSArray, center::Q2DI; kwargs...) = getindex(a.data, q2di_n=center.n, q2di_i=center.i, q2di_j=center.j; kwargs...)
@@ -44,10 +65,11 @@ end
 "get a ring of a DGGArray"
 function Base.getindex(a::DGGSArray, center::Q2DI, radius::Integer; kwargs...)
     radius >= 1 || error("radius must not be negative")
+    radius == 1 && return getindex(a, center; kwargs...)
 
     res = a
     if length(kwargs) >= 1
-        res = getindex(res; kwargs...)
+        res = getindex(res; kwargs...) # filter before padding
     end
     res = getindex(res, center, radius, :ring)
     return res
@@ -60,7 +82,7 @@ function Base.getindex(a::DGGSArray, center::Q2DI, radii::UnitRange{R}; kwargs..
 
     res = a
     if length(kwargs) >= 1
-        res = getindex(res; kwargs...)
+        res = getindex(res; kwargs...) # filter before padding
     end
     res = getindex(res, center, radii.stop, :disk)
     return res
@@ -75,6 +97,8 @@ end
 
 Base.setindex!(a::DGGSArray, val, i::Q2DI; kwargs...) = Base.setindex!(a.data, val, q2di_n=i.n, q2di_i=i.i, q2di_j=i.j; kwargs...)
 Base.setindex!(a::DGGSArray, val, n::Integer, i::Integer, j::Integer; kwargs...) = Base.setindex!(a.data, val, q2di_n=n, q2di_i=i, q2di_j=j; kwargs...)
+
+Base.size(a::DGGSArray) = size(a.data)
 
 function show_nonspatial_axes(io::IO, arr::DGGSArray)
     non_spatial_axes = filter(x -> !startswith(String(x), "q2di"), DimensionalData.name(arr.data.axes))
@@ -168,8 +192,8 @@ function to_dggs_array(
 
     level > 0 || error("Level must be positive")
 
-    lon_dim = filter(x -> x isa X || name(x) == lon_name, dims(raster))
-    lat_dim = filter(x -> x isa Y || name(x) == lat_name, dims(raster))
+    lon_dim = filter(x -> name(x) == lon_name, dims(raster))
+    lat_dim = filter(x -> name(x) == lat_name, dims(raster))
 
     isempty(lon_dim) && error("Longitude dimension not found")
     isempty(lat_dim) && error("Latitude dimension not found")
@@ -229,8 +253,8 @@ function to_geo_array(a::DGGSArray, cell_ids::DimArray)
         cell_ids,
         indims=InDims(:q2di_i, :q2di_j, :q2di_n),
         outdims=OutDims(
-            Dim{:lon}(dims(cell_ids, :X).val),
-            Dim{:lat}(dims(cell_ids, :Y).val)
+            dims(cell_ids, :lon),
+            dims(cell_ids, :lat)
         )
     ) do xout, xin, cell_ids
         for (i, cell_id) in enumerate(cell_ids)
@@ -243,8 +267,8 @@ end
 
 function to_geo_array(
     a::DGGSArray,
-    longitudes=range(-180, 180; length=800),
-    latitudes=range(-90, 90; length=400);
+    longitudes=range(-180, 180; length=2048),
+    latitudes=range(-90, 90; length=1024);
 )
     cell_ids = transform_points(longitudes, latitudes, a.level)
     to_geo_array(a, cell_ids)
@@ -259,7 +283,7 @@ function Makie.plot(a::DGGSArray, args...; type=:globe, kwargs...)
     error("Plot type :$type must be one of [:globe, :map, :native]")
 end
 
-function plot_globe(a::DGGSArray; resolution::Integer=800)
+function plot_globe(a::DGGSArray; resolution::Integer=1024)
     # get grid points
     longitudes = range(-180, 180; length=resolution * 2)
     latitudes = range(-90, 90; length=resolution)
@@ -425,14 +449,11 @@ end
 
 function plot_map(
     a::DGGSArray;
-    longitudes=range(-180, 180; length=800),
-    latitudes=range(-90, 90; length=400)
+    longitudes=range(-180, 180; length=2048),
+    latitudes=range(-90, 90; length=1024)
 )
-    #TODO: convert to geo_array lazyly only after slider values were selected
-    geo_array = to_geo_array(a, longitudes, latitudes)
-    non_spatial_axes = map(setdiff(DimensionalData.name(geo_array.axes), (:lon, :lat))) do x
-        getproperty(geo_array, x)
-    end
+    non_spatial_axes = filter(x -> !(name(x) in [:q2di_i, :q2di_j, :q2di_n]), a.data.axes)
+    cell_ids = transform_points(longitudes, latitudes, a.level)
 
     with_theme(theme_black()) do
         fig = Figure()
@@ -442,6 +463,7 @@ function plot_map(
         )
 
         if length(non_spatial_axes) == 0
+            geo_array = to_geo_array(a, longitudes, latitudes)
             h, heatmap_plt = heatmap(fig[1, 1], geo_array, axis=heatmap_ax)
             cb = Colorbar(fig[1, 2], heatmap_plt; label=get_arr_label(a))
             fig
@@ -459,13 +481,20 @@ function plot_map(
             slider_grid = SliderGrid(fig[2, 1], sliders...)
             slider_observables = [s.value for s in slider_grid.sliders]
 
-            texture = lift(slider_observables...) do slider_values...
+            geo_array = lift(slider_observables...) do slider_values...
+                # filter to selected dimensions
                 d = Dict()
                 for (ax, val) in zip(non_spatial_axes, slider_values)
                     d[name(ax)] = val
                 end
-                getindex(geo_array; NamedTuple(d)...)
+
+                getindex(a; NamedTuple(d)...) |> x -> to_geo_array(x, cell_ids)
             end
+
+            min_val = @lift filter_null(minimum)($geo_array)
+            max_val = @lift filter_null(maximum)($geo_array)
+
+            texture = @lift $geo_array |> x -> ismissing(x) ? NaN : x
 
             h, heatmap_plt = heatmap(fig[1, 1], texture, axis=heatmap_ax)
             cb = Colorbar(fig[1, 2], heatmap_plt; label=get_arr_label(a))

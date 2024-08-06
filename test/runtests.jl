@@ -12,7 +12,7 @@ Random.seed!(1337)
 # Ppen arrays, layers, and pyramids
 #
 
-p = open_dggs_pyramid("https://s3.bgc-jena.mpg.de:9000/dggs/example-ccsm3.zarr")
+p = open_dggs_pyramid("https://s3.bgc-jena.mpg.de:9000/dggs/datasets/example-ccsm3")
 l = p[4]
 a = l.tas
 
@@ -33,7 +33,7 @@ lat_range = Y(-90:90)
 level = 6
 data = [exp(cosd(lon)) + 3(lat / 90) for lon in lon_range, lat in lat_range]
 raster = DimArray(data, (lon_range, lat_range))
-a2 = to_dggs_array(raster, level)
+a2 = to_dggs_array(raster, level; lon_name=:X, lat_name=:Y)
 raster2 = to_geo_array(a2, lon_range.val, lat_range.val)
 @test a2.level == level
 
@@ -44,7 +44,7 @@ raster2 = to_geo_array(a2, lon_range.val, lat_range.val)
 # reformat lon axes from [0,360] to [-180,180]
 # skip mask
 geo_ds = open_dataset("sresa1b_ncar_ccsm3-example.nc")
-geo_ds.axes[:lon] = vcat(range(0, 180; length=128), range(-180, 0; length=128)) |> X
+geo_ds.axes[:lon] = vcat(range(0, 180; length=128), range(-180, 0; length=128)) |> Dim{:lon}
 arrs = Dict()
 for (k, arr) in geo_ds.cubes
     k == :msk_rgn && continue # exclude mask
@@ -106,12 +106,12 @@ result = p[2].layer.data[q2di_n=2].data
 # Rasters
 #
 
-a1 = Raster(rand(5, 5), (X(1:5), Y(1:5))) |> x -> to_dggs_array(x, 4)
-a2 = DimArray(rand(5, 5), (X(1:5), Y(1:5))) |> x -> to_dggs_array(x, 2)
-a3 = YAXArray((X(1:5), Y(1:5)), rand(5, 5), Dict()) |> x -> to_dggs_array(x, 2)
+a1 = Raster(rand(5, 5), (X(1:5), Y(1:5))) |> x -> to_dggs_array(x, 4; lon_name=:X, lat_name=:Y)
+a2 = DimArray(rand(5, 5), (X(1:5), Y(1:5))) |> x -> to_dggs_array(x, 2; lon_name=:X, lat_name=:Y)
+a3 = YAXArray((X(1:5), Y(1:5)), rand(5, 5), Dict()) |> x -> to_dggs_array(x, 2; lon_name=:X, lat_name=:Y)
 
-@test Raster(rand(361, 181), (X(-180:180), Y(-90:90))) |> x -> to_dggs_layer(x, 4) isa DGGSLayer
-@test Raster(rand(361, 181), (X(-180:180), Y(-90:90))) |> x -> to_dggs_pyramid(x, 4) isa DGGSPyramid
+@test Raster(rand(361, 181), (X(-180:180), Y(-90:90))) |> x -> to_dggs_layer(x, 4; lon_name=:X, lat_name=:Y) isa DGGSLayer
+@test Raster(rand(361, 181), (X(-180:180), Y(-90:90))) |> x -> to_dggs_pyramid(x, 4; lon_name=:X, lat_name=:Y) isa DGGSPyramid
 
 #
 # plotting
@@ -140,7 +140,7 @@ a3 = YAXArray((X(1:5), Y(1:5)), rand(5, 5), Dict()) |> x -> to_dggs_array(x, 2)
 # getindex 
 #
 
-p_test = open_dggs_pyramid("https://s3.bgc-jena.mpg.de:9000/dggs/test.zarr")
+p_test = open_dggs_pyramid("https://s3.bgc-jena.mpg.de:9000/dggs/datasets/test")
 l = p_test[6]
 a = p_test[level=6, id=:cos]
 c = Q2DI(2, 1, 14)
@@ -149,27 +149,34 @@ c = Q2DI(2, 1, 14)
 @test l isa DGGSLayer
 @test a isa DGGSArray
 
+@test p_test[level=6, id=:cos, center=c, radii=1:2, Time=[1, 3]] |> size == (7, 2)
+
 @test l.cos == l[:cos] == l[id=:cos]
-@test l[id=:cos, Time=[1, 3]] isa DGGSArray
-@test l[id=:cos, center=c, Time=[1, 3]].data |> size == (2,)
-@test l[id=:cos, center=c, radii=5, Time=[1, 3]].data |> size == (24, 2)
-@test l[id=:cos, center=c, radii=1:5, Time=[1, 3]].data |> size == (61, 2)
-@test l[id=:cos, Time=[1, 3]].data |> size == (32, 32, 12, 2)
+@test l[id=:cos, center=c, Time=[1, 3]] |> size == (2,)
+@test l[id=:cos, center=c, radii=5, Time=[1, 3]] |> size == (24, 2)
+@test l[id=:cos, center=c, radii=1:5, Time=[1, 3]] |> size == (61, 2)
+@test l[id=:cos, Time=[1, 3]] |> size == (32, 32, 12, 2)
 
-@test a[c].data |> size == (10,)
-@test a[c, 5].data |> size == (24, 10)
-@test a[c, 1:5].data |> size == (61, 10)
+@test a[c] |> size == (10,)
+@test a[c, 5] |> size == (24, 10)
+@test a[c, 1:5] |> size == (61, 10)
 
-@test a[c, Time=[1, 3]].data |> size == (2,)
-@test a[c, 5, Time=[1, 3]].data |> size == (24, 2)
-@test a[c, 1:5, Time=[1, 3]].data |> size == (61, 2)
-@test a[Time=[1, 3]].data |> size == (32, 32, 12, 2)
+@test a[c, Time=[1, 3]] |> size == (2,)
+@test a[c, 5, Time=[1, 3]] |> size == (24, 2)
+@test a[c, 1:5, Time=[1, 3]] |> size == (61, 2)
+@test a[Time=[1, 3]] |> size == (32, 32, 12, 2)
+
+@test a[11.586, 50.927] == a[lon=11.586, lat=50.927]
+@test a[11.586, 50.927, 1:2] |> size == (7, 10)
+@test a[11.586, 50.927, 1:2, Time=[1, 3]] |> size == (7, 2)
+@test a[Time=1] |> size == (32, 32, 12)
+@test a[Time=1, q2di_n=3] |> size == (32, 32)
 
 #
 # Neighbors
 #
 
-p_test = open_dggs_pyramid("https://s3.bgc-jena.mpg.de:9000/dggs/test.zarr")
+p_test = open_dggs_pyramid("https://s3.bgc-jena.mpg.de:9000/dggs/datasets/test")
 c = Q2DI(2, 1, 14)
 a = p_test[6].quads
 @test p_test[level=6, id=:cos, Time=[1, 2, 3], center=Q2DI(5, 1, 18), radii=1:5] |> size == (61, 3)
@@ -198,7 +205,7 @@ time_range = Ti(1:10)
 level = 6
 data = [exp(cosd(lon)) + t * (lat / 90) for lon in lon_range, lat in lat_range, t in time_range]
 geo_arr = YAXArray((lon_range, lat_range, time_range), data, Dict())
-a = to_dggs_array(geo_arr, level)
+a = to_dggs_array(geo_arr, level; lon_name=:X, lat_name=:Y)
 
 a[Q2DI(2, 10, 10)] .= 5
 a[Q2DI(3, 10, 10), Ti=1] = 5

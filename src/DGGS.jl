@@ -26,6 +26,7 @@ using Pkg.Artifacts
 using Distributed
 using ThreadsX
 using Pkg.Artifacts
+using FillArrays
 
 # must be sorted by dependency
 include("types.jl")

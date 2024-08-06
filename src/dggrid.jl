@@ -139,9 +139,22 @@ end
 """
 chunk_size_points: number of points (e.g. pixels) to transform in one block (task of a thread)
 """
-function transform_points(lon_range::AbstractVector{A}, lat_range::AbstractVector{B}, level::Integer; show_progress=true, chunk_size_points=2048) where {A<:Real,B<:Real}
+function transform_points(
+    lon_range::AbstractVector{A},
+    lat_range::AbstractVector{B},
+    level::Integer;
+    show_progress=true,
+    chunk_size_points=2048,
+    base_path::String=get(ENV, "DGGS_CELL_IDS_PATH", "https://s3.bgc-jena.mpg.de:9000/dggs/cell_ids")
+) where {A<:Real,B<:Real}
     chunk_size_lon = chunk_size_points / length(lat_range) |> ceil |> Int
     lon_chunks = Iterators.partition(lon_range, chunk_size_lon) |> collect
+
+    # try cache
+    try
+        return open_cell_ids(lon_range, lat_range, level, base_path)
+    catch
+    end
 
     # single thread is sufficient
     if length(lon_chunks) == 1
@@ -163,6 +176,61 @@ function transform_points(lon_range::AbstractVector{A}, lat_range::AbstractVecto
     end
 
     cell_ids_mat = hcat(cell_ids_mats...) |> permutedims
-    cell_ids = DimArray(cell_ids_mat, (lon_range |> X, lat_range |> Y))
+    cell_ids = DimArray(cell_ids_mat, (Dim{:lon}(lon_range), Dim{:lat}(lat_range)))
+    return cell_ids
+end
+
+function create_cell_ids(
+    lon_range::AbstractRange{T},
+    lat_range::AbstractRange{T},
+    levels::AbstractRange,
+    base_path::String=get(ENV, "DGGS_CELL_IDS_PATH", "https://s3.bgc-jena.mpg.de:9000/dggs/cell_ids")
+) where {T<:Real}
+    for level in levels
+        path = "$(base_path)/$(lon_range)_$(lat_range)/$(level)"
+        axs = (
+            Dim{:lon}(lon_range),
+            Dim{:lat}(lat_range),
+            Dim{:q2di}(["n", "i", "j"]),
+        )
+        # avoid complex eltypes e.g (n,i,j) tuple for compatibility reasons and to prevent parsing errors
+        a = YAXArray(axs, Zeros(UInt32, length(lon_range), length(lat_range), 3), Dict())
+        a = setchunks(a, (2048, 2048, 3)) # do not chunk index dimension
+        ds = Dataset(; Dict(:layer => a)...)
+        ds = savedataset(ds; path=path, driver=:zarr, skeleton=true, overwrite=true)
+
+        # can not use mapCube here
+        # - would require same elementtype of input and output cube
+        # - would ignore chunks in slices resulting to cache overflow
+        for chunk in ds.layer.chunks
+            lon_chunk = chunk[1]
+            lat_chunk = chunk[2]
+
+            cell_ids = DGGS.transform_points(lon_range[lon_chunk], lat_range[lat_chunk], level)
+            ds.layer[lon=lon_chunk, lat=lat_chunk][:, :, 1] = map(x -> x.n, cell_ids)
+            ds.layer[lon=lon_chunk, lat=lat_chunk][:, :, 2] = map(x -> x.i, cell_ids)
+            ds.layer[lon=lon_chunk, lat=lat_chunk][:, :, 3] = map(x -> x.j, cell_ids)
+        end
+
+        Zarr.consolidate_metadata(path)
+    end
+end
+
+function open_cell_ids(
+    lon_range::AbstractRange{T},
+    lat_range::AbstractRange{T},
+    level::Integer,
+    base_path::String=get(ENV, "DGGS_CELL_IDS_PATH", "https://s3.bgc-jena.mpg.de:9000/dggs/cell_ids")
+) where {T<:Real}
+    arr = open_dataset("$(base_path)/$(lon_range)_$(lat_range)/$(level)").layer
+    # can not set eltype of outdims
+    cell_ids = DimArray{Q2DI}(undef, arr.lon, arr.lat)
+    mapCube(
+        arr,
+        indims=InDims(:q2di),
+        outdims=OutDims()
+    ) do xout, xin
+        cell_ids[xin.indices[1], xin.indices[2]] = Q2DI(UInt8(xin[1]), UInt32(xin[2]), UInt32(xin[3]))
+    end
     return cell_ids
 end
