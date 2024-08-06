@@ -33,7 +33,7 @@ lat_range = Y(-90:90)
 level = 6
 data = [exp(cosd(lon)) + 3(lat / 90) for lon in lon_range, lat in lat_range]
 raster = DimArray(data, (lon_range, lat_range))
-a2 = to_dggs_array(raster, level)
+a2 = to_dggs_array(raster, level; lon_name=:X, lat_name=:Y)
 raster2 = to_geo_array(a2, lon_range.val, lat_range.val)
 @test a2.level == level
 
@@ -44,7 +44,7 @@ raster2 = to_geo_array(a2, lon_range.val, lat_range.val)
 # reformat lon axes from [0,360] to [-180,180]
 # skip mask
 geo_ds = open_dataset("sresa1b_ncar_ccsm3-example.nc")
-geo_ds.axes[:lon] = vcat(range(0, 180; length=128), range(-180, 0; length=128)) |> X
+geo_ds.axes[:lon] = vcat(range(0, 180; length=128), range(-180, 0; length=128)) |> Dim{:lon}
 arrs = Dict()
 for (k, arr) in geo_ds.cubes
     k == :msk_rgn && continue # exclude mask
@@ -106,12 +106,12 @@ result = p[2].layer.data[q2di_n=2].data
 # Rasters
 #
 
-a1 = Raster(rand(5, 5), (X(1:5), Y(1:5))) |> x -> to_dggs_array(x, 4)
-a2 = DimArray(rand(5, 5), (X(1:5), Y(1:5))) |> x -> to_dggs_array(x, 2)
-a3 = YAXArray((X(1:5), Y(1:5)), rand(5, 5), Dict()) |> x -> to_dggs_array(x, 2)
+a1 = Raster(rand(5, 5), (X(1:5), Y(1:5))) |> x -> to_dggs_array(x, 4; lon_name=:X, lat_name=:Y)
+a2 = DimArray(rand(5, 5), (X(1:5), Y(1:5))) |> x -> to_dggs_array(x, 2; lon_name=:X, lat_name=:Y)
+a3 = YAXArray((X(1:5), Y(1:5)), rand(5, 5), Dict()) |> x -> to_dggs_array(x, 2; lon_name=:X, lat_name=:Y)
 
-@test Raster(rand(361, 181), (X(-180:180), Y(-90:90))) |> x -> to_dggs_layer(x, 4) isa DGGSLayer
-@test Raster(rand(361, 181), (X(-180:180), Y(-90:90))) |> x -> to_dggs_pyramid(x, 4) isa DGGSPyramid
+@test Raster(rand(361, 181), (X(-180:180), Y(-90:90))) |> x -> to_dggs_layer(x, 4; lon_name=:X, lat_name=:Y) isa DGGSLayer
+@test Raster(rand(361, 181), (X(-180:180), Y(-90:90))) |> x -> to_dggs_pyramid(x, 4; lon_name=:X, lat_name=:Y) isa DGGSPyramid
 
 #
 # plotting
@@ -205,7 +205,7 @@ time_range = Ti(1:10)
 level = 6
 data = [exp(cosd(lon)) + t * (lat / 90) for lon in lon_range, lat in lat_range, t in time_range]
 geo_arr = YAXArray((lon_range, lat_range, time_range), data, Dict())
-a = to_dggs_array(geo_arr, level)
+a = to_dggs_array(geo_arr, level; lon_name=:X, lat_name=:Y)
 
 a[Q2DI(2, 10, 10)] .= 5
 a[Q2DI(3, 10, 10), Ti=1] = 5

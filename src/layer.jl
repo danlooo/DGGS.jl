@@ -107,8 +107,8 @@ function to_dggs_layer(
     verbose::Bool=true,
     cell_ids::Union{AbstractMatrix,Nothing}=nothing,
     kwargs...)
-    lon_dim = filter(x -> name(x) in [:lon, lon_name], dims(raster))
-    lat_dim = filter(x -> name(x) in [:lat, lat_name], dims(raster))
+    lon_dim = filter(x -> name(x) == lon_name, geo_ds.axes |> values |> collect)
+    lat_dim = filter(x -> name(x) == lat_name, geo_ds.axes |> values |> collect)
 
     isempty(lon_dim) && error("Longitude dimension not found")
     isempty(lat_dim) && error("Latitude dimension not found")
@@ -126,4 +126,4 @@ function to_dggs_layer(
     DGGSLayer(data, level, geo_ds.properties, DGGSGridSystem(Q2DI_DGGS_PROPS))
 end
 
-to_dggs_layer(raster::AbstractDimArray, level::Integer; kw...) = to_dggs_array(raster, level, kw...) |> DGGSLayer
+to_dggs_layer(raster::AbstractDimArray, level::Integer, args...; kwargs...) = to_dggs_array(raster, level; kwargs...) |> DGGSLayer

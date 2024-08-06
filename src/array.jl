@@ -192,8 +192,8 @@ function to_dggs_array(
 
     level > 0 || error("Level must be positive")
 
-    lon_dim = filter(x -> name(x) in [:lon, lon_name], dims(raster))
-    lat_dim = filter(x -> name(x) in [:lat, lat_name], dims(raster))
+    lon_dim = filter(x -> name(x) == lon_name, dims(raster))
+    lat_dim = filter(x -> name(x) == lat_name, dims(raster))
 
     isempty(lon_dim) && error("Longitude dimension not found")
     isempty(lat_dim) && error("Latitude dimension not found")
