@@ -2,15 +2,34 @@
 
 ## Geographical coordinates to cell ids and vice versa
 
-- use transform_points
-- just use lon,lat in getindex
-
-## `AbstractDimArray` to `DGGSArray`
-
-Turn any `AbstractDimArray` like a `YAXArray` and `Raster` into a `DGGSArray`:
+Transform geographic coordinates (lon,lat) into cell ids:
 
 ```@example convert
 using DGGS
+
+level = 6
+geo_coords = [
+    (11.586, 50.927),
+    (-150, 80),
+    (-150.001, 80.001)
+]
+cell_ids = transform_points(geo_coords, level)
+```
+
+And convert them back:
+
+```@example convert
+transform_points(cell_ids, level)
+```
+
+This will map any point within a cell to the corresponding cell center, resulting in the same output for the latter two nearby points.
+Manual coordinate conversion is usually not necessary, because one could use geographical coordinates directly in `getindex` methods.
+
+## `AbstractDimArray` to `DGGSArray`
+
+Turn any `AbstractDimArray` like a `Array`, `YAXArray`, and `Raster` into a `DGGSArray`:
+
+```@example convert
 using DimensionalData
 using YAXArrays
 
@@ -21,6 +40,30 @@ level = 6
 data = [exp(cosd(lon)) + t * (lat / 90) for lon in lon_range, lat in lat_range, t in time_range]
 geo_arr = YAXArray((lon_range, lat_range, time_range), data, Dict())
 a = to_dggs_array(geo_arr, level; lon_name=:X, lat_name=:Y)
+```
+
+All geographic input coordinates must be th the WGS84 format.
+This requires some adjustments in some datasets:
+
+```@example convert
+using NetCDF
+download("https://www.unidata.ucar.edu/software/netcdf/examples/sresa1b_ncar_ccsm3-example.nc", "example.nc")
+geo_ds = open_dataset("example.nc")
+geo_ds.lon, geo_ds.lat
+```
+
+Let's change the lon axes to the desired format:
+
+```@example convert
+geo_ds.axes[:lon] = vcat(range(0, 180; length=128), range(-180, 0; length=128)) |> Dim{:lon}
+arrs = Dict()
+for (k, arr) in geo_ds.cubes
+    k == :msk_rgn && continue # exclude mask
+    axs = Tuple(ax isa Dim{:lon} ? geo_ds.axes[:lon] : ax for ax in arr.axes) # propagate fixed axis
+    arrs[k] = YAXArray(axs, arr.data, arr.properties)
+end
+geo_ds = Dataset(; properties=geo_ds.properties, arrs...)
+p = to_dggs_pyramid(geo_ds, level)
 ```
 
 ## `DGGSArray` to `DGGSPyramid`
