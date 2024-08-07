@@ -37,10 +37,11 @@ a1 = p1[level=6, id=:tas, Time=1]
 
 Plot the array as a globe:
 
-```@example start
+```julia
 using GLMakie
 plot(a1)
 ```
+![](assets/plot-get-started.png)
 
 Get one hexagonal cell and all neighboring cells within a radius of `k` at a given geographical coordinate using `a[lon,lat,1:k]`:
 
