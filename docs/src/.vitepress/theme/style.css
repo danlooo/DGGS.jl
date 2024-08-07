@@ -52,13 +52,15 @@ https://github.com/vuejs/vitepress/blob/main/src/client/theme-default/styles/var
   --julia-red: #cb3c33;
   --julia-green: #389826;
 
-  --vp-c-brand: #006c66;
-  --vp-c-brand-light: #009890;
+  --vp-c-brand: #4063d8;
+  --vp-c-brand-light: #40b5d8;
   --vp-c-brand-lighter: #9499ff;
   --vp-c-brand-lightest: #bcc0ff;
   --vp-c-brand-dark: #535bf2;
   --vp-c-brand-darker: #454ce1;
   --vp-c-brand-dimm: #212425;
+
+  --vp-code-color: var(--vp-c-text-1);
 }
 
 /* Component: Button */
@@ -181,4 +183,12 @@ mjx-container > svg {
   --vp-c-brand-3: var(--vp-c-brand);
   --vp-c-sponsor: var(--vp-c-brand);
   --vitest-c-sponsor-hover: #e51370;
+}
+
+.footer-logo {
+  height: 3em;
+  display: initial;
+  margin-right: 1.5em;
+  margin-left: 1.5em;
+  filter: brightness(0) invert(1) brightness(0.5);
 }

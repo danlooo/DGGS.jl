@@ -17,10 +17,14 @@ makedocs(;
     ),
     pages=[
         "Home" => "index.md",
-        "Get started" => "get_started.md",
-        "Background" => "background.md",
+        "Guide" => [
+            "Get Started" => "get_started.md",
+            "Background" => "background.md",
+            "Convert" => "convert.md",
+            "Select" => "select.md",
+            "Plot" => "plot.md",
+        ],
         "API" => "api.md",
-        "FAQ" => "faq.md"
     ]
 )
 

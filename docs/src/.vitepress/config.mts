@@ -46,7 +46,7 @@ export default defineConfig({
       { icon: 'github', link: 'REPLACE_ME_DOCUMENTER_VITEPRESS' }
     ],
     footer: {
-      message: 'Made with <a href="https://luxdl.github.io/DocumenterVitepress.jl/dev/" target="_blank"><strong>DocumenterVitepress.jl</strong></a><br>',
+      message: '<a href="https://www.bgc-jena.mpg.de/en"><img src="assets/logo-mpi-bgc.svg" class = "footer-logo"/></a> <a href="https://earthmonitor.org/"><img src="assets/logo-open-earth-monitor.png" class = "footer-logo"/></a> <a href="https://cordis.europa.eu/project/id/101059548"><img src="assets/logo-eu.png" class = "footer-logo"/></a>',
       copyright: `© Copyright ${new Date().getUTCFullYear()}.`
     }
   }

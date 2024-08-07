@@ -4,8 +4,8 @@
 layout: home
 
 hero:
-  name: "DGGS.jl"
-  text: "Discrete Global Grid System for Julia"
+  name: DGGS.jl
+  text: Discrete Global Grid System for Julia
   tagline: Less distorted geospatial data cubes
   image:
     src: assets/icon.drawio.svg
@@ -20,7 +20,6 @@ hero:
     - theme: alt
       text: API reference
       link: /api
-
 features:
   - title: Low distortions
     details: This package is based on <a href="https://github.com/sahrk/DGGRID">DGGRID</a> which has the lowest distortion in shape and area compared to other DGGS. 
