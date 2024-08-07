@@ -47,7 +47,7 @@ This requires some adjustments in some datasets:
 
 ```@example convert
 using NetCDF
-download("https://www.unidata.ucar.edu/software/netcdf/examples/sresa1b_ncar_ccsm3-example.nc", "example.nc")
+download("https://github.com/danlooo/DGGS.jl/raw/main/test/sresa1b_ncar_ccsm3-example.nc", "example.nc")
 geo_ds = open_dataset("example.nc")
 geo_ds.lon, geo_ds.lat
 ```
