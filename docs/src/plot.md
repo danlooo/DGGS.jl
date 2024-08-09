@@ -1,6 +1,6 @@
 # Plot
 
-```julia
+```@example plot
 using GLMakie
 using DGGS
 p = open_dggs_pyramid("https://s3.bgc-jena.mpg.de:9000/dggs/datasets/modis")
@@ -13,23 +13,18 @@ Image resolution can be adjusted using the `resolution` argument of the `plot` m
 Plotting requires to convert the DGGS space back to geographical coordinates.
 The coordinate transformation is downloaded from a cache server instead of computed if the given resolution is available.
 
-```julia
+```@example plot
 plot(a)
 ```
-![](assets/plot-globe.png)
 
 Plot as a map:
 
-```julia
+```@example plot
 plot(a; type=:map)
 ```
 
-![](assets/plot-map.png)
-
 Plot as a native icosahedron:
 
-```julia
+```@example plot
 plot(a; type=:native)
 ```
-
-![](assets/plot-native.png)
