@@ -13,7 +13,7 @@ https://github.com/vuejs/vitepress/blob/main/src/client/theme-default/styles/var
 } */
 
 .VPContent.is-home {
-  background-image: url("assets/hex-pattern.png");
+  background-image: url("/hex-pattern.png");
   background-size: 20%;
 }
 
