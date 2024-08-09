@@ -43,5 +43,5 @@ jobs:
             libffi-dev libjpeg-dev libpng-dev libz-dev
       - name: Run tests
         run: >-
-          DISPLAY=:0 xvfb-run -s '-screen 0 1024x768x24'
+          DISPLAY=:0 xvfb-run -s '-screen 0 1024x768x24' \
             julia --color=yes --project=. --threads=auto -e 'using Pkg; Pkg.test("DGGS", coverage=true)'
