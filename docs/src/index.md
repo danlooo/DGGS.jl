@@ -8,7 +8,7 @@ hero:
   text: Discrete Global Grid System for Julia
   tagline: Less distorted geospatial data cubes
   image:
-    src: assets/icon.drawio.svg
+    src: icon.drawio.svg
     alt: VitePress
   actions:
     - theme: brand

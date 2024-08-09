@@ -29,7 +29,7 @@ export default defineConfig({
   themeConfig: {
     outline: 'deep',
     logo: {
-      src: '/icon.drawio.svg',
+      src: 'icon.drawio.svg',
       width: 40,
       height: 40
     },
@@ -46,7 +46,7 @@ export default defineConfig({
       { icon: 'github', link: 'REPLACE_ME_DOCUMENTER_VITEPRESS' }
     ],
     footer: {
-      message: '<a href="https://www.bgc-jena.mpg.de/en"><img src="/logo-mpi-bgc.svg" class = "footer-logo"/></a> <a href="https://earthmonitor.org/"><img src="/logo-open-earth-monitor.png" class = "footer-logo"/></a> <a href="https://cordis.europa.eu/project/id/101059548"><img src="/logo-eu.png" class = "footer-logo"/></a>',
+      message: '<a href="https://www.bgc-jena.mpg.de/en"><img src="logo-mpi-bgc.svg" class = "footer-logo"/></a> <a href="https://earthmonitor.org/"><img src="logo-open-earth-monitor.png" class = "footer-logo"/></a> <a href="https://cordis.europa.eu/project/id/101059548"><img src="logo-eu.png" class = "footer-logo"/></a>',
       copyright: `© Copyright ${new Date().getUTCFullYear()}.`
     }
   }
