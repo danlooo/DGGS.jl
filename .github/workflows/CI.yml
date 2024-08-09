@@ -66,8 +66,12 @@ jobs:
       - uses: julia-actions/julia-buildpkg@v1
       - name: Install documentation dependencies
         run: DISPLAY=:0 xvfb-run -s '-screen 0 1024x768x24' julia --project=docs -e 'using Pkg; Pkg.Registry.update(); pkg"dev ."; Pkg.instantiate(); Pkg.precompile(); Pkg.status()'
-      - uses: julia-actions/julia-docdeploy@v1
-        with:
-          prefix: DISPLAY=:0 xvfb-run -s '-screen 0 1024x768x24'
+      - name: Build and deploy docs
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # For authentication with GitHub Actions token
+          DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }} # For authentication with SSH deploy key
+          GKSwstype: "100" # for Plots.jl plots (if you have them)
+          JULIA_DEBUG: "Documenter"
+          DATADEPS_ALWAYS_ACCEPT: true
+        run: |
+          DISPLAY=:0 xvfb-run -s '-screen 0 1024x768x24' julia --project=docs/ --color=yes --threads=auto docs/make.jl
