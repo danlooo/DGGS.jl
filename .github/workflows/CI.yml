@@ -55,21 +55,14 @@ jobs:
       - uses: julia-actions/setup-julia@v1
         with:
           version: "1"
-      - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/cache@v1
-      - uses: julia-actions/julia-docdeploy@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Install system dependencies
         run: >
           sudo apt-get update &&
           sudo apt-get install -y \
             xorg-dev mesa-utils xvfb libgl1 freeglut3-dev libxrandr-dev libxinerama-dev libxcursor-dev \
             libxi-dev libxext-dev libcairo2-dev libfreetype6-dev libffi-dev libjpeg-dev libpng-dev libz-dev
-      - name: Build documentation
-        run: |
-          julia --project=docs --threads=auto -e '
-            using Documenter: DocMeta, doctest
-            using DGGS
-            DocMeta.setdocmeta!(DGGS, :DocTestSetup, :(using DGGS); recursive=true)
-            doctest(DGGS)'
+      - uses: julia-actions/julia-buildpkg@v1
+      - uses: julia-actions/julia-docdeploy@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
