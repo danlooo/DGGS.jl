@@ -39,7 +39,7 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y xorg-dev mesa-utils xvfb libgl1 freeglut3-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev
       - name: Run the tests
         id: referencetests
-        run: |
+        run: >
           DISPLAY=:0 xvfb-run -s '-screen 0 1024x768x24'
             julia --color=yes --project=. --threads=auto -e
               'using Pkg; Pkg.test("DGGS", coverage=true)' && echo "TESTS_SUCCESSFUL=true" >> $GITHUB_ENV
