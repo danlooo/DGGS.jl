@@ -7,13 +7,12 @@ DocMeta.setdocmeta!(DGGS, :DocTestSetup, :(using DGGS); recursive=true)
 makedocs(;
     modules=[DGGS],
     authors="Daniel Loos",
-    repo="https://github.com/danlooo/DGGS.jl/blob/{commit}{path}#{line}",
     sitename="DGGS.jl",
     format=DocumenterVitepress.MarkdownVitepress(
         repo="github.com/danlooo/DGGS.jl",
         devbranch="main",
         devurl="dev",
-        clean_md_output=false
+        # clean_md_output=false
     ),
     pages=[
         "Home" => "index.md",
@@ -30,5 +29,8 @@ makedocs(;
 
 deploydocs(;
     repo="github.com/danlooo/DGGS.jl",
-    devbranch="main"
+    target="build", # this is where Vitepress stores its output
+    devbranch="main",
+    branch = "gh-pages",
+    push_preview = true
 )
