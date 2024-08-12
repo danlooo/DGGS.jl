@@ -180,6 +180,8 @@ function transform_points(
     return cell_ids
 end
 
+transform_points(lon::T, lat::T, level::Integer) where {T<:Real} = transform_points([(lon, lat)], level)[1]
+
 function create_cell_ids(
     lon_range::AbstractRange{T},
     lat_range::AbstractRange{T},
