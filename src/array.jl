@@ -88,7 +88,7 @@ function Base.getindex(a::DGGSArray, center::Q2DI, radii::UnitRange{R}; kwargs..
     return res
 end
 
-function Base.getindex(a::DGGSArray, lon::Real, lat::Real, args...; kwargs...)
+function Base.getindex(a::DGGSArray, lon::AbstractFloat, lat::AbstractFloat, args...; kwargs...)
     center = transform_points([(lon, lat)], a.level)[1]
     res = getindex(a, center, args...; kwargs...)
     return res
