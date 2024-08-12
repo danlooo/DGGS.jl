@@ -144,6 +144,7 @@ function get_window_pad_i_end(a, center, disk_size, mask)
         ),
         a.data[
             q2di_n=Dict(
+                2 => 7,
                 3 => 8,
                 5 => 10
             )[center.n],
@@ -177,9 +178,12 @@ function get_window_pad_j_end(a, center, disk_size, mask)
             non_spatial_axes...
         ),
         a.data[
-            q2di_n=Dict(5 => 6)[center.n],
+            q2di_n=Dict(
+                2 => 3,
+                5 => 6
+            )[center.n],
             q2di_i=1:pad_size,
-            q2di_j=range(stop=-center.i + quad_size + pad_size + 1, length=length(main.q2di_i))
+            q2di_j=range(stop=-center.i + quad_size + pad_size + 1, length=length(main.q2di_i)) |> reverse
         ].data,
         Dict()
     )
@@ -223,6 +227,10 @@ function Base.getindex(a::DGGSArray, center::Q2DI, span::Integer, type::Symbol)
         window = get_window_pad_i_end(a, center, span, mask)
     elseif i_is_in_same_quad & (1 <= jrange.start <= quad_size < jrange.stop)
         window = get_window_pad_j_end(a, center, span, mask)
+
+        if center.n in [5]
+            mask = hcat(mask[:, 1:span-1], mask[:, span:-1:1])
+        end
     else
         error("edge case not implemented")
     end
