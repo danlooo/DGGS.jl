@@ -57,9 +57,9 @@ Base.getindex(a::DGGSArray, center::Q2DI; kwargs...) = getindex(a.data, q2di_n=c
 
 
 "get a cell of a DGGSArray"
-function Base.getindex(a::DGGSArray, n::T, i::U, j::V; kwargs...) where {T<:Integer,U<:Integer,V<:Integer}
+function Base.getindex(a::DGGSArray, n::Integer, i::Integer, j::Integer, args...; kwargs...)
     center = Q2DI(n, i, j)
-    return getindex(a, center; kwargs...)
+    return getindex(a, center, args...; kwargs...)
 end
 
 "get a ring of a DGGArray"
