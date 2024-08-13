@@ -54,22 +54,48 @@ function get_window_pad_j_start(a::DGGSArray, center::Q2DI, disk_size::Integer)
         q2di_j=clip(jrange, a.level)
     ]
     non_spatial_axes = filter(x -> !startswith(String(DimensionalData.name(x)), "q2di"), a.data.axes)
-    padding = YAXArray((
-            main.q2di_i,
-            Dim{:q2di_j}(jrange.start-1:-1),
-            non_spatial_axes...
-        ),
-        a.data[
-            q2di_n=Dict(
-                2 => 11,
-                3 => 7,
-                5 => 9
-            )[center.n],
-            q2di_i=irange,
-            q2di_j=range(length=length(jrange) - length(main.q2di_j), stop=quad_size)
-        ],
-        Dict()
-    )
+
+    if center.n in 2:6
+        padding = YAXArray((
+                main.q2di_i,
+                Dim{:q2di_j}(jrange.start-1:-1),
+                non_spatial_axes...
+            ),
+            a.data[
+                q2di_n=Dict(
+                    2 => 11,
+                    3 => 7,
+                    4 => 8,
+                    5 => 9,
+                    6 => 10,
+                )[center.n],
+                q2di_i=irange,
+                q2di_j=range(length=length(jrange) - length(main.q2di_j), stop=quad_size)
+            ],
+            Dict()
+        )
+    else
+        # involves additional adjoint
+        padding = YAXArray((
+                main.q2di_i,
+                Dim{:q2di_j}(jrange.start-1:-1),
+                non_spatial_axes...
+            ),
+            a.data[
+                q2di_n=Dict(
+                    7 => 11,
+                    8 => 7,
+                    9 => 8,
+                    10 => 9,
+                    11 => 10
+                )[center.n],
+                q2di_i=quad_size-abs(jrange.start):quad_size,
+                q2di_j=reverse(irange)
+            ]',
+            Dict()
+        )
+    end
+
     padded = cat(padding, main, dims=:q2di_j)
     return padded
 end
@@ -231,6 +257,7 @@ function Base.getindex(a::DGGSArray, center::Q2DI, span::Integer, type::Symbol)
     elseif i_is_in_same_quad & (1 <= jrange.start <= quad_size < jrange.stop)
         window = get_window_pad_j_end(a, center, span, mask)
 
+        # TODO: Handle other edge cases
         if center.n in [5]
             mask = hcat(mask[:, 1:span-1], mask[:, span:-1:1])
         end
