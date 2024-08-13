@@ -174,7 +174,9 @@ function get_window_pad_i_end(a, center, disk_size, mask)
             q2di_n=Dict(
                 2 => 7,
                 3 => 8,
-                5 => 10
+                4 => 9,
+                5 => 10,
+                6 => 11
             )[center.n],
             q2di_i=1:pad_size,
             q2di_j=clip(jrange, a.level)
