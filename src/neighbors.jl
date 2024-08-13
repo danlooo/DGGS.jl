@@ -96,14 +96,16 @@ function get_window_pad_i_start(a::DGGSArray, center::Q2DI, disk_size::Integer, 
         a.data[
             # last reversed rows of neighboring quads
             q2di_n=Dict(
-                10 => 9,
-                11 => 10,
                 2 => 6,
                 3 => 2,
+                4 => 3,
                 5 => 4,
+                6 => 5,
                 7 => 11,
                 8 => 7,
                 9 => 8,
+                10 => 9,
+                11 => 10,
             )[center.n],
             q2di_i=range(length=mask_size, start=quad_size - pad_size - center.j + 2) |> reverse,
             q2di_j=range(length=length(irange.start:0), stop=width(a.level))
@@ -180,6 +182,7 @@ function get_window_pad_j_end(a, center, disk_size, mask)
         a.data[
             q2di_n=Dict(
                 2 => 3,
+                3 => 4,
                 5 => 6
             )[center.n],
             q2di_i=1:pad_size,
@@ -245,4 +248,3 @@ function Base.getindex(a::DGGSArray, center::Q2DI, span::Integer, type::Symbol)
     )
     return masked
 end
-
