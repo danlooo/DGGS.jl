@@ -75,6 +75,7 @@ function get_window_pad_j_start(a::DGGSArray, center::Q2DI, disk_size::Integer)
             Dict()
         )
     else
+        mask_size = length(main.q2di_i)
         # involves additional adjoint
         padding = YAXArray((
                 main.q2di_i,
@@ -89,8 +90,8 @@ function get_window_pad_j_start(a::DGGSArray, center::Q2DI, disk_size::Integer)
                     10 => 9,
                     11 => 10
                 )[center.n],
-                q2di_i=quad_size-abs(jrange.start):quad_size,
-                q2di_j=reverse(irange)
+                q2di_i=range(stop=quad_size, length=length(jrange.start-1:-1)),
+                q2di_j=range(start=quad_size - center.i - disk_size + 3, length=mask_size) |> reverse
             ]',
             Dict()
         )
@@ -165,24 +166,42 @@ function get_window_pad_i_end(a, center, disk_size, mask)
     ]
     non_spatial_axes = filter(x -> !startswith(String(DimensionalData.name(x)), "q2di"), a.data.axes)
 
-    padding = YAXArray((
-            Dim{:q2di_i}(quad_size:irange.stop-1),
-            main.q2di_j,
-            non_spatial_axes...
-        ),
-        a.data[
-            q2di_n=Dict(
-                2 => 7,
-                3 => 8,
-                4 => 9,
-                5 => 10,
-                6 => 11
-            )[center.n],
-            q2di_i=1:pad_size,
-            q2di_j=clip(jrange, a.level)
-        ].data,
-        Dict()
-    )
+    if center.n in 2:6
+        padding = YAXArray((
+                Dim{:q2di_i}(quad_size:irange.stop-1),
+                main.q2di_j,
+                non_spatial_axes...
+            ),
+            a.data[
+                q2di_n=Dict(
+                    2 => 7,
+                    3 => 8,
+                    4 => 9,
+                    5 => 10,
+                    6 => 11
+                )[center.n],
+                q2di_i=1:pad_size,
+                q2di_j=clip(jrange, a.level)
+            ].data,
+            Dict()
+        )
+    else
+        # last reversed rows of neighboring quads
+        padding = YAXArray((
+                Dim{:q2di_i}(quad_size:irange.stop-1),
+                main.q2di_j,
+                non_spatial_axes...
+            ),
+            a.data[
+                q2di_n=Dict(
+                    7 => 8
+                )[center.n],
+                q2di_i=range(stop=jrange.stop, length=mask_size) |> reverse,
+                q2di_j=1:pad_size
+            ].data',
+            Dict()
+        )
+    end
 
     padded = cat(main, padding, dims=:q2di_i)
     return padded
