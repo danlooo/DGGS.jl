@@ -91,7 +91,7 @@ function get_window_pad_j_start(a::DGGSArray, center::Q2DI, disk_size::Integer)
                     11 => 10
                 )[center.n],
                 q2di_i=range(stop=quad_size, length=length(jrange.start-1:-1)),
-                q2di_j=range(start=quad_size - center.i - disk_size + 3, length=mask_size) |> reverse
+                q2di_j=range(start=quad_size - center.i - disk_size + 2, length=mask_size) |> reverse
             ]',
             Dict()
         )
@@ -188,19 +188,28 @@ function get_window_pad_i_end(a, center, disk_size, mask)
     else
         # last reversed rows of neighboring quads
         padding = YAXArray((
-                Dim{:q2di_i}(quad_size:irange.stop-1),
                 main.q2di_j,
+                Dim{:q2di_i}(quad_size:irange.stop-1),
                 non_spatial_axes...
             ),
             a.data[
                 q2di_n=Dict(
                     7 => 8
                 )[center.n],
-                q2di_i=range(stop=jrange.stop, length=mask_size) |> reverse,
-                q2di_j=1:pad_size
-            ].data',
+                q2di_i=range(start=quad_size - center.j - disk_size + 2, length=mask_size) |> reverse,
+                q2di_j=range(start=1, length=length(quad_size:irange.stop-1))
+            ].data,
             Dict()
         )
+
+        # permute dims to match main, needed for cat
+        if length(non_spatial_axes) == 0
+            padding = permutedims(padding, (2, 1))
+        elseif length(non_spatial_axes) == 1
+            padding = permutedims(padding, (2, 1, 3))
+        else
+            padding = permutedims(padding, (2, 1, 3:3+length(non_spatial_axes)...))
+        end
     end
 
     padded = cat(main, padding, dims=:q2di_i)
