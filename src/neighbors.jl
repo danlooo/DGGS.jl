@@ -36,6 +36,28 @@ function clip(r::UnitRange, level)
     return start:stop
 end
 
+function cat_padding(main, padding, axes)
+    if name.(main.axes) != name.(padding.axes)
+        non_spatial_axes = filter(x -> !startswith(String(name(x)), "q2di"), main.axes)
+
+        # permute dims to match main, needed for cat
+        if length(non_spatial_axes) == 0
+            padding = permutedims(padding, (2, 1))
+        elseif length(non_spatial_axes) == 1
+            padding = permutedims(padding, (2, 1, 3))
+        else
+            padding = permutedims(padding, (2, 1, 3:3+length(non_spatial_axes)...))
+        end
+    end
+
+    # collect to prevent data scrambling in DiskArray
+    main = YAXArray(main.axes, collect(main.data))
+    padding = YAXArray(padding.axes, collect(padding.data))
+
+    padded = cat(main, padding, dims=axes)
+    return padded
+end
+
 function get_window_pad_nothing(a::DGGSArray, center::Q2DI, disk_size::Integer)
     # all cells of mask are within one quad
     irange = center.i-(disk_size-1):center.i+(disk_size-1)
@@ -140,15 +162,7 @@ function get_window_pad_i_start(a::DGGSArray, center::Q2DI, disk_size::Integer, 
         Dict()
     )
 
-    # permute dims to match main, needed for cat
-    if length(non_spatial_axes) == 0
-        padding = permutedims(padding, (2, 1))
-    elseif length(non_spatial_axes) == 1
-        padding = permutedims(padding, (2, 1, 3))
-    else
-        padding = permutedims(padding, (2, 1, 3:3+length(non_spatial_axes)...))
-    end
-    padded = cat(padding, main, dims=:q2di_i)
+    padded = cat_padding(padding, main, :q2di_i)
     return padded
 end
 
@@ -201,18 +215,9 @@ function get_window_pad_i_end(a, center, disk_size, mask)
             ].data,
             Dict()
         )
-
-        # permute dims to match main, needed for cat
-        if length(non_spatial_axes) == 0
-            padding = permutedims(padding, (2, 1))
-        elseif length(non_spatial_axes) == 1
-            padding = permutedims(padding, (2, 1, 3))
-        else
-            padding = permutedims(padding, (2, 1, 3:3+length(non_spatial_axes)...))
-        end
     end
 
-    padded = cat(main, padding, dims=:q2di_i)
+    padded = cat_padding(main, padding, :q2di_i)
     return padded
 end
 
@@ -247,15 +252,7 @@ function get_window_pad_j_end(a, center, disk_size, mask)
         Dict()
     )
 
-    # permute dims to match main, needed for cat
-    if length(non_spatial_axes) == 0
-        padding = permutedims(padding, (2, 1))
-    elseif length(non_spatial_axes) == 1
-        padding = permutedims(padding, (2, 1, 3))
-    else
-        padding = permutedims(padding, (2, 1, 3:3+length(non_spatial_axes)...))
-    end
-    padded = cat(main, padding, dims=:q2di_j)
+    padded = cat_padding(main, padding, :q2di_j)
     return padded
 end
 
