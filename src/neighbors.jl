@@ -235,23 +235,45 @@ function get_window_pad_j_end(a, center, disk_size, mask)
     ]
     non_spatial_axes = filter(x -> !startswith(String(DimensionalData.name(x)), "q2di"), a.data.axes)
 
-    padding = YAXArray((
-            Dim{:q2di_j}(quad_size:jrange.stop-1),
-            main.q2di_i,
-            non_spatial_axes...
-        ),
-        a.data[
-            q2di_n=Dict(
-                2 => 3,
-                3 => 4,
-                4 => 5,
-                5 => 6
-            )[center.n],
-            q2di_i=1:pad_size,
-            q2di_j=range(stop=-center.i + quad_size + pad_size + 2, length=length(main.q2di_i)) |> reverse
-        ].data,
-        Dict()
-    )
+    if center.n in 2:6
+        padding = YAXArray((
+                Dim{:q2di_j}(quad_size:jrange.stop-1),
+                main.q2di_i,
+                non_spatial_axes...
+            ),
+            a.data[
+                q2di_n=Dict(
+                    2 => 3,
+                    3 => 4,
+                    4 => 5,
+                    5 => 6,
+                    6 => 2
+                )[center.n],
+                q2di_i=1:pad_size,
+                q2di_j=range(stop=-center.i + quad_size + pad_size + 2, length=length(main.q2di_i)) |> reverse
+            ].data,
+            Dict()
+        )
+    else
+        padding = YAXArray((
+                main.q2di_i,
+                Dim{:q2di_j}(quad_size:jrange.stop-1),
+                non_spatial_axes...
+            ),
+            a.data[
+                q2di_n=Dict(
+                    7 => 3,
+                    8 => 4,
+                    9 => 5,
+                    10 => 6,
+                    11 => 2
+                )[center.n],
+                q2di_i=irange,
+                q2di_j=range(start=1, length=length(quad_size:jrange.stop-1))
+            ].data,
+            Dict()
+        )
+    end
 
     padded = cat_padding(main, padding, :q2di_j)
     return padded
