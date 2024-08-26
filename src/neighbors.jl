@@ -244,10 +244,11 @@ function get_window_pad_j_end(a, center, disk_size, mask)
             q2di_n=Dict(
                 2 => 3,
                 3 => 4,
+                4 => 5,
                 5 => 6
             )[center.n],
             q2di_i=1:pad_size,
-            q2di_j=range(stop=-center.i + quad_size + pad_size + 1, length=length(main.q2di_i)) |> reverse
+            q2di_j=range(stop=-center.i + quad_size + pad_size + 2, length=length(main.q2di_i)) |> reverse
         ].data,
         Dict()
     )
