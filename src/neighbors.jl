@@ -208,7 +208,11 @@ function get_window_pad_i_end(a, center, disk_size, mask)
             ),
             a.data[
                 q2di_n=Dict(
-                    7 => 8
+                    7 => 8,
+                    8 => 9,
+                    9 => 10,
+                    10 => 11,
+                    11 => 7
                 )[center.n],
                 q2di_i=range(start=quad_size - center.j - disk_size + 2, length=mask_size) |> reverse,
                 q2di_j=range(start=1, length=length(quad_size:irange.stop-1))
