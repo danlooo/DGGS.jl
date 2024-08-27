@@ -36,6 +36,28 @@ function clip(r::UnitRange, level)
     return start:stop
 end
 
+function cat_padding(main, padding, axes)
+    if name.(main.axes) != name.(padding.axes)
+        non_spatial_axes = filter(x -> !startswith(String(name(x)), "q2di"), main.axes)
+
+        # permute dims to match main, needed for cat
+        if length(non_spatial_axes) == 0
+            padding = permutedims(padding, (2, 1))
+        elseif length(non_spatial_axes) == 1
+            padding = permutedims(padding, (2, 1, 3))
+        else
+            padding = permutedims(padding, (2, 1, 3:3+length(non_spatial_axes)...))
+        end
+    end
+
+    # collect to prevent data scrambling in DiskArray
+    main = YAXArray(main.axes, collect(main.data))
+    padding = YAXArray(padding.axes, collect(padding.data))
+
+    padded = cat(main, padding, dims=axes)
+    return padded
+end
+
 function get_window_pad_nothing(a::DGGSArray, center::Q2DI, disk_size::Integer)
     # all cells of mask are within one quad
     irange = center.i-(disk_size-1):center.i+(disk_size-1)
@@ -54,22 +76,49 @@ function get_window_pad_j_start(a::DGGSArray, center::Q2DI, disk_size::Integer)
         q2di_j=clip(jrange, a.level)
     ]
     non_spatial_axes = filter(x -> !startswith(String(DimensionalData.name(x)), "q2di"), a.data.axes)
-    padding = YAXArray((
-            main.q2di_i,
-            Dim{:q2di_j}(jrange.start-1:-1),
-            non_spatial_axes...
-        ),
-        a.data[
-            q2di_n=Dict(
-                2 => 11,
-                3 => 7,
-                5 => 9
-            )[center.n],
-            q2di_i=irange,
-            q2di_j=range(length=length(jrange) - length(main.q2di_j), stop=quad_size)
-        ],
-        Dict()
-    )
+
+    if center.n in 2:6
+        padding = YAXArray((
+                main.q2di_i,
+                Dim{:q2di_j}(jrange.start-1:-1),
+                non_spatial_axes...
+            ),
+            a.data[
+                q2di_n=Dict(
+                    2 => 11,
+                    3 => 7,
+                    4 => 8,
+                    5 => 9,
+                    6 => 10,
+                )[center.n],
+                q2di_i=irange,
+                q2di_j=range(length=length(jrange) - length(main.q2di_j), stop=quad_size)
+            ],
+            Dict()
+        )
+    else
+        mask_size = length(main.q2di_i)
+        # involves additional adjoint
+        padding = YAXArray((
+                main.q2di_i,
+                Dim{:q2di_j}(jrange.start-1:-1),
+                non_spatial_axes...
+            ),
+            a.data[
+                q2di_n=Dict(
+                    7 => 11,
+                    8 => 7,
+                    9 => 8,
+                    10 => 9,
+                    11 => 10
+                )[center.n],
+                q2di_i=range(stop=quad_size, length=length(jrange.start-1:-1)),
+                q2di_j=range(start=quad_size - center.i - disk_size + 2, length=mask_size) |> reverse
+            ]',
+            Dict()
+        )
+    end
+
     padded = cat(padding, main, dims=:q2di_j)
     return padded
 end
@@ -96,14 +145,16 @@ function get_window_pad_i_start(a::DGGSArray, center::Q2DI, disk_size::Integer, 
         a.data[
             # last reversed rows of neighboring quads
             q2di_n=Dict(
-                10 => 9,
-                11 => 10,
                 2 => 6,
                 3 => 2,
+                4 => 3,
                 5 => 4,
+                6 => 5,
                 7 => 11,
                 8 => 7,
                 9 => 8,
+                10 => 9,
+                11 => 10,
             )[center.n],
             q2di_i=range(length=mask_size, start=quad_size - pad_size - center.j + 2) |> reverse,
             q2di_j=range(length=length(irange.start:0), stop=width(a.level))
@@ -111,15 +162,7 @@ function get_window_pad_i_start(a::DGGSArray, center::Q2DI, disk_size::Integer, 
         Dict()
     )
 
-    # permute dims to match main, needed for cat
-    if length(non_spatial_axes) == 0
-        padding = permutedims(padding, (2, 1))
-    elseif length(non_spatial_axes) == 1
-        padding = permutedims(padding, (2, 1, 3))
-    else
-        padding = permutedims(padding, (2, 1, 3:3+length(non_spatial_axes)...))
-    end
-    padded = cat(padding, main, dims=:q2di_i)
+    padded = cat_padding(padding, main, :q2di_i)
     return padded
 end
 
@@ -137,23 +180,48 @@ function get_window_pad_i_end(a, center, disk_size, mask)
     ]
     non_spatial_axes = filter(x -> !startswith(String(DimensionalData.name(x)), "q2di"), a.data.axes)
 
-    padding = YAXArray((
-            Dim{:q2di_i}(quad_size:irange.stop-1),
-            main.q2di_j,
-            non_spatial_axes...
-        ),
-        a.data[
-            q2di_n=Dict(
-                3 => 8,
-                5 => 10
-            )[center.n],
-            q2di_i=1:pad_size,
-            q2di_j=clip(jrange, a.level)
-        ].data,
-        Dict()
-    )
+    if center.n in 2:6
+        padding = YAXArray((
+                Dim{:q2di_i}(quad_size:irange.stop-1),
+                main.q2di_j,
+                non_spatial_axes...
+            ),
+            a.data[
+                q2di_n=Dict(
+                    2 => 7,
+                    3 => 8,
+                    4 => 9,
+                    5 => 10,
+                    6 => 11
+                )[center.n],
+                q2di_i=1:pad_size,
+                q2di_j=clip(jrange, a.level)
+            ].data,
+            Dict()
+        )
+    else
+        # last reversed rows of neighboring quads
+        padding = YAXArray((
+                main.q2di_j,
+                Dim{:q2di_i}(quad_size:irange.stop-1),
+                non_spatial_axes...
+            ),
+            a.data[
+                q2di_n=Dict(
+                    7 => 8,
+                    8 => 9,
+                    9 => 10,
+                    10 => 11,
+                    11 => 7
+                )[center.n],
+                q2di_i=range(start=quad_size - center.j - disk_size + 2, length=mask_size) |> reverse,
+                q2di_j=range(start=1, length=length(quad_size:irange.stop-1))
+            ].data,
+            Dict()
+        )
+    end
 
-    padded = cat(main, padding, dims=:q2di_i)
+    padded = cat_padding(main, padding, :q2di_i)
     return padded
 end
 
@@ -171,28 +239,47 @@ function get_window_pad_j_end(a, center, disk_size, mask)
     ]
     non_spatial_axes = filter(x -> !startswith(String(DimensionalData.name(x)), "q2di"), a.data.axes)
 
-    padding = YAXArray((
-            Dim{:q2di_j}(quad_size:jrange.stop-1),
-            main.q2di_i,
-            non_spatial_axes...
-        ),
-        a.data[
-            q2di_n=Dict(5 => 6)[center.n],
-            q2di_i=1:pad_size,
-            q2di_j=range(stop=-center.i + quad_size + pad_size + 1, length=length(main.q2di_i))
-        ].data,
-        Dict()
-    )
-
-    # permute dims to match main, needed for cat
-    if length(non_spatial_axes) == 0
-        padding = permutedims(padding, (2, 1))
-    elseif length(non_spatial_axes) == 1
-        padding = permutedims(padding, (2, 1, 3))
+    if center.n in 2:6
+        padding = YAXArray((
+                Dim{:q2di_j}(quad_size:jrange.stop-1),
+                main.q2di_i,
+                non_spatial_axes...
+            ),
+            a.data[
+                q2di_n=Dict(
+                    2 => 3,
+                    3 => 4,
+                    4 => 5,
+                    5 => 6,
+                    6 => 2
+                )[center.n],
+                q2di_i=1:pad_size,
+                q2di_j=range(stop=-center.i + quad_size + pad_size + 1, length=length(main.q2di_i)) |> reverse
+            ].data,
+            Dict()
+        )
     else
-        padding = permutedims(padding, (2, 1, 3:3+length(non_spatial_axes)...))
+        padding = YAXArray((
+                main.q2di_i,
+                Dim{:q2di_j}(quad_size:jrange.stop-1),
+                non_spatial_axes...
+            ),
+            a.data[
+                q2di_n=Dict(
+                    7 => 3,
+                    8 => 4,
+                    9 => 5,
+                    10 => 6,
+                    11 => 2
+                )[center.n],
+                q2di_i=irange,
+                q2di_j=range(start=1, length=length(quad_size:jrange.stop-1))
+            ].data,
+            Dict()
+        )
     end
-    padded = cat(main, padding, dims=:q2di_j)
+
+    padded = cat_padding(main, padding, :q2di_j)
     return padded
 end
 
@@ -223,6 +310,11 @@ function Base.getindex(a::DGGSArray, center::Q2DI, span::Integer, type::Symbol)
         window = get_window_pad_i_end(a, center, span, mask)
     elseif i_is_in_same_quad & (1 <= jrange.start <= quad_size < jrange.stop)
         window = get_window_pad_j_end(a, center, span, mask)
+
+        # TODO: Handle other edge cases
+        if center.n in [5]
+            mask = hcat(mask[:, 1:span-1], mask[:, span:-1:1])
+        end
     else
         error("edge case not implemented")
     end
@@ -237,4 +329,3 @@ function Base.getindex(a::DGGSArray, center::Q2DI, span::Integer, type::Symbol)
     )
     return masked
 end
-
