@@ -42,7 +42,10 @@ geo_arr = YAXArray((lon_range, lat_range, time_range), data, Dict())
 a = to_dggs_array(geo_arr, level; lon_name=:X, lat_name=:Y)
 ```
 
-All geographic input coordinates must be th the WGS84 format.
+All geographic input coordinates must be in decimal degrees in the WGS84 format. 
+Longitudes must be within [-180,180] and latitudes must be within [-90,90].
+Arrays must be in ascending order, i.e. sorted from west to east and from south to north.
+
 This requires some adjustments in some datasets:
 
 ```@example convert
@@ -65,6 +68,8 @@ end
 geo_ds = Dataset(; properties=geo_ds.properties, arrs...)
 p = to_dggs_pyramid(geo_ds, level)
 ```
+
+If an axis is in ascending order (e.g. latitude ranging from 90 to -90), it must be reversed beforehand.
 
 ## `DGGSArray` to `DGGSPyramid`
 
