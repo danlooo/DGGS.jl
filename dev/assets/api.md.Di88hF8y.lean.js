@@ -1,0 +1,1 @@
+import{_ as e,c as r,o as a,a7 as d}from"./chunks/framework.DnanIEvF.js";const G=JSON.parse('{"title":"","description":"","frontmatter":{},"headers":[],"relativePath":"api.md","filePath":"api.md","lastUpdated":null}'),o={name:"api.md"},t=d("",32),l=[t];function i(s,b,n,p,c,f){return a(),r("div",null,l)}const u=e(o,[["render",i]]);export{G as __pageData,u as default};
