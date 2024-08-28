@@ -298,8 +298,6 @@ function plot_globe(a::DGGSArray; resolution::Integer=1024)
 
         if length(non_spatial_axes) == 0
             geo_array = to_geo_array(a, cell_ids)
-            min_val = filter_null(minimum)(geo_array)
-            max_val = filter_null(maximum)(geo_array)
             texture = geo_array |>
                       x -> x[1:length(x.lon), length(x.lat):-1:1]' |>
                            collect .|>
@@ -356,7 +354,7 @@ function plot_globe(a::DGGSArray; resolution::Integer=1024)
             north_up_btn.buttoncolor_hover = :black
             north_up_btn.labelcolor_hover = :white
 
-            cb = Colorbar(side_panel[1, 1]; limits=(min_val, max_val), label=get_arr_label(a))
+            cb = Colorbar(side_panel[1, 1]; label=get_arr_label(a))
             fig
         else
             sliders = map(non_spatial_axes) do ax
@@ -381,9 +379,6 @@ function plot_globe(a::DGGSArray; resolution::Integer=1024)
 
                 getindex(a; NamedTuple(d)...) |> x -> to_geo_array(x, cell_ids)
             end
-
-            min_val = @lift filter_null(minimum)($geo_array)
-            max_val = @lift filter_null(maximum)($geo_array)
 
             texture = @lift $geo_array |>
                             x -> x[1:length(x.lon), length(x.lat):-1:1]' |>
@@ -441,7 +436,7 @@ function plot_globe(a::DGGSArray; resolution::Integer=1024)
             north_up_btn.buttoncolor_hover = :black
             north_up_btn.labelcolor_hover = :white
 
-            cb = Colorbar(side_panel[1, 1]; limits=@lift(($min_val, $max_val)), label=get_arr_label(a))
+            cb = Colorbar(side_panel[1, 1]; label=get_arr_label(a))
             fig
         end
     end
@@ -491,11 +486,7 @@ function plot_map(
                 getindex(a; NamedTuple(d)...) |> x -> to_geo_array(x, cell_ids)
             end
 
-            min_val = @lift filter_null(minimum)($geo_array)
-            max_val = @lift filter_null(maximum)($geo_array)
-
             texture = @lift $geo_array |> x -> ismissing(x) ? NaN : x
-
             h, heatmap_plt = heatmap(fig[1, 1], texture, axis=heatmap_ax)
             cb = Colorbar(fig[1, 2], heatmap_plt; label=get_arr_label(a))
             fig
@@ -516,8 +507,6 @@ function plot_native(a::DGGSArray)
 
         if length(non_spatial_axes) == 0
             native_array = a.data[q2di_n=2:11] |> collect # ignore 2 vertices at quad 1 and 12
-            min_val = filter_null(minimum)(native_array)
-            max_val = filter_null(maximum)(native_array)
             texture = native_array |>
                       x -> reshape(x, size(x)[1], 10 * size(x)[1]) .|>
                            x -> ismissing(x) ? NaN : x
@@ -572,7 +561,7 @@ function plot_native(a::DGGSArray)
             north_up_btn.buttoncolor_hover = :black
             north_up_btn.labelcolor_hover = :white
 
-            cb = Colorbar(side_panel[1, 1]; limits=(min_val, max_val), label=get_arr_label(a))
+            cb = Colorbar(side_panel[1, 1]; label=get_arr_label(a))
             fig
         else
             sliders = map(non_spatial_axes) do ax
@@ -597,9 +586,6 @@ function plot_native(a::DGGSArray)
 
                 getindex(a; NamedTuple(d)...) |> x -> x.data[q2di_n=2:11] |> collect
             end
-
-            min_val = @lift filter_null(minimum)($native_array)
-            max_val = @lift filter_null(maximum)($native_array)
 
             texture = @lift $native_array |>
                             x -> reshape(x, size(x)[1], 10 * size(x)[1]) .|>
@@ -656,7 +642,7 @@ function plot_native(a::DGGSArray)
             north_up_btn.buttoncolor_hover = :black
             north_up_btn.labelcolor_hover = :white
 
-            cb = Colorbar(side_panel[1, 1]; limits=@lift(($min_val, $max_val)), label=get_arr_label(a))
+            cb = Colorbar(side_panel[1, 1]; label=get_arr_label(a))
             fig
         end
     end
