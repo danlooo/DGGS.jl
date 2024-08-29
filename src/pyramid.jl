@@ -82,7 +82,7 @@ function write_dggs_pyramid(base_path::String, dggs::DGGSPyramid)
     end
 
     global_attrs = dggs.attrs
-    global_attrs["dggs_levels"] = levels
+    global_attrs["dggs_levels"] = dggs.levels
 
     JSON3.write("$base_path/.zattrs", global_attrs)
     JSON3.write("$base_path/.zgroup", Dict(:zarr_format => 2))
