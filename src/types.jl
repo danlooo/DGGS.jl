@@ -21,7 +21,7 @@ struct DGGSGridSystem
     projection::String
 end
 
-DGGSGridSystem(d::Dict{String,Any}) = DGGSGridSystem(d["id"], d["index"], d["polygon"], d["aperture"], d["projection"])
+DGGSGridSystem(d::Dict{String,Any}) = DGGSGridSystem(d["dggs_id"], d["dggs_index"], d["dggs_polygon"], d["dggs_aperture"], d["dggs_projection"])
 
 Base.show(io::IO, ::MIME"text/plain", dggs::DGGSGridSystem) = Base.show_default(io, dggs)
 
@@ -96,14 +96,14 @@ end
 
 
 const Q2DI_DGGS_PROPS = Dict(
-    "index" => "Q2DI",
-    "aperture" => 4,
-    "rotation_lon" => 11.25,
-    "polyhedron" => "icosahedron",
-    "id" => "DGGRID ISEA4H Q2DI",
-    "radius" => 6371007.180918475,
-    "polygon" => "hexagon",
-    "rotation_lat" => 58.2825,
-    "projection" => "isea",
-    "rotation_azimuth" => 0
+    "dggs_index" => "Q2DI",
+    "dggs_projection" => "isea",
+    "dggs_id" => "DGGRID ISEA4H Q2DI",
+    "dggs_polyhedron" => "icosahedron",
+    "dggs_polygon" => "hexagon",
+    "dggs_aperture" => 4,
+    "dggs_radius" => 6371007.180918475,
+    "dggs_rotation_lon" => 11.25,
+    "dggs_rotation_lat" => 58.2825,
+    "dggs_rotation_azimuth" => 0
 )

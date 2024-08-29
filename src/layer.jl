@@ -1,6 +1,6 @@
 
 function DGGSLayer(data::YAXArrays.Dataset)
-    haskey(data.properties, "_DGGS") || error("Dataset is not in DGGS format")
+    haskey(data.properties, "dggs_id") || error("Dataset is not in DGGS format")
 
     layer = Dict{Symbol,DGGSArray}()
     for (k, c) in data.cubes
