@@ -19,7 +19,7 @@ a = l.tas
 @test a.id == :tas
 @test length(p.attrs) == length(l.attrs)
 @test length(a.attrs) > length(p.attrs)
-@test (setdiff(p.attrs, l.attrs) .|> x -> x.first) == ["_DGGS"] # same global attrs expect DGGS level
+@test (setdiff(p.attrs, l.attrs) .|> x -> x.first) == ["dggs_level"] # same global attrs expect DGGS level
 
 @test a[10, 1, 1] isa YAXArray
 @test (a[10, 1, 1] .== a[Q2DI(10, 1, 1)]) |> collect |> all
@@ -92,8 +92,8 @@ data = zeros(4, 4, 12)
 data[:, :, 2] = [0 0 0 0; 0 0 0 0; 0 0 1 1; 0 0 1 1]
 level = 3
 axs = (Dim{:q2di_i}(1:4), Dim{:q2di_j}(1:4), Dim{:q2di_n}(1:12))
-props = Dict("_DGGS" => deepcopy(DGGS.Q2DI_DGGS_PROPS))
-props["_DGGS"]["level"] = level
+props = deepcopy(DGGS.Q2DI_DGGS_PROPS)
+props["dggs_level"] = level
 a = YAXArray(axs, data, props) |> DGGSArray
 p = to_dggs_pyramid(a)
 expected = [0 0; 0 0.625]

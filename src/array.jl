@@ -20,9 +20,9 @@ function DGGSArray(arr::AbstractArray, level::Integer, id=:layer)
         Dim{:q2di_n}(0:11),
     )
 
-    props = DGGS.Q2DI_DGGS_PROPS
-    props["name"] => id
-    props["dggs_level"] => level
+    props = deepcopy(DGGS.Q2DI_DGGS_PROPS)
+    props["name"] = id
+    props["dggs_level"] = level
 
     data = YAXArray(axs, arr, props)
     DGGSArray(data)
