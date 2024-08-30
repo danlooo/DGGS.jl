@@ -8,11 +8,11 @@
     <meta name="generator" content="VitePress v1.3.4">
     <link rel="preload stylesheet" href="/DGGS.jl/dev/assets/style.CqIzQRkt.css" as="style">
     
-    <script type="module" src="/DGGS.jl/dev/assets/app.DnWK7cqP.js"></script>
+    <script type="module" src="/DGGS.jl/dev/assets/app.Dwu-f5pY.js"></script>
     <link rel="preload" href="/DGGS.jl/dev/assets/inter-roman-latin.Di8DUHzh.woff2" as="font" type="font/woff2" crossorigin="">
-    <link rel="modulepreload" href="/DGGS.jl/dev/assets/chunks/theme.Dcix0TSA.js">
+    <link rel="modulepreload" href="/DGGS.jl/dev/assets/chunks/theme.B51Pbdcg.js">
     <link rel="modulepreload" href="/DGGS.jl/dev/assets/chunks/framework.DnanIEvF.js">
-    <link rel="modulepreload" href="/DGGS.jl/dev/assets/select.md.ofFWjdTV.lean.js">
+    <link rel="modulepreload" href="/DGGS.jl/dev/assets/select.md.BGXmB1cr.lean.js">
     <script id="check-dark-mode">(()=>{const e=localStorage.getItem("vitepress-theme-appearance")||"auto",a=window.matchMedia("(prefers-color-scheme: dark)").matches;(!e||e==="auto"?a:e==="dark")&&document.documentElement.classList.add("dark")})();</script>
     <script id="check-mac-os">document.documentElement.classList.toggle("mac",/Mac|iPhone|iPod|iPad/i.test(navigator.platform));</script>
   </head>
@@ -35,45 +35,65 @@
 <span class="line"><span>Name:		ndvi</span></span>
 <span class="line"><span>Units:		NDVI</span></span>
 <span class="line"><span>DGGS:		DGGRID ISEA4H Q2DI ⬢ at level 5</span></span>
-<span class="line"><span>Attributes:	8</span></span>
+<span class="line"><span>Attributes:	18</span></span>
 <span class="line"><span>Non spatial axes:</span></span>
 <span class="line"><span>  Ti 216 Dates.DateTime points</span></span></code></pre></div><p>Additional filtering by any non-spatial axes e.g. <code>Time</code> still results in a <code>DGGSArray</code>:</p><div class="language-julia vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">julia</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">p[</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">5</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">]</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">.</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">ndvi[Time</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">=</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">1</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">]</span></span></code></pre></div><div class="language- vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>DGGSArray{Union{Missing, Float32}, 5}</span></span>
 <span class="line"><span>Name:		NDVI</span></span>
 <span class="line"><span>Units:		NDVI</span></span>
 <span class="line"><span>DGGS:		DGGRID ISEA4H Q2DI ⬢ at level 5</span></span>
-<span class="line"><span>Attributes:	8</span></span>
+<span class="line"><span>Attributes:	18</span></span>
 <span class="line"><span>Non spatial axes:</span></span></code></pre></div><p>Further filtering will return a <code>YAXArray</code> instead:</p><div class="language-julia vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">julia</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">p[</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">5</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">]</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">.</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">ndvi[Time</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">=</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">1</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">][q2di_n </span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">=</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> 2</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">]</span></span></code></pre></div><div class="language- vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>╭───────────────────────────────────────────╮</span></span>
 <span class="line"><span>│ 16×16 YAXArray{Union{Missing, Float32},2} │</span></span>
 <span class="line"><span>├───────────────────────────────────────────┴───────────── dims ┐</span></span>
 <span class="line"><span>  ↓ q2di_i Sampled{Int64} 0:1:15 ForwardOrdered Regular Points,</span></span>
 <span class="line"><span>  → q2di_j Sampled{Int64} 0:1:15 ForwardOrdered Regular Points</span></span>
-<span class="line"><span>├───────────────────────────────────────────────────────────────┴──── metadata ┐</span></span>
-<span class="line"><span>  Dict{String, Any} with 8 entries:</span></span>
-<span class="line"><span>  &quot;units&quot;         =&gt; &quot;NDVI&quot;</span></span>
-<span class="line"><span>  &quot;missing_value&quot; =&gt; -9999.0</span></span>
-<span class="line"><span>  &quot;name&quot;          =&gt; &quot;NDVI&quot;</span></span>
-<span class="line"><span>  &quot;_DGGS&quot;         =&gt; Dict{String, Any}(&quot;aperture&quot;=&gt;4, &quot;index&quot;=&gt;&quot;Q2DI&quot;, &quot;id&quot;=&gt;&quot;D…</span></span>
-<span class="line"><span>  &quot;add_offset&quot;    =&gt; 0.0</span></span>
-<span class="line"><span>  &quot;long_name&quot;     =&gt; &quot;monthly NDVI CMG 0.05 Deg Monthly NDVI&quot;</span></span>
-<span class="line"><span>  &quot;scale_factor&quot;  =&gt; 0.0001</span></span>
-<span class="line"><span>  &quot;_FillValue&quot;    =&gt; -9999.0</span></span>
-<span class="line"><span>├─────────────────────────────────────────────────────────────────── file size ┤ </span></span>
+<span class="line"><span>├───────────────────────────────────────────────────── metadata ┤</span></span>
+<span class="line"><span>  Dict{String, Any} with 18 entries:</span></span>
+<span class="line"><span>  &quot;dggs_radius&quot;           =&gt; 6.37101e6</span></span>
+<span class="line"><span>  &quot;long_name&quot;             =&gt; &quot;monthly NDVI CMG 0.05 Deg Monthly NDVI&quot;</span></span>
+<span class="line"><span>  &quot;dggs_rotation_azimuth&quot; =&gt; 0</span></span>
+<span class="line"><span>  &quot;scale_factor&quot;          =&gt; 0.0001</span></span>
+<span class="line"><span>  &quot;dggs_rotation_lon&quot;     =&gt; 11.25</span></span>
+<span class="line"><span>  &quot;dggs_id&quot;               =&gt; &quot;DGGRID ISEA4H Q2DI&quot;</span></span>
+<span class="line"><span>  &quot;dggs_polygon&quot;          =&gt; &quot;hexagon&quot;</span></span>
+<span class="line"><span>  &quot;dggs_level&quot;            =&gt; 5</span></span>
+<span class="line"><span>  &quot;_FillValue&quot;            =&gt; -9999.0</span></span>
+<span class="line"><span>  &quot;units&quot;                 =&gt; &quot;NDVI&quot;</span></span>
+<span class="line"><span>  &quot;name&quot;                  =&gt; &quot;NDVI&quot;</span></span>
+<span class="line"><span>  &quot;dggs_polyhedron&quot;       =&gt; &quot;icosahedron&quot;</span></span>
+<span class="line"><span>  &quot;missing_value&quot;         =&gt; -9999.0</span></span>
+<span class="line"><span>  &quot;add_offset&quot;            =&gt; 0.0</span></span>
+<span class="line"><span>  &quot;dggs_projection&quot;       =&gt; &quot;isea&quot;</span></span>
+<span class="line"><span>  &quot;dggs_rotation_lat&quot;     =&gt; 58.2825</span></span>
+<span class="line"><span>  &quot;dggs_aperture&quot;         =&gt; 4</span></span>
+<span class="line"><span>  &quot;dggs_index&quot;            =&gt; &quot;Q2DI&quot;</span></span>
+<span class="line"><span>├──────────────────────────────────────────────────── file size ┤ </span></span>
 <span class="line"><span>  file size: 1.0 KB</span></span>
-<span class="line"><span>└──────────────────────────────────────────────────────────────────────────────┘</span></span></code></pre></div><h2 id="Select-cells-and-its-neighbors" tabindex="-1">Select cells and its neighbors <a class="header-anchor" href="#Select-cells-and-its-neighbors" aria-label="Permalink to &quot;Select cells and its neighbors {#Select-cells-and-its-neighbors}&quot;">​</a></h2><p>Select a single cell using geographical coordinates (lon, lat):</p><div class="language-julia vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">julia</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">a </span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">=</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;"> p[</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">6</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">]</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">.</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">ndvi</span></span>
+<span class="line"><span>└───────────────────────────────────────────────────────────────┘</span></span></code></pre></div><h2 id="Select-cells-and-its-neighbors" tabindex="-1">Select cells and its neighbors <a class="header-anchor" href="#Select-cells-and-its-neighbors" aria-label="Permalink to &quot;Select cells and its neighbors {#Select-cells-and-its-neighbors}&quot;">​</a></h2><p>Select a single cell using geographical coordinates (lon, lat):</p><div class="language-julia vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">julia</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">a </span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">=</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;"> p[</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">6</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">]</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">.</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">ndvi</span></span>
 <span class="line"><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">a[</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">11.586</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">, </span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">50.927</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">]</span></span></code></pre></div><div class="language- vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>╭─────────────────────────────────────────────────╮</span></span>
 <span class="line"><span>│ 216-element YAXArray{Union{Missing, Float32},1} │</span></span>
 <span class="line"><span>├─────────────────────────────────────────────────┴────────────────────── dims ┐</span></span>
 <span class="line"><span>  ↓ Ti Sampled{Dates.DateTime} [2001-01-01T00:00:00, …, 2018-12-01T00:00:00] ForwardOrdered Irregular Points</span></span>
 <span class="line"><span>├──────────────────────────────────────────────────────────────────── metadata ┤</span></span>
-<span class="line"><span>  Dict{String, Any} with 8 entries:</span></span>
-<span class="line"><span>  &quot;units&quot;         =&gt; &quot;NDVI&quot;</span></span>
-<span class="line"><span>  &quot;missing_value&quot; =&gt; -9999.0</span></span>
-<span class="line"><span>  &quot;name&quot;          =&gt; &quot;NDVI&quot;</span></span>
-<span class="line"><span>  &quot;_DGGS&quot;         =&gt; Dict{String, Any}(&quot;aperture&quot;=&gt;4, &quot;index&quot;=&gt;&quot;Q2DI&quot;, &quot;id&quot;=&gt;&quot;D…</span></span>
-<span class="line"><span>  &quot;add_offset&quot;    =&gt; 0.0</span></span>
-<span class="line"><span>  &quot;long_name&quot;     =&gt; &quot;monthly NDVI CMG 0.05 Deg Monthly NDVI&quot;</span></span>
-<span class="line"><span>  &quot;scale_factor&quot;  =&gt; 0.0001</span></span>
-<span class="line"><span>  &quot;_FillValue&quot;    =&gt; -9999.0</span></span>
+<span class="line"><span>  Dict{String, Any} with 18 entries:</span></span>
+<span class="line"><span>  &quot;dggs_radius&quot;           =&gt; 6.37101e6</span></span>
+<span class="line"><span>  &quot;long_name&quot;             =&gt; &quot;monthly NDVI CMG 0.05 Deg Monthly NDVI&quot;</span></span>
+<span class="line"><span>  &quot;dggs_rotation_azimuth&quot; =&gt; 0</span></span>
+<span class="line"><span>  &quot;scale_factor&quot;          =&gt; 0.0001</span></span>
+<span class="line"><span>  &quot;dggs_rotation_lon&quot;     =&gt; 11.25</span></span>
+<span class="line"><span>  &quot;dggs_id&quot;               =&gt; &quot;DGGRID ISEA4H Q2DI&quot;</span></span>
+<span class="line"><span>  &quot;dggs_polygon&quot;          =&gt; &quot;hexagon&quot;</span></span>
+<span class="line"><span>  &quot;dggs_level&quot;            =&gt; 6</span></span>
+<span class="line"><span>  &quot;_FillValue&quot;            =&gt; -9999.0</span></span>
+<span class="line"><span>  &quot;units&quot;                 =&gt; &quot;NDVI&quot;</span></span>
+<span class="line"><span>  &quot;name&quot;                  =&gt; &quot;NDVI&quot;</span></span>
+<span class="line"><span>  &quot;dggs_polyhedron&quot;       =&gt; &quot;icosahedron&quot;</span></span>
+<span class="line"><span>  &quot;missing_value&quot;         =&gt; -9999.0</span></span>
+<span class="line"><span>  &quot;add_offset&quot;            =&gt; 0.0</span></span>
+<span class="line"><span>  &quot;dggs_projection&quot;       =&gt; &quot;isea&quot;</span></span>
+<span class="line"><span>  &quot;dggs_rotation_lat&quot;     =&gt; 58.2825</span></span>
+<span class="line"><span>  &quot;dggs_aperture&quot;         =&gt; 4</span></span>
+<span class="line"><span>  &quot;dggs_index&quot;            =&gt; &quot;Q2DI&quot;</span></span>
 <span class="line"><span>├─────────────────────────────────────────────────────────────────── file size ┤ </span></span>
 <span class="line"><span>  file size: 864.0 bytes</span></span>
 <span class="line"><span>└──────────────────────────────────────────────────────────────────────────────┘</span></span></code></pre></div><p>Select the same cell using DGGS coordinates (n,i,j):</p><div class="language-julia vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">julia</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">a[</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">3</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">,</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">2</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">,</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">30</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">]</span></span></code></pre></div><div class="language- vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>╭─────────────────────────────────────────────────╮</span></span>
@@ -81,15 +101,25 @@
 <span class="line"><span>├─────────────────────────────────────────────────┴────────────────────── dims ┐</span></span>
 <span class="line"><span>  ↓ Ti Sampled{Dates.DateTime} [2001-01-01T00:00:00, …, 2018-12-01T00:00:00] ForwardOrdered Irregular Points</span></span>
 <span class="line"><span>├──────────────────────────────────────────────────────────────────── metadata ┤</span></span>
-<span class="line"><span>  Dict{String, Any} with 8 entries:</span></span>
-<span class="line"><span>  &quot;units&quot;         =&gt; &quot;NDVI&quot;</span></span>
-<span class="line"><span>  &quot;missing_value&quot; =&gt; -9999.0</span></span>
-<span class="line"><span>  &quot;name&quot;          =&gt; &quot;NDVI&quot;</span></span>
-<span class="line"><span>  &quot;_DGGS&quot;         =&gt; Dict{String, Any}(&quot;aperture&quot;=&gt;4, &quot;index&quot;=&gt;&quot;Q2DI&quot;, &quot;id&quot;=&gt;&quot;D…</span></span>
-<span class="line"><span>  &quot;add_offset&quot;    =&gt; 0.0</span></span>
-<span class="line"><span>  &quot;long_name&quot;     =&gt; &quot;monthly NDVI CMG 0.05 Deg Monthly NDVI&quot;</span></span>
-<span class="line"><span>  &quot;scale_factor&quot;  =&gt; 0.0001</span></span>
-<span class="line"><span>  &quot;_FillValue&quot;    =&gt; -9999.0</span></span>
+<span class="line"><span>  Dict{String, Any} with 18 entries:</span></span>
+<span class="line"><span>  &quot;dggs_radius&quot;           =&gt; 6.37101e6</span></span>
+<span class="line"><span>  &quot;long_name&quot;             =&gt; &quot;monthly NDVI CMG 0.05 Deg Monthly NDVI&quot;</span></span>
+<span class="line"><span>  &quot;dggs_rotation_azimuth&quot; =&gt; 0</span></span>
+<span class="line"><span>  &quot;scale_factor&quot;          =&gt; 0.0001</span></span>
+<span class="line"><span>  &quot;dggs_rotation_lon&quot;     =&gt; 11.25</span></span>
+<span class="line"><span>  &quot;dggs_id&quot;               =&gt; &quot;DGGRID ISEA4H Q2DI&quot;</span></span>
+<span class="line"><span>  &quot;dggs_polygon&quot;          =&gt; &quot;hexagon&quot;</span></span>
+<span class="line"><span>  &quot;dggs_level&quot;            =&gt; 6</span></span>
+<span class="line"><span>  &quot;_FillValue&quot;            =&gt; -9999.0</span></span>
+<span class="line"><span>  &quot;units&quot;                 =&gt; &quot;NDVI&quot;</span></span>
+<span class="line"><span>  &quot;name&quot;                  =&gt; &quot;NDVI&quot;</span></span>
+<span class="line"><span>  &quot;dggs_polyhedron&quot;       =&gt; &quot;icosahedron&quot;</span></span>
+<span class="line"><span>  &quot;missing_value&quot;         =&gt; -9999.0</span></span>
+<span class="line"><span>  &quot;add_offset&quot;            =&gt; 0.0</span></span>
+<span class="line"><span>  &quot;dggs_projection&quot;       =&gt; &quot;isea&quot;</span></span>
+<span class="line"><span>  &quot;dggs_rotation_lat&quot;     =&gt; 58.2825</span></span>
+<span class="line"><span>  &quot;dggs_aperture&quot;         =&gt; 4</span></span>
+<span class="line"><span>  &quot;dggs_index&quot;            =&gt; &quot;Q2DI&quot;</span></span>
 <span class="line"><span>├─────────────────────────────────────────────────────────────────── file size ┤ </span></span>
 <span class="line"><span>  file size: 864.0 bytes</span></span>
 <span class="line"><span>└──────────────────────────────────────────────────────────────────────────────┘</span></span></code></pre></div><p><img src="/DGGS.jl/dev/assets/rings-disks.DQjhkQvs.png" alt=""> A 3-ring and a 2-disk around a center cell</p><p>Select a 2-disk containing all neighboring cells that are at least k cells apart including a given center cell:</p><div class="language-julia vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">julia</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">a[</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">11.586</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">, </span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">50.927</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">, </span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">1</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">:</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">2</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">]</span></span></code></pre></div><div class="language- vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>╭───────────────────────────────────────────╮</span></span>
@@ -112,34 +142,54 @@
 <span class="line"><span>  file size: 10.12 KB</span></span>
 <span class="line"><span>└──────────────────────────────────────────────────────────────────────────────┘</span></span></code></pre></div><h2 id="long-and-short-syntax" tabindex="-1">long and short syntax <a class="header-anchor" href="#long-and-short-syntax" aria-label="Permalink to &quot;long and short syntax {#long-and-short-syntax}&quot;">​</a></h2><p>Selection on both spatial and non-spatial dimensions can be performed using keyword-based arguments on pyramids, ndvis, and arrays:</p><div class="language-julia vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">julia</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">p[id</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">=</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">:ndvi</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">, Time</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">=</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">1</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">, level</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">=</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">5</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">, lon</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">=</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">11.586</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">, lat</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">=</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">50.927</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">]</span></span></code></pre></div><div class="language- vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>╭───────────────────────────────────────────────────╮</span></span>
 <span class="line"><span>│ 0-dimensional YAXArray{Union{Missing, Float32},0} │</span></span>
-<span class="line"><span>├───────────────────────────────────────────────────┴──────────────── metadata ┐</span></span>
-<span class="line"><span>  Dict{String, Any} with 8 entries:</span></span>
-<span class="line"><span>  &quot;units&quot;         =&gt; &quot;NDVI&quot;</span></span>
-<span class="line"><span>  &quot;missing_value&quot; =&gt; -9999.0</span></span>
-<span class="line"><span>  &quot;name&quot;          =&gt; &quot;NDVI&quot;</span></span>
-<span class="line"><span>  &quot;_DGGS&quot;         =&gt; Dict{String, Any}(&quot;aperture&quot;=&gt;4, &quot;index&quot;=&gt;&quot;Q2DI&quot;, &quot;id&quot;=&gt;&quot;D…</span></span>
-<span class="line"><span>  &quot;add_offset&quot;    =&gt; 0.0</span></span>
-<span class="line"><span>  &quot;long_name&quot;     =&gt; &quot;monthly NDVI CMG 0.05 Deg Monthly NDVI&quot;</span></span>
-<span class="line"><span>  &quot;scale_factor&quot;  =&gt; 0.0001</span></span>
-<span class="line"><span>  &quot;_FillValue&quot;    =&gt; -9999.0</span></span>
-<span class="line"><span>├─────────────────────────────────────────────────────────────────── file size ┤ </span></span>
+<span class="line"><span>├───────────────────────────────────────────────────┴ metadata ┐</span></span>
+<span class="line"><span>  Dict{String, Any} with 18 entries:</span></span>
+<span class="line"><span>  &quot;dggs_radius&quot;           =&gt; 6.37101e6</span></span>
+<span class="line"><span>  &quot;long_name&quot;             =&gt; &quot;monthly NDVI CMG 0.05 Deg Monthly NDVI&quot;</span></span>
+<span class="line"><span>  &quot;dggs_rotation_azimuth&quot; =&gt; 0</span></span>
+<span class="line"><span>  &quot;scale_factor&quot;          =&gt; 0.0001</span></span>
+<span class="line"><span>  &quot;dggs_rotation_lon&quot;     =&gt; 11.25</span></span>
+<span class="line"><span>  &quot;dggs_id&quot;               =&gt; &quot;DGGRID ISEA4H Q2DI&quot;</span></span>
+<span class="line"><span>  &quot;dggs_polygon&quot;          =&gt; &quot;hexagon&quot;</span></span>
+<span class="line"><span>  &quot;dggs_level&quot;            =&gt; 5</span></span>
+<span class="line"><span>  &quot;_FillValue&quot;            =&gt; -9999.0</span></span>
+<span class="line"><span>  &quot;units&quot;                 =&gt; &quot;NDVI&quot;</span></span>
+<span class="line"><span>  &quot;name&quot;                  =&gt; &quot;NDVI&quot;</span></span>
+<span class="line"><span>  &quot;dggs_polyhedron&quot;       =&gt; &quot;icosahedron&quot;</span></span>
+<span class="line"><span>  &quot;missing_value&quot;         =&gt; -9999.0</span></span>
+<span class="line"><span>  &quot;add_offset&quot;            =&gt; 0.0</span></span>
+<span class="line"><span>  &quot;dggs_projection&quot;       =&gt; &quot;isea&quot;</span></span>
+<span class="line"><span>  &quot;dggs_rotation_lat&quot;     =&gt; 58.2825</span></span>
+<span class="line"><span>  &quot;dggs_aperture&quot;         =&gt; 4</span></span>
+<span class="line"><span>  &quot;dggs_index&quot;            =&gt; &quot;Q2DI&quot;</span></span>
+<span class="line"><span>├─────────────────────────────────────────────────── file size ┤ </span></span>
 <span class="line"><span>  file size: 4.0 bytes</span></span>
-<span class="line"><span>└──────────────────────────────────────────────────────────────────────────────┘</span></span></code></pre></div><p>which is equivalent to:</p><div class="language-julia vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">julia</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">p[</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">5</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">]</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">.</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">ndvi[Time</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">=</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">1</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">][</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">11.586</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">, </span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">50.927</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">]</span></span></code></pre></div><div class="language- vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>╭───────────────────────────────────────────────────╮</span></span>
+<span class="line"><span>└──────────────────────────────────────────────────────────────┘</span></span></code></pre></div><p>which is equivalent to:</p><div class="language-julia vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">julia</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">p[</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">5</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">]</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">.</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">ndvi[Time</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">=</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">1</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">][</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">11.586</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">, </span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">50.927</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">]</span></span></code></pre></div><div class="language- vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>╭───────────────────────────────────────────────────╮</span></span>
 <span class="line"><span>│ 0-dimensional YAXArray{Union{Missing, Float32},0} │</span></span>
-<span class="line"><span>├───────────────────────────────────────────────────┴──────────────── metadata ┐</span></span>
-<span class="line"><span>  Dict{String, Any} with 8 entries:</span></span>
-<span class="line"><span>  &quot;units&quot;         =&gt; &quot;NDVI&quot;</span></span>
-<span class="line"><span>  &quot;missing_value&quot; =&gt; -9999.0</span></span>
-<span class="line"><span>  &quot;name&quot;          =&gt; &quot;NDVI&quot;</span></span>
-<span class="line"><span>  &quot;_DGGS&quot;         =&gt; Dict{String, Any}(&quot;aperture&quot;=&gt;4, &quot;index&quot;=&gt;&quot;Q2DI&quot;, &quot;id&quot;=&gt;&quot;D…</span></span>
-<span class="line"><span>  &quot;add_offset&quot;    =&gt; 0.0</span></span>
-<span class="line"><span>  &quot;long_name&quot;     =&gt; &quot;monthly NDVI CMG 0.05 Deg Monthly NDVI&quot;</span></span>
-<span class="line"><span>  &quot;scale_factor&quot;  =&gt; 0.0001</span></span>
-<span class="line"><span>  &quot;_FillValue&quot;    =&gt; -9999.0</span></span>
-<span class="line"><span>├─────────────────────────────────────────────────────────────────── file size ┤ </span></span>
+<span class="line"><span>├───────────────────────────────────────────────────┴ metadata ┐</span></span>
+<span class="line"><span>  Dict{String, Any} with 18 entries:</span></span>
+<span class="line"><span>  &quot;dggs_radius&quot;           =&gt; 6.37101e6</span></span>
+<span class="line"><span>  &quot;long_name&quot;             =&gt; &quot;monthly NDVI CMG 0.05 Deg Monthly NDVI&quot;</span></span>
+<span class="line"><span>  &quot;dggs_rotation_azimuth&quot; =&gt; 0</span></span>
+<span class="line"><span>  &quot;scale_factor&quot;          =&gt; 0.0001</span></span>
+<span class="line"><span>  &quot;dggs_rotation_lon&quot;     =&gt; 11.25</span></span>
+<span class="line"><span>  &quot;dggs_id&quot;               =&gt; &quot;DGGRID ISEA4H Q2DI&quot;</span></span>
+<span class="line"><span>  &quot;dggs_polygon&quot;          =&gt; &quot;hexagon&quot;</span></span>
+<span class="line"><span>  &quot;dggs_level&quot;            =&gt; 5</span></span>
+<span class="line"><span>  &quot;_FillValue&quot;            =&gt; -9999.0</span></span>
+<span class="line"><span>  &quot;units&quot;                 =&gt; &quot;NDVI&quot;</span></span>
+<span class="line"><span>  &quot;name&quot;                  =&gt; &quot;NDVI&quot;</span></span>
+<span class="line"><span>  &quot;dggs_polyhedron&quot;       =&gt; &quot;icosahedron&quot;</span></span>
+<span class="line"><span>  &quot;missing_value&quot;         =&gt; -9999.0</span></span>
+<span class="line"><span>  &quot;add_offset&quot;            =&gt; 0.0</span></span>
+<span class="line"><span>  &quot;dggs_projection&quot;       =&gt; &quot;isea&quot;</span></span>
+<span class="line"><span>  &quot;dggs_rotation_lat&quot;     =&gt; 58.2825</span></span>
+<span class="line"><span>  &quot;dggs_aperture&quot;         =&gt; 4</span></span>
+<span class="line"><span>  &quot;dggs_index&quot;            =&gt; &quot;Q2DI&quot;</span></span>
+<span class="line"><span>├─────────────────────────────────────────────────── file size ┤ </span></span>
 <span class="line"><span>  file size: 4.0 bytes</span></span>
-<span class="line"><span>└──────────────────────────────────────────────────────────────────────────────┘</span></span></code></pre></div></div></div></main><footer class="VPDocFooter" data-v-83890dd9 data-v-4f9813fa><!--[--><!--]--><div class="edit-info" data-v-4f9813fa><div class="edit-link" data-v-4f9813fa><a class="VPLink link vp-external-link-icon no-icon edit-link-button" href="https://github.com/danlooo/DGGS.jl/edit/main/docs/src/select.md" target="_blank" rel="noreferrer" data-v-4f9813fa><!--[--><span class="vpi-square-pen edit-link-icon" data-v-4f9813fa></span> Edit this page<!--]--></a></div><!----></div><nav class="prev-next" aria-labelledby="doc-footer-aria-label" data-v-4f9813fa><span class="visually-hidden" id="doc-footer-aria-label" data-v-4f9813fa>Pager</span><div class="pager" data-v-4f9813fa><a class="VPLink link pager-link prev" href="/DGGS.jl/dev/convert" data-v-4f9813fa><!--[--><span class="desc" data-v-4f9813fa>Previous page</span><span class="title" data-v-4f9813fa>Convert</span><!--]--></a></div><div class="pager" data-v-4f9813fa><a class="VPLink link pager-link next" href="/DGGS.jl/dev/plot" data-v-4f9813fa><!--[--><span class="desc" data-v-4f9813fa>Next page</span><span class="title" data-v-4f9813fa>Plot</span><!--]--></a></div></nav></footer><!--[--><!--]--></div></div></div><!--[--><!--]--></div></div><footer class="VPFooter has-sidebar" data-v-a9a9e638 data-v-c970a860><div class="container" data-v-c970a860><p class="message" data-v-c970a860><a href="https://www.bgc-jena.mpg.de/en"><img src="logo-mpi-bgc.svg" class = "footer-logo"/></a> <a href="https://earthmonitor.org/"><img src="logo-open-earth-monitor.png" class = "footer-logo"/></a> <a href="https://cordis.europa.eu/project/id/101059548"><img src="logo-eu.png" class = "footer-logo"/></a></p><p class="copyright" data-v-c970a860>© Copyright 2024.</p></div></footer><!--[--><!--]--></div></div>
-    <script>window.__VP_HASH_MAP__=JSON.parse("{\"api.md\":\"Di88hF8y\",\"background.md\":\"8AYVTUag\",\"convert.md\":\"jXi7k3H2\",\"get_started.md\":\"CbA9stm3\",\"index.md\":\"BT4wzSEz\",\"plot.md\":\"CpUOUU64\",\"select.md\":\"ofFWjdTV\"}");window.__VP_SITE_DATA__=JSON.parse("{\"lang\":\"en-US\",\"dir\":\"ltr\",\"title\":\"DGGS.jl\",\"description\":\"Documentation for DGGS.jl\",\"base\":\"/DGGS.jl/dev/\",\"head\":[],\"router\":{\"prefetchLinks\":true},\"appearance\":true,\"themeConfig\":{\"outline\":\"deep\",\"logo\":{\"src\":\"icon.drawio.svg\",\"width\":40,\"height\":40},\"search\":{\"provider\":\"local\",\"options\":{\"detailedView\":true}},\"nav\":[{\"text\":\"Home\",\"link\":\"/index\"},{\"text\":\"Guide\",\"collapsed\":false,\"items\":[{\"text\":\"Get Started\",\"link\":\"/get_started\"},{\"text\":\"Background\",\"link\":\"/background\"},{\"text\":\"Convert\",\"link\":\"/convert\"},{\"text\":\"Select\",\"link\":\"/select\"},{\"text\":\"Plot\",\"link\":\"/plot\"}]},{\"text\":\"API\",\"link\":\"/api\"}],\"sidebar\":[{\"text\":\"Home\",\"link\":\"/index\"},{\"text\":\"Guide\",\"collapsed\":false,\"items\":[{\"text\":\"Get Started\",\"link\":\"/get_started\"},{\"text\":\"Background\",\"link\":\"/background\"},{\"text\":\"Convert\",\"link\":\"/convert\"},{\"text\":\"Select\",\"link\":\"/select\"},{\"text\":\"Plot\",\"link\":\"/plot\"}]},{\"text\":\"API\",\"link\":\"/api\"}],\"editLink\":{\"pattern\":\"https://github.com/danlooo/DGGS.jl/edit/main/docs/src/:path\"},\"socialLinks\":[{\"icon\":\"github\",\"link\":\"https://github.com/danlooo/DGGS.jl\"}],\"footer\":{\"message\":\"<a href=\\\"https://www.bgc-jena.mpg.de/en\\\"><img src=\\\"logo-mpi-bgc.svg\\\" class = \\\"footer-logo\\\"/></a> <a href=\\\"https://earthmonitor.org/\\\"><img src=\\\"logo-open-earth-monitor.png\\\" class = \\\"footer-logo\\\"/></a> <a href=\\\"https://cordis.europa.eu/project/id/101059548\\\"><img src=\\\"logo-eu.png\\\" class = \\\"footer-logo\\\"/></a>\",\"copyright\":\"© Copyright 2024.\"}},\"locales\":{},\"scrollOffset\":134,\"cleanUrls\":true}");</script>
+<span class="line"><span>└──────────────────────────────────────────────────────────────┘</span></span></code></pre></div></div></div></main><footer class="VPDocFooter" data-v-83890dd9 data-v-4f9813fa><!--[--><!--]--><div class="edit-info" data-v-4f9813fa><div class="edit-link" data-v-4f9813fa><a class="VPLink link vp-external-link-icon no-icon edit-link-button" href="https://github.com/danlooo/DGGS.jl/edit/main/docs/src/select.md" target="_blank" rel="noreferrer" data-v-4f9813fa><!--[--><span class="vpi-square-pen edit-link-icon" data-v-4f9813fa></span> Edit this page<!--]--></a></div><!----></div><nav class="prev-next" aria-labelledby="doc-footer-aria-label" data-v-4f9813fa><span class="visually-hidden" id="doc-footer-aria-label" data-v-4f9813fa>Pager</span><div class="pager" data-v-4f9813fa><a class="VPLink link pager-link prev" href="/DGGS.jl/dev/convert" data-v-4f9813fa><!--[--><span class="desc" data-v-4f9813fa>Previous page</span><span class="title" data-v-4f9813fa>Convert</span><!--]--></a></div><div class="pager" data-v-4f9813fa><a class="VPLink link pager-link next" href="/DGGS.jl/dev/plot" data-v-4f9813fa><!--[--><span class="desc" data-v-4f9813fa>Next page</span><span class="title" data-v-4f9813fa>Plot</span><!--]--></a></div></nav></footer><!--[--><!--]--></div></div></div><!--[--><!--]--></div></div><footer class="VPFooter has-sidebar" data-v-a9a9e638 data-v-c970a860><div class="container" data-v-c970a860><p class="message" data-v-c970a860><a href="https://www.bgc-jena.mpg.de/en"><img src="logo-mpi-bgc.svg" class = "footer-logo"/></a> <a href="https://earthmonitor.org/"><img src="logo-open-earth-monitor.png" class = "footer-logo"/></a> <a href="https://cordis.europa.eu/project/id/101059548"><img src="logo-eu.png" class = "footer-logo"/></a></p><p class="copyright" data-v-c970a860>© Copyright 2024.</p></div></footer><!--[--><!--]--></div></div>
+    <script>window.__VP_HASH_MAP__=JSON.parse("{\"api.md\":\"DaaTSLyl\",\"background.md\":\"8AYVTUag\",\"convert.md\":\"KF38vKrt\",\"get_started.md\":\"CKLDBF8I\",\"index.md\":\"BT4wzSEz\",\"plot.md\":\"BH9MYTJl\",\"select.md\":\"BGXmB1cr\"}");window.__VP_SITE_DATA__=JSON.parse("{\"lang\":\"en-US\",\"dir\":\"ltr\",\"title\":\"DGGS.jl\",\"description\":\"Documentation for DGGS.jl\",\"base\":\"/DGGS.jl/dev/\",\"head\":[],\"router\":{\"prefetchLinks\":true},\"appearance\":true,\"themeConfig\":{\"outline\":\"deep\",\"logo\":{\"src\":\"icon.drawio.svg\",\"width\":40,\"height\":40},\"search\":{\"provider\":\"local\",\"options\":{\"detailedView\":true}},\"nav\":[{\"text\":\"Home\",\"link\":\"/index\"},{\"text\":\"Guide\",\"collapsed\":false,\"items\":[{\"text\":\"Get Started\",\"link\":\"/get_started\"},{\"text\":\"Background\",\"link\":\"/background\"},{\"text\":\"Convert\",\"link\":\"/convert\"},{\"text\":\"Select\",\"link\":\"/select\"},{\"text\":\"Plot\",\"link\":\"/plot\"}]},{\"text\":\"API\",\"link\":\"/api\"}],\"sidebar\":[{\"text\":\"Home\",\"link\":\"/index\"},{\"text\":\"Guide\",\"collapsed\":false,\"items\":[{\"text\":\"Get Started\",\"link\":\"/get_started\"},{\"text\":\"Background\",\"link\":\"/background\"},{\"text\":\"Convert\",\"link\":\"/convert\"},{\"text\":\"Select\",\"link\":\"/select\"},{\"text\":\"Plot\",\"link\":\"/plot\"}]},{\"text\":\"API\",\"link\":\"/api\"}],\"editLink\":{\"pattern\":\"https://github.com/danlooo/DGGS.jl/edit/main/docs/src/:path\"},\"socialLinks\":[{\"icon\":\"github\",\"link\":\"https://github.com/danlooo/DGGS.jl\"}],\"footer\":{\"message\":\"<a href=\\\"https://www.bgc-jena.mpg.de/en\\\"><img src=\\\"logo-mpi-bgc.svg\\\" class = \\\"footer-logo\\\"/></a> <a href=\\\"https://earthmonitor.org/\\\"><img src=\\\"logo-open-earth-monitor.png\\\" class = \\\"footer-logo\\\"/></a> <a href=\\\"https://cordis.europa.eu/project/id/101059548\\\"><img src=\\\"logo-eu.png\\\" class = \\\"footer-logo\\\"/></a>\",\"copyright\":\"© Copyright 2024.\"}},\"locales\":{},\"scrollOffset\":134,\"cleanUrls\":true}");</script>
     
   </body>
 </html>
