@@ -42,10 +42,10 @@ end
 
 function open_dggs_pyramid(path::String)
     root_group = zopen(path)
-    haskey(root_group.attrs, "_DGGS") || error("Zarr store is not in DGGS format")
+    haskey(root_group.attrs, "dggs_id") || error("Zarr store is not in DGGS format")
 
     pyramid = Dict{Int,DGGSLayer}()
-    for level in sort(root_group.attrs["_DGGS"]["levels"])
+    for level in sort(root_group.attrs["dggs_levels"])
         layer_ds = open_dataset(root_group.groups["$level"])
         pyramid[level] = DGGSLayer(layer_ds)
     end
@@ -64,10 +64,7 @@ function write_dggs_pyramid(base_path::String, dggs::DGGSPyramid)
         arrs = map((k, v) -> k => v.data, keys(dggs[level].data), values(dggs[level].data))
 
         attrs = dggs[level].attrs
-        attrs["_DGGS"] = Dict{Symbol,Any}(
-            key => getfield(dggs.dggs, key) for key in propertynames(dggs.dggs)
-        )
-        attrs["_DGGS"][:level] = level
+        attrs["dggs_level"] = level
 
         ds = Dataset(; properties=attrs, arrs...)
         savedataset(ds; path=level_path)
@@ -78,18 +75,14 @@ function write_dggs_pyramid(base_path::String, dggs::DGGSPyramid)
         for band in keys(ds.cubes)
             attrs = JSON3.read("$level_path/$band/.zattrs", Dict{String,Any})
             attrs = merge(attrs, dggs[level][band].attrs)
-            attrs["_DGGS"] = Dict{String,Any}(
-                String(key) => getfield(dggs.dggs, key) for key in propertynames(dggs.dggs)
-            )
-            attrs["_DGGS"]["level"] = level
+            attrs["dggs_level"] = level
             JSON3.write("$level_path/$band/.zattrs", attrs)
             Zarr.consolidate_metadata("$level_path/$band")
         end
     end
 
     global_attrs = dggs.attrs
-    global_attrs["_DGGS"] = Dict{String,Any}(String(key) => getfield(dggs.dggs, key) for key in propertynames(dggs.dggs))
-    global_attrs["_DGGS"]["levels"] = dggs.levels
+    global_attrs["dggs_levels"] = dggs.levels
 
     JSON3.write("$base_path/.zattrs", global_attrs)
     JSON3.write("$base_path/.zgroup", Dict(:zarr_format => 2))
@@ -249,7 +242,7 @@ function to_dggs_pyramid(l::DGGSLayer; base_path=tempname())
                 )
             )
             attrs = deepcopy(arr.attrs)
-            attrs["_DGGS"]["level"] = coarser_level
+            attrs["dggs_level"] = coarser_level
             coarser_arr = YAXArray(coarser_arr.axes, coarser_arr.data, attrs)
             coarser_data[k] = DGGSArray(coarser_arr, attrs, k, coarser_level, finer_layer.dggs)
         end

@@ -1,6 +1,6 @@
 
 function DGGSLayer(data::YAXArrays.Dataset)
-    haskey(data.properties, "_DGGS") || error("Dataset is not in DGGS format")
+    haskey(data.properties, "dggs_id") || error("Dataset is not in DGGS format")
 
     layer = Dict{Symbol,DGGSArray}()
     for (k, c) in data.cubes
@@ -123,7 +123,11 @@ function to_dggs_layer(
         verbose && @info "Tranform band $band"
         data[band] = to_dggs_array(geo_arr, level; cell_ids=cell_ids, verbose=false, lon_name=lon_name, lat_name=lat_name, kwargs...)
     end
-    DGGSLayer(data, level, geo_ds.properties, DGGSGridSystem(Q2DI_DGGS_PROPS))
+    properties = geo_ds.properties
+    properties = union(properties, Q2DI_DGGS_PROPS) |> Dict
+    properties["dggs_level"] = level
+
+    DGGSLayer(data, level, properties, DGGSGridSystem(Q2DI_DGGS_PROPS))
 end
 
 to_dggs_layer(raster::AbstractDimArray, level::Integer, args...; kwargs...) = to_dggs_array(raster, level; kwargs...) |> DGGSLayer

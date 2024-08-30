@@ -1,9 +1,9 @@
 function DGGSArray(arr::YAXArray, id::Symbol)
-    haskey(arr.properties, "_DGGS") || error("Array is not in DGGS format")
+    haskey(arr.properties, "dggs_id") || error("Array is not in DGGS format")
 
     attrs = arr.properties
-    level = attrs["_DGGS"]["level"]
-    dggs = DGGSGridSystem(attrs["_DGGS"])
+    level = attrs["dggs_level"]
+    dggs = DGGSGridSystem(attrs)
 
     DGGSArray(arr, attrs, id, level, dggs)
 end
@@ -19,11 +19,11 @@ function DGGSArray(arr::AbstractArray, level::Integer, id=:layer)
         Dim{:q2di_j}(range(0; step=1, length=2^(level - 1))),
         Dim{:q2di_n}(0:11),
     )
-    props = Dict{String,Any}(
-        "name" => id,
-        "_DGGS" => DGGS.Q2DI_DGGS_PROPS
-    )
-    props["_DGGS"]["level"] = level
+
+    props = deepcopy(DGGS.Q2DI_DGGS_PROPS)
+    props["name"] = id
+    props["dggs_level"] = level
+
     data = YAXArray(axs, arr, props)
     DGGSArray(data)
 end
@@ -241,8 +241,8 @@ function to_dggs_array(
     end
 
     props = raster |> metadata |> typeof == Dict{String,Any} ? deepcopy(metadata(raster)) : Dict{String,Any}()
-    props["_DGGS"] = deepcopy(Q2DI_DGGS_PROPS)
-    props["_DGGS"]["level"] = level
+    props = Dict(union(props, Q2DI_DGGS_PROPS))
+    props["dggs_level"] = level
     cell_array = YAXArray(cell_array.axes, cell_array.data, props)
     DGGSArray(cell_array, id)
 end
@@ -658,8 +658,7 @@ import Base: broadcasted, +, -, *, /, \
 function Base.broadcasted(f::Function, a::DGGSArray, number::Real)
     data = f.(a.data, number)
 
-    # meta data may be invalidated after transformation
-    properties = Dict("_DGGS" => deepcopy(data.properties["_DGGS"]))
+    properties = deepcopy(data.properties)
     array = YAXArray(data.axes, data.data, properties)
 
     res = DGGSArray(array)
