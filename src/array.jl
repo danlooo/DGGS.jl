@@ -166,7 +166,7 @@ end
 
 "Apply function f after filtering of missing and NAN values"
 function filter_null(f)
-    x -> x |> filter(!ismissing) |> filter(!isnan) |> f
+    x -> x |> filter(y -> !ismissing(y) && !isnan(y)) |> f
 end
 
 function get_arr_label(a::DGGSArray)
@@ -177,6 +177,11 @@ function get_arr_label(a::DGGSArray)
     return arr_label
 end
 
+"""
+Convert a geographic lat/lon raster to a DGGAArray
+
+agg_type: `:convert` will return a Float64 array and `:round` will keep the element type that might loose precision
+"""
 function to_dggs_array(
     raster::AbstractDimArray,
     level::Integer;
@@ -184,6 +189,7 @@ function to_dggs_array(
     lat_name::Symbol=:lat,
     cell_ids::Union{AbstractMatrix,Nothing}=nothing,
     agg_func::Function=filter_null(mean),
+    agg_type::Symbol=:convert,
     verbose::Bool=true,
     id::Symbol=:layer,
     path::String=tempname()
@@ -222,6 +228,7 @@ function to_dggs_array(
 
     verbose && @info "Step 2/2: Re-grid the data"
 
+    agg_round_func = Dict(:round => round, :convert => identity)[agg_type]
     cell_array = mapCube(
         # mapCube can't find axes of other AbstractDimArrays e.g. Raster
         YAXArray(dims(raster), raster.data),
@@ -230,13 +237,17 @@ function to_dggs_array(
             Dim{:q2di_i}(range(0; step=1, length=2^(level - 1))),
             Dim{:q2di_j}(range(0; step=1, length=2^(level - 1))),
             Dim{:q2di_n}(0:11),
+            outtype=Dict(:round => Bool, :convert => Float64)[agg_type],
             path=path
         ),
         showprog=true
     ) do xout, xin
         for (cell_id, cell_indices) in cell_ids_indexlist
-            # xout is not a YAXArray anymore
-            xout[cell_id.i+1, cell_id.j+1, cell_id.n+1] = agg_func(view(xin, cell_indices))
+            try
+                xout[cell_id.i+1, cell_id.j+1, cell_id.n+1] = view(xin, cell_indices) |> agg_func |> agg_round_func
+            catch
+                # ignore e.g. mean(Bool[]) is NaN which is doesn't match a boolean output array 
+            end
         end
     end
 

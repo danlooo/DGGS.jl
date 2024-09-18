@@ -206,15 +206,6 @@ function aggregate_hexagons!(xout::AbstractArray, xin::AbstractArray, n::Integer
     xout[1, 1] = missing  # pentagons are handled separateley (different kernel)
 end
 
-"""
-Spatial hexagonal convolution in Q2DI index space matching levels of DGGRID ISEA4H grids
-"""
-function aggregate_dggs_array(xout, xin, arr::DGGSArray)
-    n = xin.indices[3]
-    aggregate_hexagons!(xout, xin, n, arr)
-    aggregate_pentagon!(xout, xin, n, arr)
-end
-
 function to_dggs_pyramid(geo_ds::Dataset, level::Integer, args...; verbose=true, base_path=tempname(), kwargs...)
     verbose && @info "Convert to DGGS layer"
     l = to_dggs_layer(geo_ds, level, args...; kwargs...)
@@ -232,7 +223,6 @@ function to_dggs_pyramid(l::DGGSLayer; base_path=tempname())
         coarser_data = Dict{Symbol,DGGSArray}()
         for (k, arr) in finer_layer.data
             coarser_arr = mapCube(
-                (xout, xin) -> aggregate_dggs_array(xout, xin, arr),
                 arr.data;
                 indims=InDims(:q2di_i, :q2di_j),
                 outdims=OutDims(
@@ -240,7 +230,11 @@ function to_dggs_pyramid(l::DGGSLayer; base_path=tempname())
                     Dim{:q2di_j}(range(0; step=1, length=2^(coarser_level - 1))),
                     path=joinpath(base_path, "$(coarser_level)/$(k)")
                 )
-            )
+            ) do xout, xin
+                n = xin.indices[3]
+                aggregate_hexagons!(xout, xin, n, arr)
+                aggregate_pentagon!(xout, xin, n, arr)
+            end
             attrs = deepcopy(arr.attrs)
             attrs["dggs_level"] = coarser_level
             coarser_arr = YAXArray(coarser_arr.axes, coarser_arr.data, attrs)
