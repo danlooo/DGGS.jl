@@ -18,7 +18,7 @@ end
 
 function DGGSLayer(arr::DGGSArray)
     data = Dict{Symbol,DGGSArray}()
-    data[:layer] = arr
+    data[arr.id] = arr
     DGGSLayer(data, arr.level, arr.attrs, arr.dggs)
 end
 

@@ -243,7 +243,7 @@ function to_dggs_array(
             Dim{:q2di_j}(range(0; step=1, length=2^(level - 1))),
             Dim{:q2di_n}(0:11),
             outtype=Dict(
-                :round => Bool,
+                :round => any(Base.uniontypes(eltype(raster)) .<: Integer) ? filter(x -> x != Missing, Base.uniontypes(eltype(raster)))[1] : Bool,
                 :convert => Float64,
                 :identity => filter(x -> x != Missing, Base.uniontypes(eltype(raster)))[1]
             )[agg_type],

@@ -119,7 +119,7 @@ function aggregate_pentagon!(xout::AbstractArray, xin::AbstractArray, n::Integer
         idx[1] = i
         idx[2] = j
         idx[3] = n
-        xin.parent[idx...]
+        a.data[idx...]
     end
     res = filter_null(mean)(vals) |> Dict(:round => round, :convert => identity, :identity => identity)[agg_type]
     xout[1, 1] = res
@@ -178,8 +178,8 @@ function aggregate_hexagons!(xout::AbstractArray, xin::AbstractArray, n::Integer
     row_idx[2] = row_paddings[n][2]
     row_idx[3] = row_paddings[n][3]
 
-    padded_xin = hcat(xin.parent[col_idx...], xin)
-    padded_xin = vcat(vcat([missing], xin.parent[row_idx...])', padded_xin)
+    padded_xin = hcat(a.data[col_idx...], xin)
+    padded_xin = vcat(vcat([missing], a.data[row_idx...])', padded_xin)
 
     kernel = Float64[1 1 0; 1 2 1; 0 1 1] |> x -> x ./ sum(x)
     kernel_stride = 2
