@@ -40,8 +40,8 @@ raster2 = to_geo_array(a2, lon_range.val, lat_range.val)
 # test aggregation methods
 data_bool = [exp(cosd(lon)) + 3(lat / 90) > 1 ? true : missing for lon in lon_range, lat in lat_range]
 raster_bool = DimArray(data_bool, (lon_range, lat_range))
-@test Float64 in to_dggs_array(raster_bool, level; lon_name=:X, lat_name=:Y, agg_type=:convert).data |> eltype |> Base.uniontypes
-@test Bool in to_dggs_array(raster_bool, level; lon_name=:X, lat_name=:Y, agg_type=:round).data |> eltype |> Base.uniontypes
+@test Float64 in to_dggs_pyramid(raster_bool, level; lon_name=:X, lat_name=:Y, agg_type=:convert)[level-1].layer.data |> eltype |> Base.uniontypes
+@test Bool in to_dggs_pyramid(raster_bool, level; lon_name=:X, lat_name=:Y, agg_type=:round)[level-1].layer.data |> eltype |> Base.uniontypes
 
 # low loss after converting back
 @test all(abs.(Matrix(raster) .- Matrix(raster2)) .< 1.5)
