@@ -58,7 +58,7 @@ geo_ds = Dataset(; properties=geo_ds.properties, arrs...)
 dggs2 = to_dggs_pyramid(geo_ds, level)
 l2 = dggs2[2]
 @test l2.area.data |> eltype == Union{Missing,Float32}
-@test l2.msk_rgn.data |> eltype == Union{Missing,Bool}
+@test l2.msk_rgn.data |> eltype == Union{Missing,Int32}
 @test maximum(dggs2.levels) == level
 @test minimum(dggs2.levels) == 2
 @test dggs2.attrs == dggs2[2].attrs
