@@ -53,7 +53,6 @@ geo_ds = open_dataset("sresa1b_ncar_ccsm3-example.nc")
 geo_ds.axes[:lon] = vcat(range(0, 180; length=128), range(-180, 0; length=128)) |> Dim{:lon}
 arrs = Dict()
 for (k, arr) in geo_ds.cubes
-    k == :msk_rgn && continue # exclude mask
     axs = Tuple(ax isa Dim{:lon} ? geo_ds.axes[:lon] : ax for ax in arr.axes) # propagate fixed axis
     arrs[k] = YAXArray(axs, arr.data, arr.properties)
 end
