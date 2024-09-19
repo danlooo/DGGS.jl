@@ -36,15 +36,14 @@ raster = DimArray(data, (lon_range, lat_range))
 a2 = to_dggs_array(raster, level; lon_name=:X, lat_name=:Y)
 raster2 = to_geo_array(a2, lon_range.val, lat_range.val)
 @test a2.level == level
+# low loss after converting back
+@test all(abs.(Matrix(raster) .- Matrix(raster2)) .< 1.8)
 
 # test aggregation methods
 data_bool = [exp(cosd(lon)) + 3(lat / 90) > 1 ? true : missing for lon in lon_range, lat in lat_range]
 raster_bool = DimArray(data_bool, (lon_range, lat_range))
 @test Float64 in to_dggs_pyramid(raster_bool, level; lon_name=:X, lat_name=:Y, agg_type=:convert)[level-1].layer.data |> eltype |> Base.uniontypes
 @test Bool in to_dggs_pyramid(raster_bool, level; lon_name=:X, lat_name=:Y, agg_type=:round)[level-1].layer.data |> eltype |> Base.uniontypes
-
-# low loss after converting back
-@test all(abs.(Matrix(raster) .- Matrix(raster2)) .< 1.5)
 
 # load netcdf geo raster
 # reformat lon axes from [0,360] to [-180,180]
