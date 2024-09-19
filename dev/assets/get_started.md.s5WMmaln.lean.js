@@ -7,6 +7,7 @@ import{_ as a,c as i,a5 as n,o as t}from"./chunks/framework.ChCwx2Gq.js";const e
 <span class="line"><span>  Ti 1 CFTime.DateTimeNoLeap points</span></span>
 <span class="line"><span>  plev 17 Float64 points</span></span>
 <span class="line"><span>Arrays:</span></span>
+<span class="line"><span>  msk_rgn bool Union{Missing, Bool} </span></span>
 <span class="line"><span>  tas air_temperature (:Ti) K Union{Missing, Float32} aggregated</span></span>
 <span class="line"><span>  ua eastward_wind (:plev, :Ti) m s-1 Union{Missing, Float32} aggregated</span></span>
 <span class="line"><span>  pr precipitation_flux (:Ti) kg m-2 s-1 Union{Missing, Float32} aggregated</span></span>
@@ -16,7 +17,7 @@ import{_ as a,c as i,a5 as n,o as t}from"./chunks/framework.ChCwx2Gq.js";const e
 <span class="line"><span>Standard name:	air_temperature</span></span>
 <span class="line"><span>Units:		K</span></span>
 <span class="line"><span>DGGS:		DGGRID ISEA4H Q2DI ⬢ at level 6</span></span>
-<span class="line"><span>Attributes:	41</span></span>
+<span class="line"><span>Attributes:	40</span></span>
 <span class="line"><span>Non spatial axes:</span></span></code></pre></div><p>Plot the array as a globe:</p><div class="language-julia vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">julia</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">using</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;"> GLMakie</span></span>
 <span class="line"><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">plot</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">(a1)</span></span></code></pre></div><p><img src="`+e+`" alt=""></p><p>Get one hexagonal cell and all neighboring cells within a radius of <code>k</code> at a given geographical coordinate using <code>a[lon,lat,1:k]</code>:</p><div class="language-julia vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">julia</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">a1[</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">11.586</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">, </span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">50.927</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">, </span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">1</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">:</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">3</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">]</span></span></code></pre></div><div class="language- vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>╭────────────────────────────────────────────────╮</span></span>
 <span class="line"><span>│ 19-element YAXArray{Union{Missing, Float32},1} │</span></span>
