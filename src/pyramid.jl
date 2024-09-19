@@ -93,7 +93,7 @@ end
 "position of last row or column in a quad matrix of that level"
 width(level::Integer) = 2^(level - 1)
 
-function aggregate_pentagon!(xout::AbstractArray, xin::AbstractArray, n::Integer, a::DGGSArray; agg_type::Symbol=:convert)
+function aggregate_pentagon!(xout::AbstractArray, xin::AbstractArray, n::Integer, a::DGGSArray; agg_type::Symbol=:round)
     m = width(a.level)
 
     # position of children in Q2DI space i.e. (i,j,n)
@@ -125,7 +125,7 @@ function aggregate_pentagon!(xout::AbstractArray, xin::AbstractArray, n::Integer
     xout[1, 1] = res
 end
 
-function aggregate_hexagons!(xout::AbstractArray, xin::AbstractArray, n::Integer, a::DGGSArray; agg_type::Symbol=:convert)
+function aggregate_hexagons!(xout::AbstractArray, xin::AbstractArray, n::Integer, a::DGGSArray; agg_type::Symbol=:round)
     (1 <= n <= 12) || error("Quad number n must be between 1 and 12")
     n in [1, 12] && return # first and last quad only contain one pentagon
 
@@ -206,7 +206,7 @@ function aggregate_hexagons!(xout::AbstractArray, xin::AbstractArray, n::Integer
     xout[1, 1] = missing  # pentagons are handled separateley (different kernel)
 end
 
-function to_dggs_pyramid(geo_ds::Dataset, level::Integer, args...; verbose=true, base_path=tempname(), agg_type=:convert, kwargs...)
+function to_dggs_pyramid(geo_ds::Dataset, level::Integer, args...; verbose=true, base_path=tempname(), agg_type=:round, kwargs...)
     verbose && @info "Convert to DGGS layer"
     l = to_dggs_layer(geo_ds, level, args...; agg_type=agg_type, kwargs...)
     verbose && @info "Building pyramid"
@@ -214,7 +214,7 @@ function to_dggs_pyramid(geo_ds::Dataset, level::Integer, args...; verbose=true,
     return dggs
 end
 
-function to_dggs_pyramid(l::DGGSLayer; base_path=tempname(), agg_type::Symbol=:convert)
+function to_dggs_pyramid(l::DGGSLayer; base_path=tempname(), agg_type::Symbol=:round)
     pyramid = Dict{Int,DGGSLayer}()
     pyramid[l.level] = l
 
@@ -250,7 +250,7 @@ end
 
 to_dggs_pyramid(a::DGGSArray; kw...) = a |> DGGSLayer |> l -> to_dggs_pyramid(l; kw...)
 
-function to_dggs_pyramid(raster::AbstractDimArray, level::Integer; agg_type=:convert, kwargs...)
+function to_dggs_pyramid(raster::AbstractDimArray, level::Integer; agg_type=:round, kwargs...)
     arr = to_dggs_array(raster, level; agg_type=agg_type, kwargs...)
     dggs = to_dggs_pyramid(arr; agg_type=agg_type)
     return dggs

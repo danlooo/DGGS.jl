@@ -189,7 +189,7 @@ function to_dggs_array(
     lat_name::Symbol=:lat,
     cell_ids::Union{AbstractMatrix,Nothing}=nothing,
     agg_func::Function=filter_null(mean),
-    agg_type::Symbol=:convert,
+    agg_type::Symbol=:round,
     verbose::Bool=true,
     id::Symbol=:layer,
     path::String=tempname()
