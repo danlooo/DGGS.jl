@@ -229,6 +229,11 @@ function to_dggs_array(
     verbose && @info "Step 2/2: Re-grid the data"
 
     agg_round_func = Dict(:round => round, :convert => identity)[agg_type]
+    if agg_type == :round && any(Base.uniontypes(eltype(raster)) .<: AbstractFloat)
+        # no rounding needed
+        agg_type = :identity
+    end
+
     cell_array = mapCube(
         # mapCube can't find axes of other AbstractDimArrays e.g. Raster
         YAXArray(dims(raster), raster.data),
@@ -237,7 +242,11 @@ function to_dggs_array(
             Dim{:q2di_i}(range(0; step=1, length=2^(level - 1))),
             Dim{:q2di_j}(range(0; step=1, length=2^(level - 1))),
             Dim{:q2di_n}(0:11),
-            outtype=Dict(:round => Bool, :convert => Float64)[agg_type],
+            outtype=Dict(
+                :round => Bool,
+                :convert => Float64,
+                :identity => filter(x -> x != Missing, Base.uniontypes(eltype(raster)))[1]
+            )[agg_type],
             path=path
         ),
         showprog=true
@@ -246,7 +255,7 @@ function to_dggs_array(
             try
                 xout[cell_id.i+1, cell_id.j+1, cell_id.n+1] = view(xin, cell_indices) |> agg_func |> agg_round_func
             catch
-                # ignore e.g. mean(Bool[]) is NaN which is doesn't match a boolean output array 
+                # ignore e.g. mean(Bool[]) is NaN which doesn't match a boolean output array 
             end
         end
     end
