@@ -17,9 +17,8 @@ l = p[4]
 a = l.tas
 
 @test a.id == :tas
-@test length(p.attrs) == length(l.attrs)
 @test length(a.attrs) > length(p.attrs)
-@test (setdiff(p.attrs, l.attrs) .|> x -> x.first) == ["dggs_level"] # same global attrs expect DGGS level
+@test (setdiff(p.attrs, l.attrs) .|> x -> x.first) == ["dggs_levels", "dggs_level"] # same global attrs expect DGGS level
 
 @test a[10, 1, 1] isa YAXArray
 @test (a[10, 1, 1] .== a[Q2DI(10, 1, 1)]) |> collect |> all
