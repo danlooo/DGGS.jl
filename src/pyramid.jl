@@ -93,7 +93,7 @@ end
 "position of last row or column in a quad matrix of that level"
 width(level::Integer) = 2^(level - 1)
 
-function aggregate_pentagon!(xout::AbstractArray, xin::AbstractArray, n::Integer, a::DGGSArray)
+function aggregate_pentagon!(xout::AbstractArray, xin::AbstractArray, n::Integer, a::DGGSArray; agg_type::Symbol=:round)
     m = width(a.level)
 
     # position of children in Q2DI space i.e. (i,j,n)
@@ -121,11 +121,11 @@ function aggregate_pentagon!(xout::AbstractArray, xin::AbstractArray, n::Integer
         idx[3] = n
         xin.parent[idx...]
     end
-    res = filter_null(mean)(vals)
+    res = filter_null(mean)(vals) |> Dict(:round => round, :convert => identity, :identity => identity)[agg_type]
     xout[1, 1] = res
 end
 
-function aggregate_hexagons!(xout::AbstractArray, xin::AbstractArray, n::Integer, a::DGGSArray)
+function aggregate_hexagons!(xout::AbstractArray, xin::AbstractArray, n::Integer, a::DGGSArray; agg_type::Symbol=:round)
     (1 <= n <= 12) || error("Quad number n must be between 1 and 12")
     n in [1, 12] && return # first and last quad only contain one pentagon
 
@@ -199,31 +199,22 @@ function aggregate_hexagons!(xout::AbstractArray, xin::AbstractArray, n::Integer
             end
 
             # kernel is already normalized, just sum instead of mean
-            xout[i, j] = filter_null(sum)(data .* kernel)
+            xout[i, j] = filter_null(sum)(data .* kernel) |> Dict(:round => round, :convert => identity, :identity => identity)[agg_type]
         end
     end
 
     xout[1, 1] = missing  # pentagons are handled separateley (different kernel)
 end
 
-"""
-Spatial hexagonal convolution in Q2DI index space matching levels of DGGRID ISEA4H grids
-"""
-function aggregate_dggs_array(xout, xin, arr::DGGSArray)
-    n = xin.indices[3]
-    aggregate_hexagons!(xout, xin, n, arr)
-    aggregate_pentagon!(xout, xin, n, arr)
-end
-
-function to_dggs_pyramid(geo_ds::Dataset, level::Integer, args...; verbose=true, base_path=tempname(), kwargs...)
+function to_dggs_pyramid(geo_ds::Dataset, level::Integer, args...; verbose=true, base_path=tempname(), agg_type=:round, kwargs...)
     verbose && @info "Convert to DGGS layer"
-    l = to_dggs_layer(geo_ds, level, args...; kwargs...)
+    l = to_dggs_layer(geo_ds, level, args...; agg_type=agg_type, kwargs...)
     verbose && @info "Building pyramid"
-    dggs = to_dggs_pyramid(l; base_path=base_path)
+    dggs = to_dggs_pyramid(l; base_path=base_path, agg_type=agg_type)
     return dggs
 end
 
-function to_dggs_pyramid(l::DGGSLayer; base_path=tempname())
+function to_dggs_pyramid(l::DGGSLayer; base_path=tempname(), agg_type::Symbol=:round)
     pyramid = Dict{Int,DGGSLayer}()
     pyramid[l.level] = l
 
@@ -231,8 +222,12 @@ function to_dggs_pyramid(l::DGGSLayer; base_path=tempname())
         finer_layer = pyramid[coarser_level+1]
         coarser_data = Dict{Symbol,DGGSArray}()
         for (k, arr) in finer_layer.data
+            if agg_type == :round && any(Base.uniontypes(eltype(arr.data)) .<: AbstractFloat)
+                # no rounding needed
+                agg_type = :identity
+            end
+
             coarser_arr = mapCube(
-                (xout, xin) -> aggregate_dggs_array(xout, xin, arr),
                 arr.data;
                 indims=InDims(:q2di_i, :q2di_j),
                 outdims=OutDims(
@@ -240,7 +235,11 @@ function to_dggs_pyramid(l::DGGSLayer; base_path=tempname())
                     Dim{:q2di_j}(range(0; step=1, length=2^(coarser_level - 1))),
                     path=joinpath(base_path, "$(coarser_level)/$(k)")
                 )
-            )
+            ) do xout, xin
+                n = xin.indices[3]
+                aggregate_hexagons!(xout, xin, n, arr; agg_type=agg_type)
+                aggregate_pentagon!(xout, xin, n, arr; agg_type=agg_type)
+            end
             attrs = deepcopy(arr.attrs)
             attrs["dggs_level"] = coarser_level
             coarser_arr = YAXArray(coarser_arr.axes, coarser_arr.data, attrs)
@@ -256,8 +255,8 @@ end
 
 to_dggs_pyramid(a::DGGSArray; kw...) = a |> DGGSLayer |> l -> to_dggs_pyramid(l; kw...)
 
-function to_dggs_pyramid(raster::AbstractDimArray, level::Integer; kw...)
-    arr = to_dggs_array(raster, level; kw...)
-    dggs = to_dggs_pyramid(arr)
+function to_dggs_pyramid(raster::AbstractDimArray, level::Integer; agg_type=:round, kwargs...)
+    arr = to_dggs_array(raster, level; agg_type=agg_type, kwargs...)
+    dggs = to_dggs_pyramid(arr; agg_type=agg_type)
     return dggs
 end

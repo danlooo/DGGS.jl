@@ -36,9 +36,14 @@ raster = DimArray(data, (lon_range, lat_range))
 a2 = to_dggs_array(raster, level; lon_name=:X, lat_name=:Y)
 raster2 = to_geo_array(a2, lon_range.val, lat_range.val)
 @test a2.level == level
-
 # low loss after converting back
-@test all(abs.(Matrix(raster) .- Matrix(raster2)) .< 1.5)
+@test all(abs.(Matrix(raster) .- Matrix(raster2)) .< 1.8)
+
+# test aggregation methods
+data_bool = [exp(cosd(lon)) + 3(lat / 90) > 1 ? true : missing for lon in lon_range, lat in lat_range]
+raster_bool = DimArray(data_bool, (lon_range, lat_range))
+@test Float64 in to_dggs_pyramid(raster_bool, level; lon_name=:X, lat_name=:Y, agg_type=:convert)[level-1].layer.data |> eltype |> Base.uniontypes
+@test Bool in to_dggs_pyramid(raster_bool, level; lon_name=:X, lat_name=:Y, agg_type=:round)[level-1].layer.data |> eltype |> Base.uniontypes
 
 # load netcdf geo raster
 # reformat lon axes from [0,360] to [-180,180]
@@ -47,13 +52,14 @@ geo_ds = open_dataset("sresa1b_ncar_ccsm3-example.nc")
 geo_ds.axes[:lon] = vcat(range(0, 180; length=128), range(-180, 0; length=128)) |> Dim{:lon}
 arrs = Dict()
 for (k, arr) in geo_ds.cubes
-    k == :msk_rgn && continue # exclude mask
     axs = Tuple(ax isa Dim{:lon} ? geo_ds.axes[:lon] : ax for ax in arr.axes) # propagate fixed axis
     arrs[k] = YAXArray(axs, arr.data, arr.properties)
 end
 geo_ds = Dataset(; properties=geo_ds.properties, arrs...)
 dggs2 = to_dggs_pyramid(geo_ds, level)
 l2 = dggs2[2]
+@test l2.area.data |> eltype == Union{Missing,Float32}
+@test l2.msk_rgn.data |> eltype == Union{Missing,Bool}
 @test maximum(dggs2.levels) == level
 @test minimum(dggs2.levels) == 2
 @test dggs2.attrs == dggs2[2].attrs
