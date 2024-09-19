@@ -121,7 +121,7 @@ function aggregate_pentagon!(xout::AbstractArray, xin::AbstractArray, n::Integer
         idx[3] = n
         xin.parent[idx...]
     end
-    res = filter_null(mean)(vals) |> Dict(:round => round, :convert => identity)[agg_type]
+    res = filter_null(mean)(vals) |> Dict(:round => round, :convert => identity, :identity => identity)[agg_type]
     xout[1, 1] = res
 end
 
@@ -199,7 +199,7 @@ function aggregate_hexagons!(xout::AbstractArray, xin::AbstractArray, n::Integer
             end
 
             # kernel is already normalized, just sum instead of mean
-            xout[i, j] = filter_null(sum)(data .* kernel) |> Dict(:round => round, :convert => identity)[agg_type]
+            xout[i, j] = filter_null(sum)(data .* kernel) |> Dict(:round => round, :convert => identity, :identity => identity)[agg_type]
         end
     end
 
@@ -222,6 +222,11 @@ function to_dggs_pyramid(l::DGGSLayer; base_path=tempname(), agg_type::Symbol=:r
         finer_layer = pyramid[coarser_level+1]
         coarser_data = Dict{Symbol,DGGSArray}()
         for (k, arr) in finer_layer.data
+            if agg_type == :round && any(Base.uniontypes(eltype(arr.data)) .<: AbstractFloat)
+                # no rounding needed
+                agg_type = :identity
+            end
+
             coarser_arr = mapCube(
                 arr.data;
                 indims=InDims(:q2di_i, :q2di_j),
