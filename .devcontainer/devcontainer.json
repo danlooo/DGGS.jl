@@ -1,0 +1,17 @@
+{
+	"name": "DGGS.jl",
+	"dockerFile": "Dockerfile",
+	"extensions": [],
+	"containerEnv": {
+		"DISPLAY": "${localEnv:DISPLAY}",
+	},
+	"remoteEnv": {
+		"DOCKER_BUILDKIT": "0",
+	},
+	"mounts": [
+		"source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind,consistency=cached"
+	],
+	"runArgs": [
+		"--privileged"
+	]
+}
