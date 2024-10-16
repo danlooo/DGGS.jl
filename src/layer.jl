@@ -22,7 +22,7 @@ function DGGSLayer(arr::DGGSArray)
     DGGSLayer(data, arr.level, arr.attrs, arr.dggs)
 end
 
-function DGGSLayer(arrs::Vector{DGGSArray{T,L}}) where {T,L}
+function DGGSLayer(arrs::Vector{DGGSArray})
     [x.id for x in arrs] |> allunique || error("IDs of arrays must be different")
     [x.level for x in arrs] |> allequal || error("Level of arrays must be the same")
 
@@ -30,8 +30,6 @@ function DGGSLayer(arrs::Vector{DGGSArray{T,L}}) where {T,L}
     data = Dict(x.id => x for x in arrs)
     DGGSLayer(data, arr.level, arr.attrs, arr.dggs)
 end
-
-DGGSLayer(::Vector{DGGSArray{T}}) where {T} = error("Level of arrays must be the same")
 
 function Base.axes(l::DGGSLayer)
     axes = Vector()
