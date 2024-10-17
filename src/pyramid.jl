@@ -224,14 +224,8 @@ function to_dggs_pyramid(l::DGGSLayer; base_path=tempname(), agg_type::Symbol=:r
         finer_layer = pyramid[coarser_level+1]
         coarser_data = Dict{Symbol,DGGSArray}()
         for (k, arr) in finer_layer.data
-            if agg_type == :round && any(Base.uniontypes(eltype(arr.data)) .<: AbstractFloat)
-                # no rounding needed
-                agg_type = :identity
-            end
-
             # Some arrays e.g. NetDF4 over HDF5 are not thread-safe
             lck = ReentrantLock()
-
             coarser_arr = mapCube(
                 arr.data;
                 indims=InDims(:q2di_i, :q2di_j),
