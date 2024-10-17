@@ -1,0 +1,24 @@
+{
+	"name": "DGGS.jl",
+	"dockerFile": "Dockerfile",
+	"containerEnv": {
+		"DISPLAY": "${localEnv:DISPLAY}",
+	},
+	"remoteEnv": {
+		"DOCKER_BUILDKIT": "0",
+	},
+	"mounts": [
+		"source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind,consistency=cached"
+	],
+	"runArgs": [
+		"--privileged"
+	],
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"julialang.language-julia",
+				"ms-azuretools.vscode-docker"
+			]
+		}
+	}
+}

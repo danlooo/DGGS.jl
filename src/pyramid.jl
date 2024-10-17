@@ -93,7 +93,7 @@ end
 "position of last row or column in a quad matrix of that level"
 width(level::Integer) = 2^(level - 1)
 
-function aggregate_pentagon!(xout::AbstractArray, xin::AbstractArray, n::Integer, a::DGGSArray; agg_type::Symbol=:round)
+function aggregate_pentagon!(xout::AbstractArray, xin::AbstractArray, n::Integer, a::DGGSArray; agg_type::Symbol=:round, lck=ReentrantLock())
     m = width(a.level)
 
     # position of children in Q2DI space i.e. (i,j,n)
@@ -115,17 +115,19 @@ function aggregate_pentagon!(xout::AbstractArray, xin::AbstractArray, n::Integer
     )
 
     vals = map(children[n]) do (i, j, n)
+        # select current slice at given spatial point
+        # spatial dims are always at the beginning of idx
         idx = collect(xin.indices)
         idx[1] = i
         idx[2] = j
         idx[3] = n
-        a.data[idx...]
+        @lock lck a.data.data[idx...]
     end
     res = filter_null(mean)(vals) |> Dict(:round => round, :convert => identity, :identity => identity)[agg_type]
     xout[1, 1] = res
 end
 
-function aggregate_hexagons!(xout::AbstractArray, xin::AbstractArray, n::Integer, a::DGGSArray; agg_type::Symbol=:round)
+function aggregate_hexagons!(xout::AbstractArray, xin::AbstractArray, n::Integer, a::DGGSArray; agg_type::Symbol=:round, lck=ReentrantLock())
     (1 <= n <= 12) || error("Quad number n must be between 1 and 12")
     n in [1, 12] && return # first and last quad only contain one pentagon
 
@@ -178,8 +180,8 @@ function aggregate_hexagons!(xout::AbstractArray, xin::AbstractArray, n::Integer
     row_idx[2] = row_paddings[n][2]
     row_idx[3] = row_paddings[n][3]
 
-    padded_xin = hcat(a.data[col_idx...], xin)
-    padded_xin = vcat(vcat([missing], a.data[row_idx...])', padded_xin)
+    padded_xin = @lock lck hcat(a.data[col_idx...], xin)
+    padded_xin = @lock lck vcat(vcat([missing], a.data[row_idx...])', padded_xin)
 
     kernel = Float64[1 1 0; 1 2 1; 0 1 1] |> x -> x ./ sum(x)
     kernel_stride = 2
@@ -222,11 +224,13 @@ function to_dggs_pyramid(l::DGGSLayer; base_path=tempname(), agg_type::Symbol=:r
         finer_layer = pyramid[coarser_level+1]
         coarser_data = Dict{Symbol,DGGSArray}()
         for (k, arr) in finer_layer.data
-            if agg_type == :round && any(Base.uniontypes(eltype(arr.data)) .<: AbstractFloat)
+            if agg_type == :round && all(Base.uniontypes(eltype(arr.data)) .<: Union{AbstractFloat,Missing})
                 # no rounding needed
                 agg_type = :identity
             end
 
+            # Some arrays e.g. NetDF4 over HDF5 are not thread-safe
+            lck = ReentrantLock()
             coarser_arr = mapCube(
                 arr.data;
                 indims=InDims(:q2di_i, :q2di_j),
@@ -237,8 +241,8 @@ function to_dggs_pyramid(l::DGGSLayer; base_path=tempname(), agg_type::Symbol=:r
                 )
             ) do xout, xin
                 n = xin.indices[3]
-                aggregate_hexagons!(xout, xin, n, arr; agg_type=agg_type)
-                aggregate_pentagon!(xout, xin, n, arr; agg_type=agg_type)
+                aggregate_hexagons!(xout, xin, n, arr; agg_type=agg_type, lck=lck)
+                aggregate_pentagon!(xout, xin, n, arr; agg_type=agg_type, lck=lck)
             end
             attrs = deepcopy(arr.attrs)
             attrs["dggs_level"] = coarser_level

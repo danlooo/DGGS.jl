@@ -17,7 +17,7 @@ struct DGGSGridSystem
     id::String
     index::String
     polygon::String
-    aperture::Integer
+    aperture::Int64
     projection::String
 end
 
