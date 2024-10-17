@@ -229,6 +229,6 @@ a[Q2DI(3, 10, 10), Ti=1] = 5
 # Thread safetey of NetCDF4 i.e. HDF5
 #
 Threads.nthreads() > 1 || @warn "Test script must be started with multiple threads to test thread-safety"
-ar = open_dataset("disks.nc").disks
+ar = open_dataset("disks.dggs.nc").disks
 a = DGGSArray(ar)
 p = to_dggs_pyramid(a)
