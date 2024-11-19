@@ -75,7 +75,7 @@ l2 = dggs2[2]
 @test l2[id=:tas, Time=1].data |> size == (2, 2, 12)
 
 @test DGGSLayer([l2.tas, l2.pr]) isa DGGSLayer
-@test_throws ErrorException [p[4].tas, p[5].pr] |> DGGSLayer
+@test_throws MethodError [p[4].tas, p[5].pr] |> DGGSLayer
 @test_throws ErrorException [p[4].tas, p[4].tas] |> DGGSLayer
 
 #
@@ -197,14 +197,14 @@ a = p_test[6].quads
 @test p_test[6].quads[Q2DI(2, 1, 14), 2] |> unique |> sort == [2, 6]
 @test p_test[6].quads[Q2DI(2, 25, 1), 1:5] |> unique |> sort == [2, 11]
 
-@test all(p_test[6].edge_disks[Q2DI(3, 28, 1), 1:5] .== 1)
-@test all(p_test[6].edge_disks[Q2DI(3, 5, 1), 1:5] .== 1)
-@test all(p_test[6].edge_disks[Q2DI(3, 1, 28), 1:5] .== 1)
-@test all(p_test[6].edge_disks[Q2DI(3, 32, 28), 1:5] .== 1)
-@test all(p_test[6].edge_disks[Q2DI(5, 18, 1), 1:5] .== 1)
-@test all(p_test[6].edge_disks[Q2DI(5, 18, 32), 1:5] .== 1)
-@test all(p_test[6].edge_disks[Q2DI(5, 32, 12), 1:5] .== 1)
-@test all(p_test[6].edge_disks[Q2DI(5, 1, 18), 1:5] .== 1)
+@test all(p_test[6].disks3[Q2DI(3, 28, 1), 1:5] .== 1)
+@test all(p_test[6].disks3[Q2DI(3, 5, 1), 1:5] .== 1)
+@test all(p_test[6].disks3[Q2DI(3, 1, 28), 1:5] .== 1)
+@test all(p_test[6].disks3[Q2DI(3, 32, 28), 1:5] .== 1)
+@test all(p_test[6].disks3[Q2DI(5, 18, 1), 1:5] .== 1)
+@test all(p_test[6].disks3[Q2DI(5, 18, 32), 1:5] .== 1)
+@test all(p_test[6].disks3[Q2DI(5, 32, 12), 1:5] .== 1)
+@test all(p_test[6].disks3[Q2DI(5, 1, 18), 1:5] .== 1)
 
 #
 # setindex
@@ -224,3 +224,11 @@ a[Q2DI(3, 10, 10), Ti=1] = 5
 @test all(collect(a[Q2DI(2, 10, 10)]) .== 5)
 @test collect(a[Q2DI(3, 10, 10), Ti=1])[1] == 5
 @test collect(a[Q2DI(4, 10, 10), Ti=1])[1] != 5
+
+#
+# Thread safetey of NetCDF4 i.e. HDF5
+#
+Threads.nthreads() > 1 || @warn "Test script must be started with multiple threads to test thread-safety"
+ar = open_dataset("disks.dggs.nc").disks
+a = DGGSArray(ar)
+p = to_dggs_pyramid(a)

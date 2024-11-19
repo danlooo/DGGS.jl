@@ -31,8 +31,6 @@ function DGGSLayer(arrs::Vector{DGGSArray{T,L}}) where {T,L}
     DGGSLayer(data, arr.level, arr.attrs, arr.dggs)
 end
 
-DGGSLayer(::Vector{DGGSArray{T}}) where {T} = error("Level of arrays must be the same")
-
 function Base.axes(l::DGGSLayer)
     axes = Vector()
     for arr in values(l.data)

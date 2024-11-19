@@ -88,7 +88,7 @@ function _transform_points(lon_range, lat_range, level)
     Iterators.product(lon_range, lat_range) |> collect |> vec |> sort |> x -> _transform_points(x, level) |> x -> reshape(x, length(lat_range), length(lon_range))
 end
 
-function transform_points(coords::Vector{Tuple{U,V}}, level; show_progress=true, chunk_size_points=2048) where {U<:Real,V<:Real}
+function transform_points(coords::AbstractVector{Tuple{U,V}}, level; show_progress=true, chunk_size_points=2048) where {U<:Real,V<:Real}
     chunks = Iterators.partition(coords, chunk_size_points) |> collect
 
     if length(chunks) == 1
@@ -100,11 +100,11 @@ function transform_points(coords::Vector{Tuple{U,V}}, level; show_progress=true,
         p = Progress(length(chunks))
         results = ThreadsX.map(chunks) do chunk
             next!(p)
-            _transform_points(chunk, lat_range, level)
+            _transform_points(chunk, level)
         end
     else
         results = ThreadsX.map(chunks) do chunk
-            _transform_points(chunk, lat_range, level)
+            _transform_points(chunk, level)
         end
     end
 
