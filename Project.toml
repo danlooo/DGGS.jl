@@ -52,7 +52,7 @@ NetCDF = "0.11"
 OrderedCollections = "1"
 ProgressMeter = "1"
 Statistics = "1"
-YAXArrays = "0.5"
+YAXArrays = "0.5, 0.6"
 Zarr = "0.9"
 julia = "1.9"
 
