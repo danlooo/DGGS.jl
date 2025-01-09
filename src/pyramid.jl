@@ -67,7 +67,7 @@ function write_dggs_pyramid(base_path::String, dggs::DGGSPyramid)
         attrs["dggs_level"] = level
 
         ds = Dataset(; properties=attrs, arrs...)
-        savedataset(ds; path=level_path)
+        savedataset(ds; path=level_path, driver=:zarr)
         JSON3.write("$level_path/.zgroup", Dict(:zarr_format => 2))
         Zarr.consolidate_metadata(level_path)
 
