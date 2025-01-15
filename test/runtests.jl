@@ -48,15 +48,13 @@ raster_bool = DimArray(data_bool, (lon_range, lat_range))
 # reformat lon axes from [0,360] to [-180,180]
 # skip mask
 geo_ds = open_dataset("sresa1b_ncar_ccsm3-example.nc")
-#geo_ds.axes[:lon] = vcat(range(0, 180; length=128), range(-180, 0; length=128)) |> Dim{:lon}
+geo_ds.axes[:lon] = vcat(range(0, 180; length=128), range(-180, 0; length=128)) |> Dim{:lon}
 arrs = Dict()
 for (k, arr) in geo_ds.cubes
     axs = Tuple(ax isa Dim{:lon} ? geo_ds.axes[:lon] : ax for ax in arr.axes) # propagate fixed axis
     arrs[k] = YAXArray(axs, arr.data, arr.properties)
 end
 geo_ds = Dataset(; properties=geo_ds.properties, arrs...)
-geo_ds.axes[:lon] = vcat(range(0, 180; length=128), range(-180, 0; length=128)) |> Dim{:lon}
-
 dggs2 = to_dggs_pyramid(geo_ds, level)
 l2 = dggs2[2]
 @test l2.area.data |> eltype == Union{Missing,Float32}
