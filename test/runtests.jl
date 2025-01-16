@@ -27,6 +27,19 @@ a = l.tas
 # Convert lat/lon rasters into a DGGS
 #
 
+# test descending ordered grids
+lon_range = X(180:-1:-180)
+lat_range = Y(90:-1:-90)
+level = 6
+data = [exp(cosd(lon)) + 3(lat / 90) for lon in lon_range, lat in lat_range]
+raster = DimArray(data, (lon_range, lat_range))
+a2 = to_dggs_array(raster, level; lon_name=:X, lat_name=:Y)
+raster2 = to_geo_array(a2, lon_range.val, lat_range.val)
+@test a2.level == level
+# low loss after converting back
+@test all(abs.(Matrix(raster) .- Matrix(raster2)) .< 1.8)
+
+# test ascending ordered grids
 lon_range = X(-180:180)
 lat_range = Y(-90:90)
 level = 6
@@ -37,6 +50,7 @@ raster2 = to_geo_array(a2, lon_range.val, lat_range.val)
 @test a2.level == level
 # low loss after converting back
 @test all(abs.(Matrix(raster) .- Matrix(raster2)) .< 1.8)
+
 
 # test aggregation methods
 data_bool = [exp(cosd(lon)) + 3(lat / 90) > 1 ? true : missing for lon in lon_range, lat in lat_range]
