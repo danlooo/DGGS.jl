@@ -1,8 +1,8 @@
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.11.1"
+julia_version = "1.11.2"
 manifest_format = "2.0"
-project_hash = "338aa1d4913c2dce7c821660601c78f8a2221737"
+project_hash = "9297cdfae4458dbc6997cff1f2d9a5120f137619"
 
 [[deps.AWS]]
 deps = ["Base64", "Compat", "Dates", "Downloads", "GitHub", "HTTP", "IniFile", "JSON", "MbedTLS", "Mocking", "OrderedCollections", "Random", "SHA", "Sockets", "URIs", "UUIDs", "XMLDict"]
