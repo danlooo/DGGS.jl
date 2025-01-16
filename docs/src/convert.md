@@ -42,7 +42,7 @@ geo_arr = YAXArray((lon_range, lat_range, time_range), data, Dict())
 a = to_dggs_array(geo_arr, level; lon_name=:X, lat_name=:Y)
 ```
 
-All geographic input coordinates must be in decimal degrees in the WGS84 format. 
+All geographic input coordinates must be in decimal degrees in the WGS84 format.
 Longitudes must be within [-180,180] and latitudes must be within [-90,90].
 Arrays must be in ascending order, i.e. sorted from west to east and from south to north.
 
@@ -58,11 +58,11 @@ geo_ds.lon, geo_ds.lat
 Let's change the lon axes to the desired format:
 
 ```@example convert
-geo_ds.axes[:lon] = vcat(range(0, 180; length=128), range(-180, 0; length=128)) |> Dim{:lon}
+geo_ds.axes[:lon] = vcat(range(0, 180; length=128), range(-180, 0; length=128)) |> lon
 arrs = Dict()
 for (k, arr) in geo_ds.cubes
     k == :msk_rgn && continue # exclude mask
-    axs = Tuple(ax isa Dim{:lon} ? geo_ds.axes[:lon] : ax for ax in arr.axes) # propagate fixed axis
+    axs = Tuple(ax isa lon ? geo_ds.axes[:lon] : ax for ax in arr.axes) # propagate fixed axis
     arrs[k] = YAXArray(axs, arr.data, arr.properties)
 end
 geo_ds = Dataset(; properties=geo_ds.properties, arrs...)

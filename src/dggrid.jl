@@ -181,7 +181,7 @@ function transform_points(
     end
 
     cell_ids_mat = hcat(cell_ids_mats...) |> permutedims
-    cell_ids = DimArray(cell_ids_mat, (Dim{:lon}(lon_range), Dim{:lat}(lat_range)))
+    cell_ids = DimArray(cell_ids_mat, (lon(lon_range), lat(lat_range)))
     return cell_ids
 end
 
@@ -196,8 +196,8 @@ function create_cell_ids(
     for level in levels
         path = "$(base_path)/$(lon_range)_$(lat_range)/$(level)"
         axs = (
-            Dim{:lon}(lon_range),
-            Dim{:lat}(lat_range),
+            lon(lon_range),
+            lat(lat_range),
             Dim{:q2di}(["n", "i", "j"]),
         )
         # avoid complex eltypes e.g (n,i,j) tuple for compatibility reasons and to prevent parsing errors

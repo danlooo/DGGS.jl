@@ -1,6 +1,6 @@
 using DGGS
-using DimensionalData
-using YAXArrays
+using DGGS.DimensionalData
+using DGGS.YAXArrays
 using GLMakie
 using Test
 using Rasters
@@ -62,10 +62,10 @@ raster_bool = DimArray(data_bool, (lon_range, lat_range))
 # reformat lon axes from [0,360] to [-180,180]
 # skip mask
 geo_ds = open_dataset("sresa1b_ncar_ccsm3-example.nc")
-geo_ds.axes[:lon] = vcat(range(0, 180; length=128), range(-180, 0; length=128)) |> Dim{:lon}
+geo_ds.axes[:lon] = vcat(range(0, 180; length=128), range(-180, 0; length=128)) |> lon
 arrs = Dict()
 for (k, arr) in geo_ds.cubes
-    axs = Tuple(ax isa Dim{:lon} ? geo_ds.axes[:lon] : ax for ax in arr.axes) # propagate fixed axis
+    axs = Tuple(ax isa lon ? geo_ds.axes[:lon] : ax for ax in arr.axes) # propagate fixed axis
     arrs[k] = YAXArray(axs, arr.data, arr.properties)
 end
 geo_ds = Dataset(; properties=geo_ds.properties, arrs...)

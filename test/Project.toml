@@ -1,7 +1,5 @@
 [deps]
-DimensionalData = "0703355e-b756-11e9-17c0-8b28908087d0"
 GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Rasters = "a3a2b9e3-a471-40c9-b274-f788e487c689"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-YAXArrays = "c21b50f5-aa40-41ea-b809-c0f5e47bfa5c"
