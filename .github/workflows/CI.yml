@@ -45,3 +45,7 @@ jobs:
         run: >-
           DISPLAY=:0 xvfb-run -s '-screen 0 1024x768x24' \
             julia --color=yes --project=. --threads=auto -e 'using Pkg; Pkg.test("DGGS", coverage=true)'
+      - name: Upload coverage reports to Codecov with GitHub Action
+        uses: codecov/codecov-action@v5
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
