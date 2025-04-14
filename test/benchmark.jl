@@ -3,6 +3,7 @@ using YAXArrays
 using DimensionalData
 using BenchmarkTools
 using Printf
+using ArchGDAL
 
 @info "Start benchmark using $(nthreads()) threads"
 
