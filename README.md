@@ -31,11 +31,9 @@ to_cell(120.8, -80, 8) |> to_geo
 
 1. Snyder Equal Area Projection
 1. Rectify diamonds: Rotation and skew
-1. Storage into 5 matrices
+1. Storage into 5 matrices, i.e. a PentaCube
 
 ![](docs/src/assets/pentacube-overview.png)
-
-Lastly, the coordinates are subdivided into 5 rectangular matrices, i.e. a PentaCube.
 
 ## Funding
 
