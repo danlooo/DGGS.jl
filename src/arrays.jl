@@ -48,3 +48,30 @@ function to_dggs_array(geo_array, resolution; agg_func::Function=mean, outtype=F
 
     return cell_array
 end
+
+function to_geo_array(dggs_array, lon_dim::DD.Dimension, lat_dim::DD.Dimension; kwargs...)
+    resolution = dggs_array.dggs_j |> length |> log2 |> Int
+    cells = [(lon, lat) for lon in lon_dim for lat in lat_dim] |>
+            x -> to_cell(x, resolution) |>
+                 x -> reshape(x, length(lon_dim), length(lat_dim))
+    geo_array = mapCube(
+        dggs_array,
+        indims=InDims(
+            dggs_array.dggs_i,
+            dggs_array.dggs_j,
+            dggs_array.dggs_n
+        ),
+        outdims=OutDims(lon_dim, lat_dim),
+        kwargs...
+    ) do xout, xin
+        xout .= map(x -> xin[x.i+1, x.j+1, x.n+1], cells)
+    end
+
+    return geo_array
+end
+
+function to_geo_array(dggs_array, lon_range::AbstractRange, lat_range::AbstractRange; kwargs...)
+    lon_dim = X(lon_range)
+    lat_dim = Y(lat_range)
+    to_geo_array(dggs_array, lon_dim, lat_dim; kwargs...)
+end

@@ -4,6 +4,7 @@ import Proj
 using Base.Threads
 using YAXArrays
 using DimensionalData
+import DimensionalData as DD
 using Statistics
 
 include("types.jl")
@@ -16,5 +17,5 @@ function __init__()
     global inv_transformations = [Proj.Transformation(crs_isea, crs_geo; ctx=Proj.proj_context_create()) for _ in 1:nthreads()]
 end
 
-export to_cell, to_geo, to_dggs_array, Cell
+export to_cell, to_geo, to_dggs_array, to_geo_array, Cell
 end
