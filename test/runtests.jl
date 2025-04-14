@@ -46,11 +46,31 @@ using DimensionalData
     end
 
     @testset "Convert geo to DGGS" begin
+        # convert geotif file
         resolution = 6
-        geo_arr = open_dataset("data/naturalearth_512.tif").Gray
-        dggs_arr = to_dggs_array(geo_arr, resolution; lon_name=:X, lat_name=:Y)
+        geo_array = open_dataset("data/naturalearth_512.tif").Gray
+        dggs_array = to_dggs_array(geo_array, resolution; lon_name=:X, lat_name=:Y)
+        @test size(dggs_array) == (2 * 2^resolution, 2^resolution, 5)
+        @test name.(caxes(dggs_array)) == (:dggs_i, :dggs_j, :dggs_n)
 
-        @test size(dggs_arr) == (2 * 2^resolution, 2^resolution, 5)
-        @test name.(caxes(dggs_arr)) == (:dggs_i, :dggs_j, :dggs_n)
+        # convert synthetic data back and forth
+        resolution = 6
+        lon_range = X(180:-1:-180)
+        lat_range = Y(90:-1:-90)
+        geo_data = [exp(cosd(lon)) + 3(lat / 90) for lon in lon_range, lat in lat_range]
+        geo_array = YAXArray((lon_range, lat_range), geo_data)
+        dggs_array = to_dggs_array(geo_array, resolution; lon_name=:X, lat_name=:Y)
+        geo_array2 = to_geo_array(dggs_array, geo_array.X, geo_array.Y)
+        geo_diffs = abs.(geo_array .= geo_array2)
+
+        @test size(geo_array) == size(geo_array2)
+        @test all(geo_diffs .< 1) # max global deviation
+        @test sum(geo_diffs .< 0.1) / length(geo_diffs) >= 0.95 # max deviation of most points
+
+        # alternative methods
+        lon_range = -180:180
+        lat_range = -90:90
+        geo_array3 = to_geo_array(dggs_array, lon_range, lat_range)
+        @test size(geo_array3) == (length(lon_range), length(lat_range))
     end
 end
