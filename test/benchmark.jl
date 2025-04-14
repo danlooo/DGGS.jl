@@ -1,4 +1,4 @@
-using PentaCube
+using DGGS
 using YAXArrays
 using DimensionalData
 using BenchmarkTools
