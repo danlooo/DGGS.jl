@@ -1,8 +1,11 @@
 using DGGS
 using Test
 using Distances
+using ArchGDAL
+using YAXArrays
+using DimensionalData
 
-@testset "PentaCube.jl" begin
+@testset "DGGS.jl" begin
 
     @testset "Cells" begin
         @test Cell(1, 2, 3, 4) isa Cell
@@ -40,5 +43,14 @@ using Distances
         @test length(cells) == length(cells_int |> unique)
         @test cells_int == 0:length(cells)-1
         @test cells == cells2
+    end
+
+    @testset "Convert geo to DGGS" begin
+        resolution = 6
+        geo_arr = open_dataset("data/naturalearth_512.tif").Gray
+        dggs_arr = to_dggs_array(geo_arr, resolution; lon_name=:X, lat_name=:Y)
+
+        @test size(dggs_arr) == (2 * 2^resolution, 2^resolution, 5)
+        @test name.(caxes(dggs_arr)) == (:dggs_i, :dggs_j, :dggs_n)
     end
 end
