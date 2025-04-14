@@ -1,4 +1,4 @@
-function to_dggs_array(geo_array, resolution; agg_func::Function=mean, outtype=Float64, lon_name=:lon, lat_name=:lat)
+function to_dggs_array(geo_array, resolution; agg_func::Function=mean, outtype=Float64, lon_name=:lon, lat_name=:lat, kwargs...)
     lon_dim = filter(x -> name(x) == lon_name, dims(geo_array))
     lat_dim = filter(x -> name(x) == lat_name, dims(geo_array))
     isempty(lon_dim) && error("Longitude dimension not found")
@@ -34,6 +34,7 @@ function to_dggs_array(geo_array, resolution; agg_func::Function=mean, outtype=F
             Dim{:dggs_j}(0:(2^resolution-1)),
             Dim{:dggs_n}(0:4),
             outtype=outtype,
+            kwargs...
         )) do xout, xin
         for (cell, cell_coords) in cell_coords
             try
