@@ -3,6 +3,7 @@
 
 !src
 !docs
+!test
 !.gitignore
 !LICENSE
 !Manifest.toml
