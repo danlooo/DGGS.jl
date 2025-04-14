@@ -1,0 +1,10 @@
+# white list
+*
+
+!src
+!docs
+!.gitignore
+!LICENSE
+!Manifest.toml
+!Project.toml
+!.github
