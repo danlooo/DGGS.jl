@@ -1,28 +1,87 @@
 using DimensionalData.Dimensions: dimcolors
-
+using StaticArrays
 #
 # grid topology
 #
 
-n_submats = 5
-crs_geo = "EPSG:4326"
-crs_isea = "+proj=isea +orient=isea +mode=plane +R=6371007.18091875"
+const n_submats = 5
+const crs_geo = "EPSG:4326"
+const crs_isea = "+proj=isea +orient=isea +mode=plane +R=6371007.18091875"
 
 # see https://www.youtube.com/watch?v=FWJOdMh8JQo&t=341s
-θ_rotation = 60 * π / 180
-rotation_matrix = [cos(θ_rotation) -sin(θ_rotation); sin(θ_rotation) cos(θ_rotation)]
-θ_skew = 30 * π / 180
-skew_matrix = [1 tan(θ_skew); 0 1]
-trans_matrix = skew_matrix * rotation_matrix
+function _compute_trans_matrix()
+    θ_rotation = 60 * π / 180
+    rotation_matrix = @SMatrix [cos(θ_rotation) -sin(θ_rotation); sin(θ_rotation) cos(θ_rotation)]
+    θ_skew = 30 * π / 180
+    skew_matrix = @SMatrix [1 tan(θ_skew); 0 1]
+    skew_matrix * rotation_matrix
+end
+const trans_matrix = _compute_trans_matrix()
+const itrans_matrix = inv(trans_matrix)
 
-trans = Proj.Transformation(crs_geo, crs_isea)
-inv_trans = inv(trans)
-epsilon = 1e-3 # move point from vertix into quad
+LonLatToISEA() = Proj.Transformation(crs_geo, crs_isea)
+
+ISEAToLonLat() = inv(LonLatToISEA())
+const epsilon = 1e-3 # move point from vertix into quad
+
+struct ISEAToRotatedISEA <: CoordinateTransformations.Transformation end
+struct RotatedISEAToISEA <: CoordinateTransformations.Transformation end
+
+function (::ISEAToRotatedISEA)(x_isea, y_isea)
+    # rectify
+    x_rect, y_rect = trans_matrix * @SMatrix [x_isea; y_isea]
+
+    # affine transformation
+    x_scaled = (x_rect - x_rect_min) / rect_width * (n_submats + 1)
+    y_scaled = (y_rect - y_rect_min) / rect_height * n_submats
+
+    n_cell = (y_rect - y_rect_min) / rect_height * n_submats |> floor |> Int
+    x_offset = x_scaled - n_cell
+    y_offset = y_scaled - n_cell
+    return clamp(n_cell, 0, 4), x_offset, y_offset
+end
+(f::ISEAToRotatedISEA)(t::Tuple) = f(t...)
+
+function (::RotatedISEAToISEA)(n_cell, x_scaled, y_scaled)
+    # Reverse transformation
+    x_rect = (x_scaled + n_cell) / 6 * rect_width + x_rect_min
+    y_rect = (y_scaled + n_cell) / 5 * rect_height + y_rect_min
+
+    x_isea, y_isea = itrans_matrix * @SMatrix [x_rect; y_rect]
+    x_isea, y_isea
+end
+(f::RotatedISEAToISEA)(t::Tuple) = f(t...)
+
+struct RotatedISEAToIndices <: CoordinateTransformations.Transformation
+    resolution::Int
+end
+function (r::RotatedISEAToIndices)(x_offset, y_offset)
+    # Discretize coordinates to cell ids
+    i_cell = x_offset * 2^r.resolution |> floor |> Int
+    j_cell = y_offset * 2^r.resolution |> floor |> Int
+
+    # crop
+    # TODO: review
+    i_cell = clamp(i_cell, 0, 2 * 2^r.resolution - 1)
+    j_cell = clamp(j_cell, 0, 2^r.resolution - 1)
+    i_cell, j_cell
+end
+(r::RotatedISEAToIndices)(t::Tuple) = r(t...)
+
+
+
 # use icosahedron vertices to calculate the extent
-x_rect_min, y_rect_min = trans_matrix * vcat(trans(58.2825256, -168.75)...)
-x_rect_max, y_rect_max = trans_matrix * vcat(trans(0.0 + epsilon, -137.0325256 - epsilon)...)
-rect_width = x_rect_max - x_rect_min
-rect_height = y_rect_max - y_rect_min
+function compute_rectangles()
+    corner1 = LonLatToISEA()(58.2825256, -168.75)
+    corner2 = LonLatToISEA()(0.0 + epsilon, -137.0325256 - epsilon)
+    x_rect_min, y_rect_min = trans_matrix * @SVector [corner1[1], corner1[2]]
+    x_rect_max, y_rect_max = trans_matrix * @SVector [corner2[1], corner2[2]]
+    rect_width = x_rect_max - x_rect_min
+    rect_height = y_rect_max - y_rect_min
+    x_rect_min, x_rect_max, rect_width, y_rect_min, y_rect_max, rect_height
+end
+const x_rect_min, x_rect_max, rect_width, y_rect_min, y_rect_max, rect_height = compute_rectangles()
+
 
 #
 # coordinate transformations
@@ -42,29 +101,12 @@ function to_cell(lon::Real, lat::Real, resolution)
     lat == 90 && return Cell(0, 0.5 * 2^resolution, 0, resolution)
 
     # project to ISEA
-    trans = transformations[threadid()]
-    x_isea, y_isea = trans(lat, lon)
+    #trans = transformations[threadid()]
+    x_isea, y_isea = LonLatToISEA(lat, lon)
 
-    # rectify
-    x_rect, y_rect = trans_matrix * [x_isea; y_isea]
-    n_cell = (y_rect - y_rect_min) / rect_height * n_submats |> floor |> Int
+    x_offset, y_offset, n_cell = ISEAToRotatedISEA()(x_isea, y_isea)
 
-    # affine transformation
-    x_scaled = (x_rect - x_rect_min) / rect_width * (n_submats + 1)
-    y_scaled = (y_rect - y_rect_min) / rect_height * n_submats
-
-    x_offset = x_scaled - (n_cell + 1) + 1
-    y_offset = y_scaled - n_cell
-
-    # Discretize coordinates to cell ids
-    i_cell = x_offset * 2^resolution |> floor |> Int
-    j_cell = y_offset * 2^resolution |> floor |> Int
-
-    # crop
-    # TODO: review
-    i_cell = clamp(i_cell, 0, 2 * 2^resolution - 1)
-    j_cell = clamp(j_cell, 0, 2^resolution - 1)
-    n_cell = clamp(n_cell, 0, 4)
+    i_cell, j_cell = RotatedISEAToIndices(resolution)(x_offset, y_offset)
 
     return Cell(i_cell, j_cell, n_cell, resolution)
 end

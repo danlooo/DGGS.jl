@@ -6,6 +6,7 @@ using YAXArrays
 using DimensionalData
 import DimensionalData as DD
 using Statistics
+using CoordinateTransformations
 
 include("types.jl")
 include("cells.jl")
