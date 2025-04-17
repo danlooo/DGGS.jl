@@ -4,7 +4,6 @@ using Distances
 using ArchGDAL
 using YAXArrays
 using DimensionalData
-using Rasters
 
 @testset "DGGS.jl" begin
 

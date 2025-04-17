@@ -26,10 +26,6 @@ struct DGGSArray{T,N,D<:Tuple,R<:Tuple,A<:AbstractArray{T,N},Na,Me} <: AbstractD
     name::Na
     metadata::Me
 
-    # DGGS fields
-    resolution::Integer
-    dggsrs::String
-
     function DGGSArray(
         data::A, dims::D, refdims::R, name::Na, metadata::Me
     ) where {D<:Tuple,R<:Tuple,A<:AbstractArray{T,N},Na,Me} where {T,N}
@@ -46,6 +42,15 @@ struct DGGSArray{T,N,D<:Tuple,R<:Tuple,A<:AbstractArray{T,N},Na,Me} <: AbstractD
         map(x -> 0 <= x <= 2^resolution - 1, dims_d[:dggs_j]) |> all || error("Dimension dggs_j not in range")
         map(x -> 0 <= x <= 4, dims_d[:dggs_n]) |> all || error("Dimension dggs_n not in range")
 
-        new{T,N,D,R,A,Na,Me}(data, dims, refdims, name, metadata, resolution, dggsrs)
+        if metadata == DD.Dimensions.Lookups.NoMetadata
+            new_metadata = Dict{String,Any}()
+        elseif typeof(metadata) != Dict{String,Any}
+            @info "Convert metadata names to String"
+            new_metadata = Dict{String,Any}(metadata)
+        end
+        new_metadata["dggs_resolution"] = resolution
+        new_metadata["dggs_dggsrs"] = dggsrs
+
+        new{T,N,D,R,A,Na,Dict{String,Any}}(data, dims, refdims, name, new_metadata)
     end
 end
