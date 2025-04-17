@@ -35,9 +35,9 @@ struct DGGSArray{T,N,D<:Tuple,R<:Tuple,A<:AbstractArray{T,N},Na,Me} <: AbstractD
     ) where {D<:Tuple,R<:Tuple,A<:AbstractArray{T,N},Na,Me} where {T,N}
         dims_d = Dict([DD.name(x) => x for x in dims])
 
-        :dggs_i in keys(dims_d) || error("Dimension :dggs_i must nbe present")
-        :dggs_j in keys(dims_d) || error("Dimension :dggs_j must nbe present")
-        :dggs_n in keys(dims_d) || error("Dimension :dggs_n must nbe present")
+        :dggs_i in keys(dims_d) || error("Dimension :dggs_i must be present")
+        :dggs_j in keys(dims_d) || error("Dimension :dggs_j must be present")
+        :dggs_n in keys(dims_d) || error("Dimension :dggs_n must be present")
 
         resolution = dims_d[:dggs_i] |> length |> log2 |> Int
         dggsrs = "ISEA4D.P5"
