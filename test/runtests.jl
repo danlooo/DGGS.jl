@@ -4,6 +4,7 @@ using Distances
 using ArchGDAL
 using YAXArrays
 using DimensionalData
+using Rasters
 
 @testset "DGGS.jl" begin
 
@@ -15,6 +16,19 @@ using DimensionalData
         @test_throws ErrorException Cell(0, 0, 0, 3) < Cell(1, 0, 0, 4)
 
         @test to_geo(1, 1, 1, 8) == to_geo(Cell(1, 1, 1, 8))
+    end
+
+    @testeset "DGGSArray" begin
+        resolution = 3
+        i_dim = Dim{:dggs_i}(0:2*2^resolution-1)
+        j_dim = Dim{:dggs_j}(0:2^resolution-1)
+        n_dim = Dim{:dggs_n}(0:4)
+        time_dim = Ti(1:10)
+        dim_array = rand(i_dim, j_dim, n_dim, time_dim)
+        yax_array = YAXArray(dim_array.dims, dim_array.data)
+
+        @test DGGSArray(dim_array) isa DGGSArray
+        @test DGGSArray(yax_array) isa DGGSArray
     end
 
     @testset "Coordinate transformations" begin

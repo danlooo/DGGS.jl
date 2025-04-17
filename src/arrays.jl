@@ -76,3 +76,18 @@ function to_geo_array(dggs_array, lon_range::AbstractRange, lat_range::AbstractR
     lat_dim = Y(lat_range)
     to_geo_array(dggs_array, lon_dim, lat_dim; kwargs...)
 end
+
+#
+# DGGSArray features
+#
+
+DGGSArray(array::AbstractDimArray) = DGGSArray(array.data, dims(array), refdims(array), name(array), metadata(array))
+
+function Base.show(io::IO, ::MIME"text/plain", array::DGGSArray)
+    println(io, "DGGSArray{$(typeof(array.data).name.name),$(eltype(array)),...} $(array.dggsrs) at resolution $(array.resolution)")
+    println(io, "Additional dimensions:")
+    for dim in array.dims
+        name(dim) in [:dggs_i, :dggs_j, :dggs_n] && continue
+        println(io, "   $(name(dim))")
+    end
+end
