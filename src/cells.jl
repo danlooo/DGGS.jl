@@ -19,9 +19,9 @@ end
 const trans_matrix = _compute_trans_matrix()
 const itrans_matrix = inv(trans_matrix)
 
-LonLatToISEA() = Proj.Transformation(crs_geo, crs_isea)
+LatLonToISEA() = Proj.Transformation(crs_geo, crs_isea)
 
-ISEAToLonLat() = inv(LonLatToISEA())
+ISEAToLatLon() = inv(LatLonToISEA())
 const epsilon = 1e-3 # move point from vertix into quad
 
 struct ISEAToRotatedISEA <: CoordinateTransformations.Transformation end
@@ -38,6 +38,8 @@ function (::ISEAToRotatedISEA)(x_isea, y_isea)
     n_cell = (y_rect - y_rect_min) / rect_height * n_submats |> floor |> Int
     x_offset = x_scaled - n_cell
     y_offset = y_scaled - n_cell
+
+
     return clamp(n_cell, 0, 4), x_offset, y_offset
 end
 (f::ISEAToRotatedISEA)(t::Tuple) = f(t...)
@@ -46,6 +48,16 @@ function (::RotatedISEAToISEA)(n_cell, x_scaled, y_scaled)
     # Reverse transformation
     x_rect = (x_scaled + n_cell) / 6 * rect_width + x_rect_min
     y_rect = (y_scaled + n_cell) / 5 * rect_height + y_rect_min
+
+    if x_rect <= rect_borders[n_cell+1][1]
+        error("Left")
+    elseif x_rect >= rect_borders[n_cell+1][2]
+        error("Right")
+    elseif y_rect <= rect_borders[n_cell+1][3]
+        error("Low")
+    elseif y_rect >= rect_borders[n_cell+1][4]
+        error("High")
+    end
 
     x_isea, y_isea = itrans_matrix * @SMatrix [x_rect; y_rect]
     x_isea, y_isea
@@ -72,15 +84,25 @@ end
 
 # use icosahedron vertices to calculate the extent
 function compute_rectangles()
-    corner1 = LonLatToISEA()(58.2825256, -168.75)
-    corner2 = LonLatToISEA()(0.0 + epsilon, -137.0325256 - epsilon)
+    corner1 = LatLonToISEA()(58.2825256, -168.75)
+    corner2 = LatLonToISEA()(0.0 + epsilon, -137.0325256 - epsilon)
     x_rect_min, y_rect_min = trans_matrix * @SVector [corner1[1], corner1[2]]
     x_rect_max, y_rect_max = trans_matrix * @SVector [corner2[1], corner2[2]]
     rect_width = x_rect_max - x_rect_min
     rect_height = y_rect_max - y_rect_min
     x_rect_min, x_rect_max, rect_width, y_rect_min, y_rect_max, rect_height
 end
-const x_rect_min, x_rect_max, rect_width, y_rect_min, y_rect_max, rect_height = compute_rectangles()
+
+const x_rect_min, rect_width, y_rect_min, rect_height = -2.1104759358028404e7, 4.604674769032054e7, -1.4954119971603343e7, 3.323114070315624e7
+const rect_borders = @SVector [
+    (-2.1104759358105145e7, -5.75584346120373e6, -1.6283372582998954e7, -8.307844429392608e6)
+    (-1.3430301409731183e7, 1.9186144871702371e6, -9.637109526020896e6, -1.6615688858253537e6)
+    (-5.755843461357219e6, 9.5930724355442e6, -2.9908464690428358e6, 4.984706657741904e6)
+    (1.9186144870167463e6, 1.726753038391816e7, 3.6554165879352223e6, 1.1630982201309163e7)
+    (9.593072435390707e6, 2.4941988332292132e7, 1.0301679644913286e7, 1.8277257744876422e7)
+]
+
+#const x_rect_min, x_rect_max, rect_width, y_rect_min, y_rect_max, rect_height = compute_rectangles()
 
 
 #
@@ -101,10 +123,12 @@ function to_cell(lon::Real, lat::Real, resolution)
     lat == 90 && return Cell(0, 0.5 * 2^resolution, 0, resolution)
 
     # project to ISEA
-    #trans = transformations[threadid()]
-    x_isea, y_isea = LonLatToISEA(lat, lon)
+    threads_ready[] || init_threads()
+    trans = take!(transformations)
+    x_isea, y_isea = trans(lat, lon)
+    put!(transformations, trans)
 
-    x_offset, y_offset, n_cell = ISEAToRotatedISEA()(x_isea, y_isea)
+    n_cell, x_offset, y_offset = ISEAToRotatedISEA()(x_isea, y_isea)
 
     i_cell, j_cell = RotatedISEAToIndices(resolution)(x_offset, y_offset)
 
@@ -140,17 +164,17 @@ function to_geo(cell::Cell)
     cell.i == 2 * 2^cell.resolution - 1 && return (0.0, -90.0)
 
     # Reverse Discretization
-    x_scaled = (cell.i / 2^cell.resolution + cell.n)
-    y_scaled = (cell.j / 2^cell.resolution + cell.n)
+    x_scaled = cell.i / 2^cell.resolution
+    y_scaled = cell.j / 2^cell.resolution
 
     # Reverse transformation
-    x_rect = x_scaled / 6 * rect_width + x_rect_min
-    y_rect = y_scaled / 5 * rect_height + y_rect_min
-
-    x_isea, y_isea = inv(trans_matrix) * [x_rect; y_rect]
+    x_isea, y_isea = RotatedISEAToISEA()(cell.n, x_scaled, y_scaled)
 
     # Reverse ISEA projection
-    lat, lon = inv_transformations[threadid()](x_isea, y_isea)
+    threads_ready[] || init_threads()
+    inv_trans = take!(inv_transformations)
+    lat, lon = inv_trans(x_isea, y_isea)
+    put!(inv_transformations, inv_trans)
 
     # Solve pole ambiguity
     # south pole already stable
@@ -164,7 +188,6 @@ end
 function to_geo(cells::Vector{Cell{T}}) where {T<:Integer}
     # avoid overhead for small data
     length(cells) < 1e5 && return map(to_geo, cells)
-
 
     res = Vector{Tuple{Float64,Float64}}(undef, length(cells))
     Threads.@threads for i in eachindex(cells)
@@ -234,12 +257,10 @@ end
 function Cell(cell_int::Integer, resolution::Int)
     # needs resolution not stored in the integer index to ensure sequential id
     # resolution = Int((length(cell_bits) - 2) / 2) # does not work for i = 0 or j=0
-    to_int(bits) = sum([bits[x] * 2^(x - 1) for x in length(bits):-1:1])
-
-    bits = digits(cell_int, base=2, pad=2 * resolution + 4)
-    n = bits[end-2:end] |> to_int
-    j = bits[end-resolution-2:end-3] |> to_int
-    i = bits[1:end-resolution-3] |> to_int
+    n = cell_int >> (2 * resolution + 1)
+    mask = 2^resolution - 1
+    i = cell_int & mask
+    j = (cell_int >> (resolution + 1)) & mask
     cell = Cell(i, j, n, resolution)
     return cell
 end
