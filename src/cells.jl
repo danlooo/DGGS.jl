@@ -49,16 +49,6 @@ function (::RotatedISEAToISEA)(n_cell, x_scaled, y_scaled)
     x_rect = (x_scaled + n_cell) / 6 * rect_width + x_rect_min
     y_rect = (y_scaled + n_cell) / 5 * rect_height + y_rect_min
 
-    if x_rect <= rect_borders[n_cell+1][1]
-        error("Left")
-    elseif x_rect >= rect_borders[n_cell+1][2]
-        error("Right")
-    elseif y_rect <= rect_borders[n_cell+1][3]
-        error("Low")
-    elseif y_rect >= rect_borders[n_cell+1][4]
-        error("High")
-    end
-
     x_isea, y_isea = itrans_matrix * @SMatrix [x_rect; y_rect]
     x_isea, y_isea
 end
@@ -90,10 +80,10 @@ function compute_rectangles()
     x_rect_max, y_rect_max = trans_matrix * @SVector [corner2[1], corner2[2]]
     rect_width = x_rect_max - x_rect_min
     rect_height = y_rect_max - y_rect_min
-    x_rect_min, x_rect_max, rect_width, y_rect_min, y_rect_max, rect_height
+    x_rect_min, rect_width, y_rect_min, rect_height
 end
 
-const x_rect_min, rect_width, y_rect_min, rect_height = -2.1104759358028404e7, 4.604674769032054e7, -1.4954119971603343e7, 3.323114070315624e7
+const x_rect_min, rect_width, y_rect_min, rect_height = compute_rectangles()
 const rect_borders = @SVector [
     (-2.1104759358105145e7, -5.75584346120373e6, -1.6283372582998954e7, -8.307844429392608e6)
     (-1.3430301409731183e7, 1.9186144871702371e6, -9.637109526020896e6, -1.6615688858253537e6)
@@ -256,9 +246,10 @@ function Cell(cell_int::Integer, resolution::Int)
     # needs resolution not stored in the integer index to ensure sequential id
     # resolution = Int((length(cell_bits) - 2) / 2) # does not work for i = 0 or j=0
     n = cell_int >> (2 * resolution + 1)
-    mask = 2^resolution - 1
-    i = cell_int & mask
-    j = (cell_int >> (resolution + 1)) & mask
+    imask = 2^(resolution + 1) - 1
+    jmask = 2^resolution - 1
+    i = cell_int & imask
+    j = (cell_int >> (resolution + 1)) & jmask
     cell = Cell(i, j, n, resolution)
     return cell
 end
