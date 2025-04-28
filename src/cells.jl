@@ -123,7 +123,6 @@ function to_cell(lon::Real, lat::Real, resolution)
     lat == 90 && return Cell(0, 0.5 * 2^resolution, 0, resolution)
 
     # project to ISEA
-    threads_ready[] || init_threads()
     trans = take!(transformations)
     x_isea, y_isea = trans(lat, lon)
     put!(transformations, trans)
@@ -171,7 +170,6 @@ function to_geo(cell::Cell)
     x_isea, y_isea = RotatedISEAToISEA()(cell.n, x_scaled, y_scaled)
 
     # Reverse ISEA projection
-    threads_ready[] || init_threads()
     inv_trans = take!(inv_transformations)
     lat, lon = inv_trans(x_isea, y_isea)
     put!(inv_transformations, inv_trans)
