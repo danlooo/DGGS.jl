@@ -16,7 +16,7 @@ const transformations = Channel{Proj.Transformation}(Inf)
 const inv_transformations = Channel{Proj.Transformation}(Inf)
 const threads_ready = Ref(false)
 
-function __init_()
+function __init__()
     for _ in 1:Threads.nthreads()
         put!(transformations, Proj.Transformation(crs_geo, crs_isea; ctx=Proj.proj_context_create()))
         put!(inv_transformations, Proj.Transformation(crs_isea, crs_geo; ctx=Proj.proj_context_create()))
