@@ -26,8 +26,8 @@ using DimensionalData
         dim_array = rand(i_dim, j_dim, n_dim, time_dim)
         yax_array = YAXArray(dim_array.dims, dim_array.data)
 
-        @test DGGSArray(dim_array) isa DGGSArray
-        @test DGGSArray(yax_array) isa DGGSArray
+        @test DGGSArray(dim_array, resolution, "ISEA4D.Penta") isa DGGSArray
+        @test DGGSArray(yax_array, resolution, "ISEA4D.Penta") isa DGGSArray
     end
 
     @testset "Coordinate transformations" begin

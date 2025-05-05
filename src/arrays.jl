@@ -44,12 +44,11 @@ function to_dggs_array(geo_array, resolution; agg_func::Function=mean, outtype=F
         end
     end
 
-    return cell_array
+    return DGGSArray(cell_array, resolution, "ISEA4D.Penta")
 end
 
-function to_geo_array(dggs_array, lon_dim::DD.Dimension, lat_dim::DD.Dimension; kwargs...)
-    resolution = dggs_array.dggs_j |> length |> log2 |> Int
-    cells = compute_cell_array(lon_dim, lat_dim, resolution)
+function to_geo_array(dggs_array::DGGSArray, lon_dim::DD.Dimension, lat_dim::DD.Dimension; kwargs...)
+    cells = compute_cell_array(lon_dim, lat_dim, dggs_array.resolution)
     geo_array = mapCube(
         dggs_array,
         indims=InDims(
@@ -76,13 +75,25 @@ end
 # DGGSArray features
 #
 
-DGGSArray(array::AbstractDimArray) = DGGSArray(array.data, dims(array), refdims(array), name(array), metadata(array))
+function DGGSArray(array::AbstractDimArray, resolution::Integer, dggsrs::String)
+    return DGGSArray(
+        array.data, dims(array), refdims(array), name(array), metadata(array),
+        resolution, dggsrs
+    )
+end
 
 function Base.show(io::IO, ::MIME"text/plain", array::DGGSArray)
-    println(io, "DGGSArray{$(typeof(array.data).name.name),$(eltype(array)),...} $(array.dggsrs) at resolution $(array.resolution)")
+    println(io, "DGGSArray{$(eltype(array))} on grid $(array.dggsrs) at resolution $(array.resolution)")
     println(io, "Additional dimensions:")
     for dim in array.dims
         name(dim) in [:dggs_i, :dggs_j, :dggs_n] && continue
         println(io, "   $(name(dim))")
     end
+end
+
+"rebuild immutable objects with new field values. Part of any AbstractDimArray."
+@inline function DD.rebuild(
+    dggs_array::DGGSArray, data::AbstractArray, dims::Tuple, refdims::Tuple, name, metadata
+)
+    DGGSArray(data, dims, refdims, name, metadata, dggs_array.resolution, dggs_array.dggsrs)
 end
