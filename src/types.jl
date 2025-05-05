@@ -13,6 +13,8 @@ struct Cell{T<:Integer}
     end
 
     function Cell(i, j, n, resolution)
+        typeof(i) == typeof(j) == typeof(n) || error("i, j, n must be of the same type")
+
         T = typeof(i)
         new{T}(i, j, n, resolution)
     end

@@ -1,27 +1,24 @@
+function compute_cell_array(lon_dim, lat_dim, resolution)
+    [(lon, lat) for lon in lon_dim, lat in lat_dim] |>
+    x -> to_cell(x, resolution)
+end
+
 function to_dggs_array(geo_array, resolution; agg_func::Function=mean, outtype=Float64, lon_name=:lon, lat_name=:lat, kwargs...)
     lon_dim = filter(x -> name(x) == lon_name, dims(geo_array))
     lat_dim = filter(x -> name(x) == lat_name, dims(geo_array))
     isempty(lon_dim) && error("Longitude dimension not found")
     isempty(lat_dim) && error("Latitude dimension not found")
-    lon_dim = lon_dim[1]
-    lat_dim = lat_dim[1]
+    lon_dim = only(lon_dim)
+    lat_dim = only(lat_dim)
 
-    cells = [(lon, lat) for lon in lon_dim for lat in lat_dim] |>
-            x -> to_cell(x, resolution) |>
-                 x -> reshape(x, length(lon_dim), length(lat_dim))
+    cells = compute_cell_array(lon_dim, lat_dim, resolution)
 
     # get pixels to aggregate for each cell
-    cell_coords = Dict{eltype(cells),Vector{CartesianIndex}}()
-    for c in axes(cells, 2)
-        for r in axes(cells, 1)
-            cell = cells[r, c]
-            if cell in keys(cell_coords)
-                # multiple pixels per cell
-                push!(cell_coords[cell], CartesianIndex(r, c))
-            else
-                cell_coords[cell] = [CartesianIndex(r, c)]
-            end
-        end
+    cell_coords = Dict{eltype(cells),Vector{CartesianIndex{2}}}()
+    for cI in CartesianIndices(cells)
+        cell = cells[cI]
+        current_cells = get!(() -> CartesianIndex{2}[], cell_coords, cell)
+        push!(current_cells, cI)
     end
 
     # re-grid
@@ -39,7 +36,7 @@ function to_dggs_array(geo_array, resolution; agg_func::Function=mean, outtype=F
         for (cell, cell_coords) in cell_coords
             try
                 # view returns 0 dim array of pixels within the cell
-                res = agg_func([view(xin, c) for c in cell_coords] .|> x -> x[1])
+                res = agg_func(view(xin, cell_coords))
                 xout[cell.i+1, cell.j+1, cell.n+1] = res
             catch
                 @warn "Unable to process cell" cell
@@ -52,15 +49,13 @@ end
 
 function to_geo_array(dggs_array, lon_dim::DD.Dimension, lat_dim::DD.Dimension; kwargs...)
     resolution = dggs_array.dggs_j |> length |> log2 |> Int
-    cells = [(lon, lat) for lon in lon_dim for lat in lat_dim] |>
-            x -> to_cell(x, resolution) |>
-                 x -> reshape(x, length(lon_dim), length(lat_dim))
+    cells = compute_cell_array(lon_dim, lat_dim, resolution)
     geo_array = mapCube(
         dggs_array,
         indims=InDims(
-            dggs_array.dggs_i,
-            dggs_array.dggs_j,
-            dggs_array.dggs_n
+            :dggs_i,
+            :dggs_j,
+            :dggs_n
         ),
         outdims=OutDims(lon_dim, lat_dim),
         kwargs...
