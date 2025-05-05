@@ -173,11 +173,11 @@ function to_geo(cell::Cell)
     end
 end
 
-function to_geo(cells::Vector{Cell{T}}) where {T<:Integer}
+function to_geo(cells::AbstractArray{Cell{T}}) where {T<:Integer}
     # avoid overhead for small data
     length(cells) < 1e5 && return map(to_geo, cells)
 
-    res = Vector{Tuple{Float64,Float64}}(undef, length(cells))
+    res = similar(cells, Tuple{Float64,Float64})
     Threads.@threads for i in eachindex(cells)
         geo_point = to_geo(cells[i])
         res[i] = geo_point
