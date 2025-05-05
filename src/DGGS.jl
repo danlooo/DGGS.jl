@@ -6,14 +6,21 @@ using YAXArrays
 using DimensionalData
 import DimensionalData as DD
 using Statistics
+using CoordinateTransformations
 
 include("types.jl")
 include("cells.jl")
 include("arrays.jl")
 
+const transformations = Channel{Proj.Transformation}(Inf)
+const inv_transformations = Channel{Proj.Transformation}(Inf)
+const threads_ready = Ref(false)
+
 function __init__()
-    global transformations = [Proj.Transformation(crs_geo, crs_isea; ctx=Proj.proj_context_create()) for _ in 1:nthreads()]
-    global inv_transformations = [Proj.Transformation(crs_isea, crs_geo; ctx=Proj.proj_context_create()) for _ in 1:nthreads()]
+    for _ in 1:Threads.nthreads()
+        put!(transformations, Proj.Transformation(crs_geo, crs_isea; ctx=Proj.proj_context_create()))
+        put!(inv_transformations, Proj.Transformation(crs_isea, crs_geo; ctx=Proj.proj_context_create()))
+    end
     @info "DGGS.jl initialized with $(nthreads()) threads"
 end
 

@@ -11,9 +11,8 @@ struct Cell{T<:Integer}
 
         new{T}(i, j, n, resolution)
     end
-
-    function Cell(i, j, n, resolution)
-        T = typeof(i)
-        new{T}(i, j, n, resolution)
-    end
+end
+function Cell(i, j, n, resolution)
+    T = typeof(i)
+    Cell{T}(i, j, n, resolution)
 end
