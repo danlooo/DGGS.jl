@@ -83,15 +83,6 @@ end
 
 DGGSArray(array::AbstractDimArray) = DGGSArray(array.data, dims(array), refdims(array), name(array), metadata(array))
 
-Base.propertynames(::DGGSArray) = (:resolution, :dggsrs, fieldnames(DGGSArray)...)
-
-function Base.getproperty(array::DGGSArray, v::Symbol)
-    v == :resolution && return array.metadata["dggs_resolution"]
-    v == :dggsrs && return array.metadata["dggs_dggsrs"]
-
-    return getfield(array, v)
-end
-
 function Base.show(io::IO, ::MIME"text/plain", array::DGGSArray)
     println(io, "DGGSArray{$(typeof(array.data).name.name),$(eltype(array)),...} $(array.dggsrs) at resolution $(array.resolution)")
     println(io, "Additional dimensions:")
