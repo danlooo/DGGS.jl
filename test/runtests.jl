@@ -4,7 +4,6 @@ using Distances
 using ArchGDAL
 using YAXArrays
 using DimensionalData
-using Rasters
 
 @testset "DGGS.jl" begin
 
@@ -18,7 +17,7 @@ using Rasters
         @test to_geo(1, 1, 1, 8) == to_geo(Cell(1, 1, 1, 8))
     end
 
-    @testeset "DGGSArray" begin
+    @testset "DGGSArray" begin
         resolution = 3
         i_dim = Dim{:dggs_i}(0:2*2^resolution-1)
         j_dim = Dim{:dggs_j}(0:2^resolution-1)
