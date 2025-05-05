@@ -128,11 +128,11 @@ end
 Multi-threaded version of to_cell
 geo_points: Vector of (lon,lat) tuples
 """
-function to_cell(geo_points::Vector{Tuple{A,B}}, resolution) where {A<:Real,B<:Real}
+function to_cell(geo_points::AbstractArray{Tuple{A,B}}, resolution) where {A<:Real,B<:Real}
     # avoid overhead for small data
     length(geo_points) < 1e5 && return map(x -> to_cell(x..., resolution), geo_points)
 
-    res = Vector{Cell}(undef, length(geo_points))
+    res = similar(geo_points, Cell)
     Threads.@threads for i in eachindex(geo_points)
         lon, lat = geo_points[i][1], geo_points[i][2]
         cell = to_cell(lon, lat, resolution)
