@@ -82,17 +82,35 @@ function DGGSArray(array::AbstractDimArray, resolution::Integer, dggsrs::String)
     )
 end
 
-function Base.show(io::IO, ::MIME"text/plain", array::DGGSArray)
-    println(io, "DGGSArray{$(eltype(array))} on grid $(array.dggsrs) at resolution $(array.resolution)")
-    println(io, "Additional dimensions:")
-    for dim in array.dims
-        name(dim) in [:dggs_i, :dggs_j, :dggs_n] && continue
-        println(io, "   $(name(dim))")
+function Base.show(io::IO, mime::MIME"text/plain", array::DGGSArray)
+    println(io, "DGGSArray{$(eltype(array))} $(string(name(array)))")
+    println(io, "DGGS: $(array.dggsrs) at resolution $(array.resolution)")
+
+    if length(array.dims) > 3
+        println(io, "Additional dimensions:")
+        for dim in array.dims
+            name(dim) in [:dggs_i, :dggs_j, :dggs_n] && continue
+            print(io, "   ")
+            DD.Dimensions.print_dimname(io, dim)
+            print(io, " $(minimum(dim):step(dim):maximum(dim))")
+        end
+        println(io, "")
+    else
+        println(io, "No additional dimensions")
+    end
+
+    if length(array.metadata) > 0
+        println(io, "Meta data:")
+        for (key, value) in array.metadata
+            println(io, "   $key: $value")
+        end
+    else
+        println(io, "No meta data")
     end
 end
 
 "rebuild immutable objects with new field values. Part of any AbstractDimArray."
-@inline function DD.rebuild(
+function DD.rebuild(
     dggs_array::DGGSArray, data::AbstractArray, dims::Tuple, refdims::Tuple, name, metadata
 )
     DGGSArray(data, dims, refdims, name, metadata, dggs_array.resolution, dggs_array.dggsrs)
