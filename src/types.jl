@@ -11,8 +11,39 @@ struct Cell{T<:Integer}
 
         new{T}(i, j, n, resolution)
     end
+
+    function Cell(i, j, n, resolution)
+        T = typeof(i)
+        new{T}(T(i), T(j), T(n), resolution)
+    end
 end
-function Cell(i, j, n, resolution)
-    T = typeof(i)
-    Cell{T}(i, j, n, resolution)
+
+struct DGGSArray{T,N,D<:Tuple,R<:Tuple,A<:AbstractArray{T,N},Na,Me} <: AbstractDimArray{T,N,D,A}
+    # DimArray fields
+    data::A
+    dims::D
+    refdims::R
+    name::Na
+    metadata::Me
+
+    # DGGS fields
+    resolution::Integer
+    dggsrs::String
+
+    function DGGSArray(
+        data::A, dims::D, refdims::R, name::Na, metadata::Me,
+        resolution::Integer, dggsrs::String
+    ) where {D<:Tuple,R<:Tuple,A<:AbstractArray{T,N},Na,Me} where {T,N}
+        dims_d = Dict([DD.name(x) => x for x in dims])
+
+        :dggs_i in keys(dims_d) || error("Dimension :dggs_i must be present")
+        :dggs_j in keys(dims_d) || error("Dimension :dggs_j must be present")
+        :dggs_n in keys(dims_d) || error("Dimension :dggs_n must be present")
+
+        map(x -> 0 <= x <= 2 * 2^resolution - 1, dims_d[:dggs_i]) |> all || error("Dimension dggs_i not in range")
+        map(x -> 0 <= x <= 2^resolution - 1, dims_d[:dggs_j]) |> all || error("Dimension dggs_j not in range")
+        map(x -> 0 <= x <= 4, dims_d[:dggs_n]) |> all || error("Dimension dggs_n not in range")
+
+        new{T,N,D,R,A,Na,Me}(data, dims, refdims, name, metadata, resolution, dggsrs)
+    end
 end

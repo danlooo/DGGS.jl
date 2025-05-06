@@ -17,6 +17,19 @@ using DimensionalData
         @test to_geo(1, 1, 1, 8) == to_geo(Cell(1, 1, 1, 8))
     end
 
+    @testset "DGGSArray" begin
+        resolution = 3
+        i_dim = Dim{:dggs_i}(0:2*2^resolution-1)
+        j_dim = Dim{:dggs_j}(0:2^resolution-1)
+        n_dim = Dim{:dggs_n}(0:4)
+        time_dim = Ti(1:10)
+        dim_array = rand(i_dim, j_dim, n_dim, time_dim)
+        yax_array = YAXArray(dim_array.dims, dim_array.data)
+
+        @test DGGSArray(dim_array, resolution, "ISEA4D.Penta") isa DGGSArray
+        @test DGGSArray(yax_array, resolution, "ISEA4D.Penta") isa DGGSArray
+    end
+
     @testset "Coordinate transformations" begin
         resolution = 20
         geo_points = [(lon, lat) for lat in -90:5:90 for lon in -180:5:180]
@@ -46,12 +59,12 @@ using DimensionalData
     end
 
     @testset "Convert geo to DGGS" begin
-        # convert geotif file
         resolution = 6
         lon_range = X(180:-1:-180)
         lat_range = Y(90:-1:-90)
         geo_data = [exp(cosd(lon)) + 3(lat / 90) for lon in lon_range, lat in lat_range]
-        geo_array = YAXArray((lon_range, lat_range), geo_data)
+        metadata = Dict("standard_name" => "air_temperature", "units" => "K", "description" => "random test data")
+        geo_array = YAXArray((lon_range, lat_range), geo_data, metadata)
         dggs_array = to_dggs_array(geo_array, resolution; lon_name=:X, lat_name=:Y)
         geo_array2 = to_geo_array(dggs_array, geo_array.X, geo_array.Y)
         geo_diffs = abs.(geo_array .- geo_array2)
