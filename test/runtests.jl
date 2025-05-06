@@ -59,12 +59,12 @@ using DimensionalData
     end
 
     @testset "Convert geo to DGGS" begin
-        # convert geotif file
         resolution = 6
         lon_range = X(180:-1:-180)
         lat_range = Y(90:-1:-90)
         geo_data = [exp(cosd(lon)) + 3(lat / 90) for lon in lon_range, lat in lat_range]
-        geo_array = YAXArray((lon_range, lat_range), geo_data)
+        metadata = Dict("standard_name" => "air_temperature", "units" => "K", "description" => "random test data")
+        geo_array = YAXArray((lon_range, lat_range), geo_data, metadata)
         dggs_array = to_dggs_array(geo_array, resolution; lon_name=:X, lat_name=:Y)
         geo_array2 = to_geo_array(dggs_array, geo_array.X, geo_array.Y)
         geo_diffs = abs.(geo_array .- geo_array2)
