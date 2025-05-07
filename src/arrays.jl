@@ -88,8 +88,7 @@ function Base.show(io::IO, mime::MIME"text/plain", array::DGGSArray)
 
     if length(array.dims) > 3
         println(io, "Additional dimensions:")
-        for dim in array.dims
-            name(dim) in [:dggs_i, :dggs_j, :dggs_n] && continue
+        for dim in non_spatial_dims(array)
             print(io, "   ")
             DD.Dimensions.print_dimname(io, dim)
             print(io, " $(minimum(dim):step(dim):maximum(dim))")
@@ -114,4 +113,9 @@ function DD.rebuild(
     dggs_array::DGGSArray, data::AbstractArray, dims::Tuple, refdims::Tuple, name, metadata
 )
     DGGSArray(data, dims, refdims, name, metadata, dggs_array.resolution, dggs_array.dggsrs)
+end
+
+function non_spatial_dims(dggs_array::DGGSArray)
+    spatial_dim_names = [:dggs_i, :dggs_j, :dggs_n]
+    filter(x -> !(name(x) in spatial_dim_names), dggs_array.dims)
 end
