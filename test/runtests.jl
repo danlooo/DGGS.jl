@@ -65,7 +65,7 @@ using DimensionalData
         geo_data = [exp(cosd(lon)) + 3(lat / 90) for lon in lon_range, lat in lat_range]
         metadata = Dict("standard_name" => "air_temperature", "units" => "K", "description" => "random test data")
         geo_array = YAXArray((lon_range, lat_range), geo_data, metadata)
-        dggs_array = to_dggs_array(geo_array, resolution; lon_name=:X, lat_name=:Y)
+        dggs_array = to_dggs_array(geo_array, resolution)
         geo_array2 = to_geo_array(dggs_array, geo_array.X, geo_array.Y)
         geo_diffs = abs.(geo_array .- geo_array2)
 

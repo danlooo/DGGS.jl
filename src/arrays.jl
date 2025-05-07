@@ -3,7 +3,7 @@ function compute_cell_array(lon_dim, lat_dim, resolution)
     x -> to_cell(x, resolution)
 end
 
-function to_dggs_array(geo_array, resolution; agg_func::Function=mean, outtype=Float64, lon_name=:lon, lat_name=:lat, kwargs...)
+function to_dggs_array(geo_array, resolution; agg_func::Function=mean, outtype=Float64, lon_name=:X, lat_name=:Y, kwargs...)
     lon_dim = filter(x -> name(x) == lon_name, dims(geo_array))
     lat_dim = filter(x -> name(x) == lat_name, dims(geo_array))
     isempty(lon_dim) && error("Longitude dimension not found")
@@ -114,4 +114,15 @@ function DD.rebuild(
     dggs_array::DGGSArray, data::AbstractArray, dims::Tuple, refdims::Tuple, name, metadata
 )
     DGGSArray(data, dims, refdims, name, metadata, dggs_array.resolution, dggs_array.dggsrs)
+end
+
+
+#
+# Subset array
+#
+
+function Base.getindex(dggs_array::DGGSArray, cell::Cell)
+    cell.resolution == dggs_array.resolution || error("Resolutions of cell and array must be the same")
+    # test on DiskArrays
+    return Base.getindex(DimArray(dggs_array), dggs_i=cell.i + 1, dggs_j=cell.j + 1, dggs_n=cell.n + 1)
 end

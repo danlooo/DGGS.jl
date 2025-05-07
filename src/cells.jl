@@ -253,3 +253,48 @@ function Cell(cell_int::Integer, resolution::Int)
     cell = Cell(i, j, n, resolution)
     return cell
 end
+
+
+#
+# Infinite lateral scrolling
+#
+
+"""
+Puts cells outside of a given sub matrix to the corresponding fixed sub matrix.
+Used for convolutions of small kernels directly in DGGS space
+"""
+function to_cell(i::T, j::T, n, resolution) where {T<:Integer}
+    i_max = 2 * 2^resolution - 1
+    j_max = 2^resolution - 1
+
+    # already inside bounds, no fixing needed
+    if 0 <= i <= i_max && 0 <= j <= j_max
+        return Cell(i, j, n, resolution)
+    end
+
+    # Padding overview around a center sub matrix
+    #
+    #   A B C D
+    #   J     E
+    #   I H G F
+
+    # padding A and B
+    if i < j_max && j > j_max
+        n_fixed = (n + 1) % 5
+        i_fixed = j - j_max
+        j_fixed = j_max - i
+        return Cell(i_fixed, j_fixed, n_fixed, resolution)
+    end
+
+    # padding C and D 
+    if j_max <= i && 0 <= j > j_max
+        n_fixed = (n + 1) % 5
+        i_fixed = i - j_max
+        j_fixed = j - j_max
+        return Cell(i_fixed, j_fixed, n_fixed, resolution)
+    end
+
+    # TODO: implement or throw error
+    Cell(20, 20, 0, resolution)
+    #error("edge case not implemented")
+end
