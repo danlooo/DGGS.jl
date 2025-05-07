@@ -13,6 +13,9 @@ struct Cell{T<:Integer}
     end
 
     function Cell(i, j, n, resolution)
+        0 <= n <= 4 || error("n=$n must be within 0 and 4")
+        0 <= i <= 2 * 2^resolution - 1 || error("i=$i must be within 0 and $(2*2^resolution - 1 )")
+        0 <= j <= 2^resolution - 1 || error("j=$j must be within 0 and $(2^resolution - 1)")
         T = typeof(i)
         new{T}(T(i), T(j), T(n), resolution)
     end
