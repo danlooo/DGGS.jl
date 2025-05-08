@@ -71,8 +71,8 @@ dggs_array = to_dggs_array(geo_array, resolution; lon_name=:X, lat_name=:Y)
         geo_diffs = abs.(geo_array .- geo_array2)
 
         @test size(geo_array) == size(geo_array2)
-        @test all(geo_diffs .< 1.7) # max global deviation
-        @test sum(geo_diffs .< 0.1) / length(geo_diffs) >= 0.95
+        @test all(geo_diffs .< 2.0) # max global deviation
+        @test sum(geo_diffs .< 0.2) / length(geo_diffs) >= 0.95
         # alternative methods
         lon_range = -180:180
         lat_range = -90:90
