@@ -6,8 +6,15 @@ using YAXArrays
 using DimensionalData
 using Makie
 
-@testset "DGGS.jl" begin
+resolution = 5
+lon_range = X(180:-1:-180)
+lat_range = Y(90:-1:-90)
+geo_data = [exp(cosd(lon)) + 3(lat / 90) for lon in lon_range, lat in lat_range]
+properties = Dict("standard_name" => "air_temperature", "units" => "K", "description" => "random test data")
+geo_array = YAXArray((lon_range, lat_range), geo_data, properties)
+dggs_array = to_dggs_array(geo_array, resolution; lon_name=:X, lat_name=:Y)
 
+@testset "DGGS.jl" begin
     @testset "Cells" begin
         @test Cell(1, 2, 3, 4) isa Cell
         @test Cell{Int32}(1, 2, 3, 4) isa Cell{Int32}
@@ -60,13 +67,6 @@ using Makie
     end
 
     @testset "Convert geo to DGGS" begin
-        resolution = 5
-        lon_range = X(180:-1:-180)
-        lat_range = Y(90:-1:-90)
-        geo_data = [exp(cosd(lon)) + 3(lat / 90) for lon in lon_range, lat in lat_range]
-        properties = Dict("standard_name" => "air_temperature", "units" => "K", "description" => "random test data")
-        geo_array = YAXArray((lon_range, lat_range), geo_data, properties)
-        dggs_array = to_dggs_array(geo_array, resolution; lon_name=:X, lat_name=:Y)
         geo_array2 = to_geo_array(dggs_array, geo_array.X, geo_array.Y)
         geo_diffs = abs.(geo_array .- geo_array2)
 
