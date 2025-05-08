@@ -3,6 +3,7 @@ module DGGSMakie
 using DGGS
 using Makie
 using DimensionalData
+import DimensionalData as DD
 using Makie.GeometryBasics
 using Dates
 
@@ -31,6 +32,8 @@ function plot_single_var(
     data = Observable(to_geo_array(dggs_array, lon_range, lat_range))
     last_update_limits = Observable(axis.finallimits[])
 
+    cb_limits = Observable((minimum(data[]), maximum(data[])))
+    cb = Colorbar(fig[1, 2], width=10, height=Relative(0.5), colormap=:viridis, limits=cb_limits; label=DD.label(dggs_array))
 
     # update plot after every update interval
     update_time = Observable(now())
@@ -51,6 +54,7 @@ function plot_single_var(
         lon_range = range(lon_min, lon_max, length=resolution)
         lat_range = range(lat_min, lat_max, length=lat_resolution)
         data[] = to_geo_array(dggs_array, lon_range, lat_range)
+        cb_limits[] = (minimum(data[]), maximum(data[]))
         last_update_limits[] = axis.finallimits[]
     end
 
@@ -58,10 +62,12 @@ function plot_single_var(
         # enforce zoom to be inside of lat/lon limits
         if abs(lims.origin[1]) + abs(lims.widths[1]) > 180 || abs(lims.origin[2]) + abs(lims.widths[2]) > 90
             axis.targetlimits[] = HyperRectangle{2,Float32}([-180, -90], [360, 180])
+            axis.finallimits[] = axis.targetlimits[]
         end
     end
 
     heatmap!(axis, data)
+    #colsize!(fig.layout, 1, Aspect(1, 1))
     fig
 end
 

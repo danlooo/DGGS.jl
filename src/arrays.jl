@@ -22,7 +22,7 @@ function to_dggs_array(geo_array, resolution; agg_func::Function=mean, outtype=F
     end
 
     # re-grid
-    cell_array = mapCube(
+    res = mapCube(
         # mapCube can't find axes of other AbstractDimArrays e.g. Raster
         YAXArray(dims(geo_array), geo_array.data),
         indims=InDims(lon_dim, lat_dim),
@@ -44,7 +44,10 @@ function to_dggs_array(geo_array, resolution; agg_func::Function=mean, outtype=F
         end
     end
 
-    return DGGSArray(cell_array, resolution, "ISEA4D.Penta")
+    return DGGSArray(
+        res.data, dims(res), refdims(res), get_name(geo_array), metadata(geo_array),
+        resolution, "ISEA4D.Penta"
+    )
 end
 
 function to_geo_array(dggs_array::DGGSArray, lon_dim::DD.Dimension, lat_dim::DD.Dimension; kwargs...)
@@ -83,7 +86,7 @@ function DGGSArray(array::AbstractDimArray, resolution::Integer, dggsrs::String)
 end
 
 function Base.show(io::IO, mime::MIME"text/plain", array::DGGSArray)
-    println(io, "DGGSArray{$(eltype(array))} $(string(name(array)))")
+    println(io, "DGGSArray{$(eltype(array))} $(string(DD.name(array)))")
     println(io, "DGGS: $(array.dggsrs) at resolution $(array.resolution)")
 
     if length(array.dims) > 3
@@ -114,6 +117,19 @@ function DD.rebuild(
 )
     DGGSArray(data, dims, refdims, name, metadata, dggs_array.resolution, dggs_array.dggsrs)
 end
+
+function get_name(array::AbstractDimArray)
+    # as implemented in python xarray
+    # uses CF conventions
+    isempty(array.properties) && return NoName()
+    haskey(array.properties, "long_name") && return array.properties["long_name"] |> Symbol
+    haskey(array.properties, "standard_name") && return array.properties["standard_name"] |> Symbol
+    haskey(array.properties, "name") && return array.properties["name"] |> Symbol
+    return NoName()
+end
+
+DD.label(dggs_array::DGGSArray) = string(DD.name(dggs_array))
+DD.name(dggs_array::DGGSArray) = dggs_array.name
 
 function non_spatial_dims(dggs_array::DGGSArray)
     spatial_dim_names = [:dggs_i, :dggs_j, :dggs_n]
