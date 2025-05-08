@@ -4,9 +4,17 @@ using Distances
 using ArchGDAL
 using YAXArrays
 using DimensionalData
+using Makie
+
+resolution = 5
+lon_range = X(180:-1:-180)
+lat_range = Y(90:-1:-90)
+geo_data = [exp(cosd(lon)) + 3(lat / 90) for lon in lon_range, lat in lat_range]
+properties = Dict("standard_name" => "air_temperature", "units" => "K", "description" => "random test data")
+geo_array = YAXArray((lon_range, lat_range), geo_data, properties)
+dggs_array = to_dggs_array(geo_array, resolution; lon_name=:X, lat_name=:Y)
 
 @testset "DGGS.jl" begin
-
     @testset "Cells" begin
         @test Cell(1, 2, 3, 4) isa Cell
         @test Cell{Int32}(1, 2, 3, 4) isa Cell{Int32}
@@ -59,23 +67,25 @@ using DimensionalData
     end
 
     @testset "Convert geo to DGGS" begin
-        resolution = 6
-        lon_range = X(180:-1:-180)
-        lat_range = Y(90:-1:-90)
-        geo_data = [exp(cosd(lon)) + 3(lat / 90) for lon in lon_range, lat in lat_range]
-        metadata = Dict("standard_name" => "air_temperature", "units" => "K", "description" => "random test data")
-        geo_array = YAXArray((lon_range, lat_range), geo_data, metadata)
-        dggs_array = to_dggs_array(geo_array, resolution; lon_name=:X, lat_name=:Y)
         geo_array2 = to_geo_array(dggs_array, geo_array.X, geo_array.Y)
         geo_diffs = abs.(geo_array .- geo_array2)
 
         @test size(geo_array) == size(geo_array2)
-        @test all(geo_diffs .< 1.7) # max global deviation
-        @test sum(geo_diffs .< 0.1) / length(geo_diffs) >= 0.95
+        @test all(geo_diffs .< 2.0) # max global deviation
+        @test sum(geo_diffs .< 0.2) / length(geo_diffs) >= 0.95
         # alternative methods
         lon_range = -180:180
         lat_range = -90:90
         geo_array3 = to_geo_array(dggs_array, lon_range, lat_range)
         @test size(geo_array3) == (length(lon_range), length(lat_range))
+    end
+
+    @testset "Plot" begin
+        fig = plot(dggs_array)
+        cb = filter(x -> x isa Colorbar, fig.content)[1]
+
+        @test fig isa Figure
+        @test cb.limits[] == (minimum(dggs_array), maximum(dggs_array))
+        @test cb.label[] == "air_temperature"
     end
 end

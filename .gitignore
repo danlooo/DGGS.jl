@@ -1,6 +1,7 @@
 # white list
 *
 
+!ext
 !src
 !docs
 !test
