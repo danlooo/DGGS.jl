@@ -26,6 +26,7 @@ function plot_single_var(
 
     fig = Figure()
     axis = Axis(fig[1, 1], limits=(-180, 180, -90, 90))
+    axis.aspect = 2
 
     data = Observable(to_geo_array(dggs_array, lon_range, lat_range))
     last_update_limits = Observable(axis.finallimits[])
