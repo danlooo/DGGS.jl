@@ -4,6 +4,7 @@ using DGGS
 using Makie
 using DimensionalData
 using Makie.GeometryBasics
+using Dates
 
 function Makie.plot(dggs_array::DGGSArray, args...; kwargs...)
     if length(DGGS.non_spatial_dims(dggs_array)) == 0
@@ -15,39 +16,51 @@ end
 
 function plot_single_var(
     dggs_array::DGGSArray, args...;
-    lon_range=-180:0.25:180, lat_range=-90:0.25:90,
+    lon_range=-180:0.25:180,
+    lat_range=-90:0.25:90,
     resolution=1000,
+    update_interval=Millisecond(1500),
     kwargs...
 )
     length(DGGS.non_spatial_dims(dggs_array)) == 0 || error("DGGSArray must not have any non-spatial dimension")
 
     fig = Figure()
-    ax = Axis(fig[1, 1], limits=(-180, 180, -90, 90))
+    axis = Axis(fig[1, 1], limits=(-180, 180, -90, 90))
 
     data = Observable(to_geo_array(dggs_array, lon_range, lat_range))
+    last_update_limits = Observable(axis.finallimits[])
 
-    # update plot after drag
-    register_interaction!(ax, :my_mouse_interaction) do event::MouseEvent, axis
-        if event.type == Makie.MouseEventTypes.rightdragstop
-            lims = axis.finallimits[]
-            lat_resolution = Int(round(lims.widths[2] / lims.widths[1] * resolution))
-            lon_range = range(lims.origin[1], lims.origin[1] + lims.widths[1]; length=resolution)
-            lat_range = range(lims.origin[2], lims.origin[2] + lims.widths[2]; length=lat_resolution)
 
-            data[] = to_geo_array(dggs_array, lon_range, lat_range)
+    # update plot after every update interval
+    update_time = Observable(now())
+    @async while true
+        sleep(update_interval)
+        update_time[] = now()
+    end
+
+    on(update_time) do current_time
+        # skip update if limits did not change
+        axis.finallimits[] == last_update_limits[] && return
+
+        lon_min, lat_min = axis.finallimits[].origin
+        lon_max, lat_max = axis.finallimits[].origin .+ axis.finallimits[].widths
+
+        lims = axis.finallimits[]
+        lat_resolution = Int(round(lims.widths[2] / lims.widths[1] * resolution))
+        lon_range = range(lon_min, lon_max, length=resolution)
+        lat_range = range(lat_min, lat_max, length=lat_resolution)
+        data[] = to_geo_array(dggs_array, lon_range, lat_range)
+        last_update_limits[] = axis.finallimits[]
+    end
+
+    on(axis.finallimits) do lims
+        # enforce zoom to be inside of lat/lon limits
+        if abs(lims.origin[1]) + abs(lims.widths[1]) > 180 || abs(lims.origin[2]) + abs(lims.widths[2]) > 90
+            axis.targetlimits[] = HyperRectangle{2,Float32}([-180, -90], [360, 180])
         end
     end
 
-    # TODO: add update plot after zoom  
-
-    # enforce zoom to be inside of lat/lon limits
-    on(ax.finallimits) do fl
-        if abs(fl.origin[1]) + abs(fl.widths[1]) > 180 || abs(fl.origin[2]) + abs(fl.widths[2]) > 90
-            ax.targetlimits[] = HyperRectangle{2,Float32}([-180, -90], [360, 180])
-        end
-    end
-
-    heatmap!(ax, data)
+    heatmap!(axis, data)
     fig
 end
 

@@ -5,6 +5,7 @@ version = "2.0.0-DEV"
 
 [deps]
 CoordinateTransformations = "150eb455-5306-5404-9cee-2592286d6298"
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 DimensionalData = "0703355e-b756-11e9-17c0-8b28908087d0"
 Proj = "c94c279d-25a6-4763-9509-64d165bea63e"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
@@ -19,6 +20,7 @@ DGGSMakie = "Makie"
 
 [compat]
 CoordinateTransformations = "0.6.4"
+Dates = "1.11.0"
 StaticArrays = "1.9.13"
 julia = "1.6.7"
 
