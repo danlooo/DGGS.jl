@@ -7,15 +7,7 @@ import DimensionalData as DD
 using Makie.GeometryBasics
 using Dates
 
-function Makie.plot(dggs_array::DGGSArray, args...; kwargs...)
-    if length(DGGS.non_spatial_dims(dggs_array)) == 0
-        plot_single_var(dggs_array, args...; kwargs...)
-    else
-        plot_multi_var(dggs_array, args...; kwargs...)
-    end
-end
-
-function plot_single_var(
+function Makie.plot(
     dggs_array::DGGSArray, args...;
     lon_range=-180:0.25:180,
     lat_range=-90:0.25:90,
@@ -27,13 +19,13 @@ function plot_single_var(
 
     fig = Figure()
     axis = Axis(fig[1, 1], limits=(-180, 180, -90, 90))
-    axis.aspect = 2
 
     data = Observable(to_geo_array(dggs_array, lon_range, lat_range))
     last_update_limits = Observable(axis.finallimits[])
 
-    cb_limits = Observable((minimum(data[]), maximum(data[])))
-    cb = Colorbar(fig[1, 2], width=10, height=Relative(0.5), colormap=:viridis, limits=cb_limits; label=DD.label(dggs_array))
+    filtered_data = filter(x -> !ismissing(x) && !isnan(x), data[])
+    cb_limits = (minimum(filtered_data), maximum(filtered_data))
+    cb = Colorbar(fig[1, 2], width=10, colormap=:viridis, limits=cb_limits; label=DD.label(dggs_array))
 
     # update plot after every update interval
     update_time = Observable(now())
@@ -54,7 +46,6 @@ function plot_single_var(
         lon_range = range(lon_min, lon_max, length=resolution)
         lat_range = range(lat_min, lat_max, length=lat_resolution)
         data[] = to_geo_array(dggs_array, lon_range, lat_range)
-        cb_limits[] = (minimum(data[]), maximum(data[]))
         last_update_limits[] = axis.finallimits[]
     end
 
@@ -66,22 +57,7 @@ function plot_single_var(
         end
     end
 
-    heatmap!(axis, data)
-    #colsize!(fig.layout, 1, Aspect(1, 1))
+    heatmap!(axis, data, colorrange=cb_limits)
     fig
 end
-
-function plot_multi_var(dggs_array::DGGSArray, args...; kwargs...)
-    #TODO: implement
-    fig = Figure()
-    ax = Axis(fig[1, 1:2])
-    s1 = Slider(fig[2, 1], range=0.1:0.1:10, startvalue=3)
-    data = lift(s1.value) do v
-        1:v
-    end
-    p = scatter!(fig[1, 1:2], data, markersize=s1.value)
-
-    fig
-end
-
 end
