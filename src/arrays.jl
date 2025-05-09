@@ -24,7 +24,7 @@ function to_dggs_array(geo_array, resolution; agg_func::Function=mean, outtype=F
     # re-grid
     res = mapCube(
         # mapCube can't find axes of other AbstractDimArrays e.g. Raster
-        YAXArray(dims(geo_array), geo_array.data),
+        YAXArray(dims(geo_array), geo_array.data, metadata(geo_array)),
         indims=InDims(lon_dim, lat_dim),
         outdims=OutDims(
             Dim{:dggs_i}(0:(2*2^resolution-1)),
@@ -108,7 +108,7 @@ function DGGSArray(array::AbstractDimArray)
     )
 end
 
-function YAXArray(dggs_array::DGGSArray)
+function YAXArrays.YAXArray(dggs_array::DGGSArray)
     properties = Dict{String,Any}(metadata(dggs_array))
     properties["dggs_resolution"] = dggs_array.resolution
     properties["dggs_dggsrs"] = dggs_array.dggsrs

@@ -96,6 +96,7 @@ dggs_array = to_dggs_array(geo_array, resolution; lon_name=:X, lat_name=:Y)
         save_dggs_array(temp_dir, dggs_array)
         dggs_array2 = open_dggs_array(temp_dir)
         @test dggs_array == dggs_array2
-        @test DD.name(dggs_array) == DD.name(dggs_array2)
+        @test name(dggs_array) == name(dggs_array2)
+        rm(temp_dir, recursive=true)
     end
 end
