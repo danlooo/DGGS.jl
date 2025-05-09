@@ -116,25 +116,28 @@ function YAXArrays.YAXArray(dggs_array::DGGSArray)
     return YAXArray(dims(dggs_array), dggs_array.data, properties)
 end
 
-function Base.show(io::IO, mime::MIME"text/plain", array::DGGSArray)
-    println(io, "DGGSArray{$(eltype(array))} $(string(DD.name(array)))")
-    println(io, "DGGS: $(array.dggsrs) at resolution $(array.resolution)")
 
-    if length(array.dims) > 3
+function Base.show(io::IO, mime::MIME"text/plain", dggs_array::DGGSArray)
+    println(io, "DGGSArray{", eltype(dggs_array), "}")
+    println(io, "DGGS: ", dggs_array.dggsrs, " at resolution ", dggs_array.resolution,
+        " (", @sprintf("%.1e", prod(size(dggs_array.data))), " cells)")
+    println(io, "Based on: ", join(size(dggs_array.data), "x"), " ", typeof(dggs_array.data).name.name)
+
+    if length(dggs_array.dims) > 3
         println(io, "Additional dimensions:")
-        for dim in non_spatial_dims(array)
+        for dim in non_spatial_dims(dggs_array)
             print(io, "   ")
             DD.Dimensions.print_dimname(io, dim)
             print(io, " $(minimum(dim):step(dim):maximum(dim))")
         end
         println(io, "")
     else
-        println(io, "No additional dimensions")
+        println(io, "Additional dimensions: none")
     end
 
-    if length(array.metadata) > 0
+    if length(dggs_array.metadata) > 0
         println(io, "Meta data:")
-        for (key, value) in array.metadata
+        for (key, value) in dggs_array.metadata
             println(io, "   $key: $value")
         end
     else
