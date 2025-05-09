@@ -5,6 +5,7 @@ using ArchGDAL
 using YAXArrays
 using DimensionalData
 using Makie
+using Zarr
 
 resolution = 5
 lon_range = X(180:-1:-180)
@@ -87,5 +88,15 @@ dggs_array = to_dggs_array(geo_array, resolution; lon_name=:X, lat_name=:Y)
         @test fig isa Figure
         @test cb.limits[] == (minimum(dggs_array), maximum(dggs_array))
         @test cb.label[] == "air_temperature"
+    end
+
+    @testset "Open and save DGGSArray" begin
+        @test dggs_array == dggs_array |> YAXArray |> DGGSArray
+        temp_dir = tempname() * ".dggs.zarr"
+        save_dggs_array(temp_dir, dggs_array)
+        dggs_array2 = open_dggs_array(temp_dir)
+        @test dggs_array == dggs_array2
+        @test name(dggs_array) == name(dggs_array2)
+        rm(temp_dir, recursive=true)
     end
 end
