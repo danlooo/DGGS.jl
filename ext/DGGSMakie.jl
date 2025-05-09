@@ -44,6 +44,10 @@ function Makie.plot(
             continue
         end
 
+        # delay plotting if small zoom/pan detected
+        change_frac = maximum(abs.(axis.finallimits[].origin .- last_update_limits[].origin) ./ last_update_limits[].widths)
+        change_frac < 0.2 && sleep(Millisecond(500))
+
         # get limits observable once. It might change during the update
         lims = axis.finallimits[]
         lon_min, lat_min = lims.origin
