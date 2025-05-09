@@ -24,7 +24,7 @@ function to_dggs_array(geo_array, resolution; agg_func::Function=mean, outtype=F
     # re-grid
     res = mapCube(
         # mapCube can't find axes of other AbstractDimArrays e.g. Raster
-        YAXArray(dims(geo_array), geo_array.data),
+        YAXArray(dims(geo_array), geo_array.data, metadata(geo_array)),
         indims=InDims(lon_dim, lat_dim),
         outdims=OutDims(
             Dim{:dggs_i}(0:(2*2^resolution-1)),
@@ -85,6 +85,37 @@ function DGGSArray(array::AbstractDimArray, resolution::Integer, dggsrs::String)
     )
 end
 
+function DGGSArray(array::AbstractDimArray)
+    properties = Dict{String,Any}(metadata(array))
+
+    "dggs_resolution" in keys(properties) || error("Missing dggs_resolution in metadata")
+    "dggs_dggsrs" in keys(properties) || error("Missing dggs_dggsrs in metadata")
+
+    resolution = properties["dggs_resolution"] |> Int
+    dggsrs = properties["dggs_dggsrs"] |> String
+
+    delete!(properties, "dggs_resolution")
+    delete!(properties, "dggs_dggsrs")
+
+    arr_name = DD.name(array)
+    if arr_name == DD.NoName()
+        arr_name = get_name(array)
+    end
+
+    DGGSArray(
+        array.data, dims(array), refdims(array), arr_name, properties,
+        resolution, dggsrs
+    )
+end
+
+function YAXArrays.YAXArray(dggs_array::DGGSArray)
+    properties = Dict{String,Any}(metadata(dggs_array))
+    properties["dggs_resolution"] = dggs_array.resolution
+    properties["dggs_dggsrs"] = dggs_array.dggsrs
+
+    return YAXArray(dims(dggs_array), dggs_array.data, properties)
+end
+
 function Base.show(io::IO, mime::MIME"text/plain", array::DGGSArray)
     println(io, "DGGSArray{$(eltype(array))} $(string(DD.name(array)))")
     println(io, "DGGS: $(array.dggsrs) at resolution $(array.resolution)")
@@ -121,11 +152,11 @@ end
 function get_name(array::AbstractDimArray)
     # as implemented in python xarray
     # uses CF conventions
-    isempty(array.properties) && return NoName()
+    isempty(array.properties) && return DD.NoName()
     haskey(array.properties, "long_name") && return array.properties["long_name"] |> Symbol
     haskey(array.properties, "standard_name") && return array.properties["standard_name"] |> Symbol
     haskey(array.properties, "name") && return array.properties["name"] |> Symbol
-    return NoName()
+    return DD.NoName()
 end
 
 DD.label(dggs_array::DGGSArray) = string(DD.name(dggs_array))
@@ -134,4 +165,21 @@ DD.name(dggs_array::DGGSArray) = dggs_array.name
 function non_spatial_dims(dggs_array::DGGSArray)
     spatial_dim_names = [:dggs_i, :dggs_j, :dggs_n]
     filter(x -> !(name(x) in spatial_dim_names), dggs_array.dims)
+end
+
+#
+# IO:: Serialization of DGGS Arrays
+#
+
+function open_dggs_array(file_path::String)
+    ds = open_dataset(file_path)
+    length(ds.cubes) == 1 || error("Path contains more than one Array")
+
+    arr_name, arr = first(ds.cubes)
+    return DGGSArray(arr)
+end
+
+function save_dggs_array(file_path::String, dggs_array::DGGSArray; kwargs...)
+    ds = Dataset(; Dict(DD.name(dggs_array) => YAXArray(dggs_array))...)
+    savedataset(ds; path=file_path, kwargs...)
 end
