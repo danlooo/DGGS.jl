@@ -12,7 +12,6 @@ function Makie.plot(
     lon_range=-180:0.25:180,
     lat_range=-90:0.25:90,
     resolution=1000,
-    update_interval=Millisecond(1500),
     kwargs...
 )
     length(DGGS.non_spatial_dims(dggs_array)) == 0 || error("DGGSArray must not have any non-spatial dimension")
@@ -27,26 +26,26 @@ function Makie.plot(
     cb_limits = (minimum(filtered_data), maximum(filtered_data))
     cb = Colorbar(fig[1, 2], width=10, colormap=:viridis, limits=cb_limits; label=DD.label(dggs_array))
 
-    # update plot after every update interval
-    update_time = Observable(now())
+    # can't plot on every limit change
+    # instead, plot one frame after the other if limits changed
     @async while true
-        sleep(update_interval)
-        update_time[] = now()
-    end
-
-    on(update_time) do current_time
         # skip update if limits did not change
-        axis.finallimits[] == last_update_limits[] && return
+        if axis.finallimits[] == last_update_limits[]
+            # FPS limit to waste less computation
+            sleep(Millisecond(30))
+            continue
+        end
 
-        lon_min, lat_min = axis.finallimits[].origin
-        lon_max, lat_max = axis.finallimits[].origin .+ axis.finallimits[].widths
-
+        # get limits observable once. It might change during the update
         lims = axis.finallimits[]
+        lon_min, lat_min = lims.origin
+        lon_max, lat_max = lims.origin .+ lims.widths
+
         lat_resolution = Int(round(lims.widths[2] / lims.widths[1] * resolution))
         lon_range = range(lon_min, lon_max, length=resolution)
         lat_range = range(lat_min, lat_max, length=lat_resolution)
         data[] = to_geo_array(dggs_array, lon_range, lat_range)
-        last_update_limits[] = axis.finallimits[]
+        last_update_limits[] = lims
     end
 
     on(axis.finallimits) do lims
