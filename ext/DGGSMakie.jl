@@ -24,7 +24,7 @@ function Makie.plot(
     0 <= resolution_scale <= 1 || error("resolution_scale must be between 0 and 1")
 
     fig = Figure()
-    ax = Axis(fig[1, 1], limits=(-180, 180, -90, 90))
+    ax = Axis(fig[1, 1], limits=(-180, 180, -90, 90), xlabel="longitude [°]", ylabel="latitude [°]")
     ax.aspect = DataAspect()
 
     data = Observable(to_geo_array(dggs_array, lon_range, lat_range))
@@ -54,6 +54,11 @@ function Makie.plot(
         lon_min, lat_min = lims.origin
         lon_max, lat_max = lims.origin .+ lims.widths
 
+        lon_min = clamp(lon_min, -180, 180)
+        lon_max = clamp(lon_max, -180, 180)
+        lat_min = clamp(lat_min, -90, 90)
+        lat_max = clamp(lat_max, -90, 90)
+
         lon_length, lat_length = fig.scene.viewport[].widths
         lon_range = range(lon_min, lon_max, length=lon_length * resolution_scale)
         lat_range = range(lat_min, lat_max, length=lat_length * resolution_scale)
@@ -61,14 +66,6 @@ function Makie.plot(
 
         last_update_limits[] = lims
         last_update_viewport_widths[] = lon_length, lat_length
-    end
-
-    on(ax.finallimits) do lims
-        # enforce zoom to be inside of lat/lon limits
-        if abs(lims.origin[1]) + abs(lims.widths[1]) > 180 || abs(lims.origin[2]) + abs(lims.widths[2]) > 90
-            ax.targetlimits[] = HyperRectangle{2,Float32}([-180, -90], [360, 180])
-            ax.finallimits[] = ax.targetlimits[]
-        end
     end
 
     heatmap!(ax, data, colorrange=cb_limits)
