@@ -11,6 +11,9 @@ function to_dggs_array(geo_array, resolution; agg_func::Function=mean, outtype=F
     lon_dim = only(lon_dim)
     lat_dim = only(lat_dim)
 
+    -180 <= minimum(lon_dim) <= maximum(lon_dim) <= 180 || error("Longitude must be within [-90,90]")
+    -90 <= minimum(lat_dim) <= maximum(lat_dim) <= 90 || error("Latitude must be within [-90,90]")
+
     cells = compute_cell_array(lon_dim, lat_dim, resolution)
 
     # get pixels to aggregate for each cell
