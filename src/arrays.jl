@@ -1,20 +1,49 @@
 function compute_cell_array(lon_dim, lat_dim, resolution)
+    -180 <= minimum(lon_dim) <= maximum(lon_dim) <= 180 || error("Longitude must be within [-90,90]")
+    -90 <= minimum(lat_dim) <= maximum(lat_dim) <= 90 || error("Latitude must be within [-90,90]")
+
     [(lon, lat) for lon in lon_dim, lat in lat_dim] |>
     x -> to_cell(x, resolution)
 end
 
-function to_dggs_array(geo_array, resolution; agg_func::Function=mean, outtype=Float64, path=tempname() * ".dggs.zarr", lon_name=:X, lat_name=:Y, kwargs...)
-    lon_dim = filter(x -> name(x) == lon_name, dims(geo_array))
-    lat_dim = filter(x -> name(x) == lat_name, dims(geo_array))
-    isempty(lon_dim) && error("Longitude dimension not found")
-    isempty(lat_dim) && error("Latitude dimension not found")
-    lon_dim = only(lon_dim)
-    lat_dim = only(lat_dim)
+function compute_cell_array(x_dim, y_dim, resolution, crs)
+    # convert back to EPSG:4326, then do normal to_cell
+    # x,y : coordinates in given crs
+    # row,col: position in x and y dim vectors
 
-    -180 <= minimum(lon_dim) <= maximum(lon_dim) <= 180 || error("Longitude must be within [-90,90]")
-    -90 <= minimum(lat_dim) <= maximum(lat_dim) <= 90 || error("Latitude must be within [-90,90]")
+    transformations = Channel{Proj.Transformation}(Inf)
+    for _ in 1:Threads.nthreads()
+        put!(transformations, Proj.Transformation(crs, crs_geo; ctx=Proj.proj_context_create()))
+    end
 
-    cells = compute_cell_array(lon_dim, lat_dim, resolution)
+    cells = Matrix(undef, length(x_dim), length(y_dim))
+
+    Threads.@threads for i in CartesianIndices((1:length(x_dim), 1:length(y_dim)))
+        row, col = i.I
+        x, y = x_dim[row], y_dim[col]
+        trans = take!(transformations)
+        lat, lon = trans(y, x)
+        cell = to_cell(lon, lat, resolution)
+        cells[row, col] = cell
+        put!(transformations, trans)
+    end
+
+    return cells
+end
+
+function to_dggs_array(geo_array, resolution, crs::AbstractString="EPSG:4326"; agg_func::Function=mean, outtype=Float64, path=tempname() * ".dggs.zarr", lon_name=:X, lat_name=:Y, kwargs...)
+    x_dim = filter(x -> name(x) == lon_name, dims(geo_array))
+    y_dim = filter(x -> name(x) == lat_name, dims(geo_array))
+    isempty(x_dim) && error("Longitude dimension not found")
+    isempty(y_dim) && error("Latitude dimension not found")
+    x_dim = only(x_dim)
+    y_dim = only(y_dim)
+
+    cells = if crs == "EPSG:4326"
+        compute_cell_array(x_dim, y_dim, resolution)
+    else
+        compute_cell_array(x_dim, y_dim, resolution, crs)
+    end
 
     # get pixels to aggregate for each cell
     cell_coords = Dict{eltype(cells),Vector{CartesianIndex{2}}}()
@@ -27,16 +56,15 @@ function to_dggs_array(geo_array, resolution; agg_func::Function=mean, outtype=F
     # re-grid
     res = mapCube(
         # mapCube can't find axes of other AbstractDimArrays e.g. Raster
-        YAXArray(dims(geo_array), geo_array.data, metadata(geo_array)),
-        indims=InDims(lon_dim, lat_dim),
+        YAXArray(dims(geo_array), geo_array.data, metadata(geo_array));
+        indims=InDims(x_dim, y_dim),
         outdims=OutDims(
             Dim{:dggs_i}(0:(2*2^resolution-1)),
             Dim{:dggs_j}(0:(2^resolution-1)),
             Dim{:dggs_n}(0:4),
             outtype=outtype,
-            path=path,
-            kwargs...
-        )) do xout, xin
+            path=path
+        ), kwargs...) do xout, xin
         for ci in CartesianIndices(xout)
             i, j, n = ci.I
             try

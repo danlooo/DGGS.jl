@@ -9,6 +9,7 @@ using Statistics
 using CoordinateTransformations
 using Dates
 using Printf
+using Infiltrator
 
 include("types.jl")
 include("cells.jl")
