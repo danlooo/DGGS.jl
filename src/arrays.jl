@@ -3,7 +3,7 @@ function compute_cell_array(lon_dim, lat_dim, resolution)
     x -> to_cell(x, resolution)
 end
 
-function to_dggs_array(geo_array, resolution; agg_func::Function=mean, outtype=Float64, path=tempname() * ".dggs.zarr", lon_name=:lon, lat_name=:lat, kwargs...)
+function to_dggs_array(geo_array, resolution; agg_func::Function=mean, outtype=Float64, path=tempname() * ".dggs.zarr", lon_name=:X, lat_name=:Y, kwargs...)
     lon_dim = filter(x -> name(x) == lon_name, dims(geo_array))
     lat_dim = filter(x -> name(x) == lat_name, dims(geo_array))
     isempty(lon_dim) && error("Longitude dimension not found")
@@ -11,14 +11,17 @@ function to_dggs_array(geo_array, resolution; agg_func::Function=mean, outtype=F
     lon_dim = only(lon_dim)
     lat_dim = only(lat_dim)
 
+    -180 <= minimum(lon_dim) <= maximum(lon_dim) <= 180 || error("Longitude must be within [-90,90]")
+    -90 <= minimum(lat_dim) <= maximum(lat_dim) <= 90 || error("Latitude must be within [-90,90]")
+
     cells = compute_cell_array(lon_dim, lat_dim, resolution)
 
     # get pixels to aggregate for each cell
     cell_coords = Dict{eltype(cells),Vector{CartesianIndex{2}}}()
-    for cI in CartesianIndices(cells)
-        cell = cells[cI]
+    for cell_idx in CartesianIndices(cells)
+        cell = cells[cell_idx]
         current_cells = get!(() -> CartesianIndex{2}[], cell_coords, cell)
-        push!(current_cells, cI)
+        push!(current_cells, cell_idx)
     end
 
     # re-grid
@@ -34,13 +37,18 @@ function to_dggs_array(geo_array, resolution; agg_func::Function=mean, outtype=F
             path=path,
             kwargs...
         )) do xout, xin
-        for (cell, cell_coords) in cell_coords
+        for ci in CartesianIndices(xout)
+            i, j, n = ci.I
             try
-                # view returns 0 dim array of pixels within the cell
-                res = agg_func(view(xin, cell_coords))
-                xout[cell.i+1, cell.j+1, cell.n+1] = res
+                cell = Cell(i - 1, j - 1, n - 1, resolution)
+                res = agg_func(view(xin, cell_coords[cell]))
+                xout[i, j, n] = res
             catch
-                @warn "Unable to process cell" cell
+                # fill gap by averaging available neighbors
+                xmin = clamp(i, 2, size(xout, 1) - 1) - 1
+                ymin = clamp(j, 2, size(xout, 2) - 1) - 1
+                res = filter(!ismissing, xout[xmin:xmin+2, ymin:ymin+2, n]) |> agg_func
+                xout[i, j, n] = res
             end
         end
     end
