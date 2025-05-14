@@ -13,7 +13,7 @@ lat_range = Y(90:-1:-90)
 geo_data = [exp(cosd(lon)) + 3(lat / 90) for lon in lon_range, lat in lat_range]
 properties = Dict("standard_name" => "air_temperature", "units" => "K", "description" => "random test data")
 geo_array = YAXArray((lon_range, lat_range), geo_data, properties)
-dggs_array = to_dggs_array(geo_array, resolution; lon_name=:X, lat_name=:Y)
+dggs_array = to_dggs_array(geo_array, resolution, "EPSG:4326")
 
 @testset "DGGS.jl" begin
     @testset "Cells" begin
@@ -74,11 +74,17 @@ dggs_array = to_dggs_array(geo_array, resolution; lon_name=:X, lat_name=:Y)
         @test size(geo_array) == size(geo_array2)
         @test all(geo_diffs .< 2.0) # max global deviation
         @test sum(geo_diffs .< 0.2) / length(geo_diffs) >= 0.95
+
         # alternative methods
         lon_range = -180:180
         lat_range = -90:90
         geo_array3 = to_geo_array(dggs_array, lon_range, lat_range)
         @test size(geo_array3) == (length(lon_range), length(lat_range))
+
+        # other crs
+        geo_array3 = open_dataset("data/geomatrix.tif").Gray
+        dggs_array3 = to_dggs_array(geo_array3, 10, geo_array3.properties["projection"])
+        @test dggs_array3 isa DGGSArray
     end
 
     @testset "Plot" begin
@@ -99,4 +105,5 @@ dggs_array = to_dggs_array(geo_array, resolution; lon_name=:X, lat_name=:Y)
         @test name(dggs_array) == name(dggs_array2)
         rm(temp_dir, recursive=true)
     end
+
 end

@@ -31,13 +31,48 @@ function compute_cell_array(x_dim, y_dim, resolution, crs)
     return cells
 end
 
-function to_dggs_array(geo_array, resolution, crs::AbstractString="EPSG:4326"; agg_func::Function=mean, outtype=Float64, path=tempname() * ".dggs.zarr", lon_name=:X, lat_name=:Y, kwargs...)
-    x_dim = filter(x -> name(x) == lon_name, dims(geo_array))
-    y_dim = filter(x -> name(x) == lat_name, dims(geo_array))
-    isempty(x_dim) && error("Longitude dimension not found")
-    isempty(y_dim) && error("Latitude dimension not found")
+function get_dggs_bbox(cells)
+    cell = first(cells)
+    resolution = cell.resolution
+
+    # start with smallest possible bbox
+    i_min = cell.i
+    i_max = cell.i
+
+    j_min, j_max = cell.j, cell.j
+    n_min, n_max = cell.n, cell.n
+
+    # extend bbox if needed
+    for cell in cells
+        cell.i < i_min && (i_min = cell.i)
+        cell.i > i_max && (i_max = cell.i)
+
+        cell.j < j_min && (j_min = cell.j)
+        cell.j > j_max && (j_max = cell.j)
+
+        cell.n < n_min && (n_min = cell.n)
+        cell.n > n_max && (n_max = cell.n)
+    end
+
+    bbox = (
+        Dim{:dggs_i}(i_min:i_max),
+        Dim{:dggs_j}(j_min:j_max),
+        Dim{:dggs_n}(n_min:n_max)
+    )
+
+    return bbox
+end
+
+function to_dggs_array(geo_array, resolution, crs::AbstractString; agg_func::Function=mean, outtype=Float64, path=tempname() * ".dggs.zarr", x_name=:X, y_name=:Y, kwargs...)
+    x_dim = filter(x -> name(x) == x_name, dims(geo_array))
+    y_dim = filter(x -> name(x) == y_name, dims(geo_array))
+    isempty(x_dim) && error("X dimension (e.g. longitude) not found")
+    isempty(y_dim) && error("Y dimension (e.g. latitude) not found")
     x_dim = only(x_dim)
     y_dim = only(y_dim)
+
+    properties = metadata(geo_array)
+    delete!(properties, "projection")
 
     cells = if crs == "EPSG:4326"
         compute_cell_array(x_dim, y_dim, resolution)
@@ -53,22 +88,22 @@ function to_dggs_array(geo_array, resolution, crs::AbstractString="EPSG:4326"; a
         push!(current_cells, cell_idx)
     end
 
+    dggs_bbox = get_dggs_bbox(keys(cell_coords))
+
     # re-grid
     res = mapCube(
         # mapCube can't find axes of other AbstractDimArrays e.g. Raster
         YAXArray(dims(geo_array), geo_array.data, metadata(geo_array));
         indims=InDims(x_dim, y_dim),
         outdims=OutDims(
-            Dim{:dggs_i}(0:(2*2^resolution-1)),
-            Dim{:dggs_j}(0:(2^resolution-1)),
-            Dim{:dggs_n}(0:4),
+            dggs_bbox...,
             outtype=outtype,
             path=path
         ), kwargs...) do xout, xin
         for ci in CartesianIndices(xout)
             i, j, n = ci.I
             try
-                cell = Cell(i - 1, j - 1, n - 1, resolution)
+                cell = Cell(dggs_bbox[1][i], dggs_bbox[2][j], dggs_bbox[3][n], resolution)
                 res = agg_func(view(xin, cell_coords[cell]))
                 xout[i, j, n] = res
             catch
@@ -89,6 +124,13 @@ end
 
 function to_geo_array(dggs_array::DGGSArray, lon_dim::DD.Dimension, lat_dim::DD.Dimension; kwargs...)
     cells = compute_cell_array(lon_dim, lat_dim, dggs_array.resolution)
+
+    # dggs_array may only contain parts of the world, having only parts of the dimension
+    get_extent(i_dim) = dggs_array.dims[i_dim].val.data |> x -> (x.start, x.stop)
+    i_min, i_max = get_extent(1)
+    j_min, j_max = get_extent(2)
+    n_min, n_max = get_extent(3)
+
     geo_array = mapCube(
         dggs_array,
         indims=InDims(
@@ -99,7 +141,14 @@ function to_geo_array(dggs_array::DGGSArray, lon_dim::DD.Dimension, lat_dim::DD.
         outdims=OutDims(lon_dim, lat_dim),
         kwargs...
     ) do xout, xin
-        xout .= map(x -> xin[x.i+1, x.j+1, x.n+1], cells)
+        for ci in CartesianIndices(xout)
+            try
+                cell_ci = cells[ci] |> x -> CartesianIndex(x.i - i_min + 1, x.j - j_min + 1, x.n - n_min + 1)
+                xout[ci] = xin[cell_ci]
+            catch
+                # not data available for this pixel
+            end
+        end
     end
 
     return geo_array
