@@ -3,13 +3,16 @@ function compute_cell_array(lon_dim, lat_dim, resolution)
     -90 <= minimum(lat_dim) <= maximum(lat_dim) <= 90 || error("Latitude must be within [-90,90]")
 
     [(lon, lat) for lon in lon_dim, lat in lat_dim] |>
-    x -> to_cell(x, resolution)
+    x -> to_cell(x, resolution) |> x -> DimArray(; data=x, dims=(lon_dim, lat_dim))
 end
 
 function compute_cell_array(x_dim, y_dim, resolution, crs)
     # convert back to EPSG:4326, then do normal to_cell
     # x,y : coordinates in given crs
     # row,col: position in x and y dim vectors
+
+    # use default thread pool for lat/lon conversion
+    crs == "EPSG:4326" && return compute_cell_array(x_dim, y_dim, resolution)
 
     transformations = Channel{Proj.Transformation}(Inf)
     for _ in 1:Threads.nthreads()
@@ -28,7 +31,9 @@ function compute_cell_array(x_dim, y_dim, resolution, crs)
         put!(transformations, trans)
     end
 
-    return cells
+    cell_array = DimArray(; data=cells, dims=(x_dim, y_dim))
+
+    return cell_array
 end
 
 function get_dggs_bbox(cells)
@@ -63,22 +68,8 @@ function get_dggs_bbox(cells)
     return bbox
 end
 
-function to_dggs_array(geo_array, resolution, crs::AbstractString; agg_func::Function=mean, outtype=Float64, path=tempname() * ".dggs.zarr", x_name=:X, y_name=:Y, kwargs...)
-    x_dim = filter(x -> name(x) == x_name, dims(geo_array))
-    y_dim = filter(x -> name(x) == y_name, dims(geo_array))
-    isempty(x_dim) && error("X dimension (e.g. longitude) not found")
-    isempty(y_dim) && error("Y dimension (e.g. latitude) not found")
-    x_dim = only(x_dim)
-    y_dim = only(y_dim)
-
-    properties = metadata(geo_array)
-    delete!(properties, "projection")
-
-    cells = if crs == "EPSG:4326"
-        compute_cell_array(x_dim, y_dim, resolution)
-    else
-        compute_cell_array(x_dim, y_dim, resolution, crs)
-    end
+function to_dggs_array(geo_array, cells; agg_func::Function=mean, outtype=Float64, path=tempname() * ".dggs.zarr", kwargs...)
+    resolution = first(cells).resolution
 
     # get pixels to aggregate for each cell
     cell_coords = Dict{eltype(cells),Vector{CartesianIndex{2}}}()
@@ -94,7 +85,7 @@ function to_dggs_array(geo_array, resolution, crs::AbstractString; agg_func::Fun
     res = mapCube(
         # mapCube can't find axes of other AbstractDimArrays e.g. Raster
         YAXArray(dims(geo_array), geo_array.data, metadata(geo_array));
-        indims=InDims(x_dim, y_dim),
+        indims=InDims(dims(geo_array, :X), dims(geo_array, :Y)),
         outdims=OutDims(
             dggs_bbox...,
             outtype=outtype,
@@ -122,8 +113,25 @@ function to_dggs_array(geo_array, resolution, crs::AbstractString; agg_func::Fun
     )
 end
 
-function to_geo_array(dggs_array::DGGSArray, lon_dim::DD.Dimension, lat_dim::DD.Dimension; kwargs...)
-    cells = compute_cell_array(lon_dim, lat_dim, dggs_array.resolution)
+function to_dggs_array(geo_array, resolution, crs::AbstractString; agg_func::Function=mean, outtype=Float64, path=tempname() * ".dggs.zarr", x_name=:X, y_name=:Y, kwargs...)
+    x_dim = filter(x -> name(x) == x_name, dims(geo_array))
+    y_dim = filter(x -> name(x) == y_name, dims(geo_array))
+    isempty(x_dim) && error("X dimension (e.g. longitude) not found")
+    isempty(y_dim) && error("Y dimension (e.g. latitude) not found")
+    x_dim = only(x_dim)
+    y_dim = only(y_dim)
+
+    properties = metadata(geo_array)
+    delete!(properties, "projection")
+
+    cells = compute_cell_array(x_dim, y_dim, resolution, crs)
+    dggs_array = to_dggs_array(geo_array, cells)
+    return dggs_array
+end
+
+function to_geo_array(dggs_array::DGGSArray, cells::AbstractDimArray; kwargs...)
+    lon_dim = dims(cells, :X)
+    lat_dim = dims(cells, :Y)
 
     # dggs_array may only contain parts of the world, having only parts of the dimension
     get_extent(i_dim) = dggs_array.dims[i_dim].val.data |> x -> (x.start, x.stop)
@@ -152,6 +160,11 @@ function to_geo_array(dggs_array::DGGSArray, lon_dim::DD.Dimension, lat_dim::DD.
     end
 
     return geo_array
+end
+
+function to_geo_array(dggs_array::DGGSArray, lon_dim::DD.Dimension, lat_dim::DD.Dimension; kwargs...)
+    cells = compute_cell_array(lon_dim, lat_dim, dggs_array.resolution)
+    return to_geo_array(dggs_array::DGGSArray, cells; kwargs...)
 end
 
 function to_geo_array(dggs_array, lon_range::AbstractRange, lat_range::AbstractRange; kwargs...)

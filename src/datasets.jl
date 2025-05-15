@@ -44,10 +44,24 @@ function to_dggs_dataset(geo_ds::Dataset, resolution::Integer, crs::String; kwar
     cells = compute_cell_array(geo_ds.X, geo_ds.Y, resolution, crs)
     dggs_arrays = []
     for (name, geo_array) in geo_ds.cubes
-        dggs_array = to_dggs_array(geo_array, cells, geo_ds.X, geo_ds.Y; kwargs...)
+        dggs_array = to_dggs_array(geo_array, cells; kwargs...)
         push!(dggs_arrays, dggs_array)
     end
     return DGGSDataset(dggs_arrays...)
+end
+
+function to_geo_dataset(dggs_ds::DGGSDataset, lon_dim::DD.Dimension, lat_dim::DD.Dimension; kwargs...)
+    cells = compute_cell_array(lon_dim, lat_dim, dggs_ds.resolution)
+
+    dggs_array = dggs_ds.B02
+
+    geo_arrays = Dict()
+    for (name, ddggs_array) in dggs_ds
+        geo_array = to_geo_array(dggs_array::DGGSArray, cells; kwargs...)
+        geo_arrays[name] = geo_array
+    end
+
+    return geo_arrays
 end
 
 function DD.show_after(io::IO, mime, ds::DGGSDataset)
