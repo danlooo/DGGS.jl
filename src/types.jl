@@ -60,22 +60,24 @@ struct DGGSDataset{K,T,N,L,D<:Tuple,R<:Tuple,LD,M,LM} <: AbstractDimStack{K,T,N,
 
     # DGGS fields
     resolution::Integer
+    dggsrs::String
 
     function DGGSDataset(
         data, dims, refdims, layerdims::LD, metadata, layermetadata,
-        resolution
+        resolution, dggsrs
     ) where LD<:NamedTuple{K} where K
         T = DD.data_eltype(data)
         N = length(dims)
         DGGSDataset{K,T,N}(
-            data, dims, refdims, layerdims, metadata, layermetadata, resolution
+            data, dims, refdims, layerdims, metadata, layermetadata,
+            resolution, dggsrs
         )
     end
     function DGGSDataset{K,T,N}(
-        data::L, dims::D, refdims::R, layerdims::NamedTuple, metadata::M, layermetadata::NamedTuple, resolution
+        data::L, dims::D, refdims::R, layerdims::NamedTuple, metadata::M, layermetadata::NamedTuple, resolution, dggsrs
     ) where {K,T,N,L,D,R,M}
         new{K,T,N,L,D,R,typeof(values(layerdims)),M,typeof(values(layermetadata))}(data, dims, refdims, layerdims, metadata, layermetadata,
-            resolution
+            resolution, dggsrs
         )
     end
 end
