@@ -28,5 +28,7 @@ function __init__()
     @info "DGGS.jl initialized with $(nthreads()) threads"
 end
 
-export to_cell, to_geo, to_dggs_dataset, to_dggs_array, to_geo_array, open_dggs_array, save_dggs_array, Cell, DGGSArray, DGGSDataset
+export Cell, DGGSArray, DGGSDatase, Cell, DGGSArray, DGGSDataset
+export to_cell, to_geo, to_dggs_dataset, to_dggs_array, to_geo_dataset, to_geo_array
+export open_dggs_array, save_dggs_array
 end

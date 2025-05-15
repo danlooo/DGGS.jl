@@ -53,24 +53,14 @@ end
 function to_geo_dataset(dggs_ds::DGGSDataset, lon_dim::DD.Dimension, lat_dim::DD.Dimension; kwargs...)
     cells = compute_cell_array(lon_dim, lat_dim, dggs_ds.resolution)
 
-    dggs_array = dggs_ds.B02
-
     geo_arrays = Dict()
-    for (name, ddggs_array) in dggs_ds
-        geo_array = to_geo_array(dggs_array::DGGSArray, cells; kwargs...)
-        geo_arrays[name] = geo_array
+    for k in keys(dggs_ds)
+        dggs_array = getproperty(dggs_ds, k)
+        geo_array = to_geo_array(dggs_array, cells; kwargs...)
+        geo_arrays[k] = geo_array
     end
-
-    return geo_arrays
-end
-
-function DD.show_after(io::IO, mime, ds::DGGSDataset)
-    block_width = get(io, :blockwidth, 0)
-
-    DD.print_block_separator(io, "DGGS", block_width, block_width)
-    println(io, "  DGGSRS:     $(ds.dggsrs)")
-    println(io, "  Resolution: $(ds.resolution)")
-    DD.print_block_close(io, block_width)
+    geo_ds = Dataset(; geo_arrays...)
+    return geo_ds
 end
 
 Base.show(io::IO, a::DGGSArray) = print(io, "DGGSArray $(name(a)) $(a.dggsrs)@$(a.resolution) ")
@@ -81,6 +71,7 @@ function print_dggs_block(io, x::Union{DGGSArray,DGGSDataset}; block_width=get(i
     println(io, " ")
     println(io, "  DGGSRS:     $(x.dggsrs)")
     println(io, "  Resolution: $(x.resolution)")
+    println(io, "  Geo BBox:   $(get_geo_bbox(x))")
     DD.print_block_close(io, block_width)
 end
 
