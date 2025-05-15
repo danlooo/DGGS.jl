@@ -164,9 +164,9 @@ end
 # DGGSArray features
 #
 
-function DGGSArray(array::AbstractDimArray, resolution::Integer, dggsrs::String)
+function DGGSArray(array::AbstractDimArray, resolution::Integer, dggsrs::String="ISEA4D.Penta"; name=DD.name(array), metadata=metadata(array))
     return DGGSArray(
-        array.data, dims(array), refdims(array), name(array), metadata(array),
+        array.data, dims(array), refdims(array), name, metadata,
         resolution, dggsrs
     )
 end
@@ -200,19 +200,6 @@ function YAXArrays.YAXArray(dggs_array::DGGSArray)
     properties["dggs_dggsrs"] = dggs_array.dggsrs
 
     return YAXArray(dims(dggs_array), dggs_array.data, properties)
-end
-
-Base.show(io::IO, a::DGGSArray) = print(io, "DGGSArray $(name(a)) $(a.dggsrs)@$(a.resolution) ")
-
-function print_dggs_block(io, x::Union{DGGSArray,DGGSDataset}; block_width=get(io, :blockwidth, 0))
-    DD.print_block_separator(io, "DGGS", block_width, block_width)
-    println(io, "  DGGSRS:     $(x.dggsrs)")
-    println(io, "  Resolution: $(x.resolution)")
-    DD.print_block_close(io, block_width)
-end
-
-function DD.show_after(io::IO, mime, x::Union{DGGSArray,DGGSDataset})
-    print_dggs_block(io, x)
 end
 
 "rebuild immutable objects with new field values. Part of any AbstractDimArray."

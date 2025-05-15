@@ -106,4 +106,30 @@ dggs_array = to_dggs_array(geo_array, resolution, "EPSG:4326")
         rm(temp_dir, recursive=true)
     end
 
+    @testset "DGGSDataset" begin
+        resolution = 3
+        i_dim = Dim{:dggs_i}(0:2*2^resolution-1)
+        j_dim = Dim{:dggs_j}(0:2^resolution-1)
+        n_dim = Dim{:dggs_n}(0:4)
+        time_dim = Ti(1:10)
+        dim_array = rand(i_dim, j_dim, n_dim, time_dim)
+
+        a1 = DGGSArray(dim_array, resolution; name=:red)
+        a2 = DGGSArray(dim_array, resolution; name=:blue)
+        a3 = DGGSArray(dim_array, resolution; name=:green)
+        a4 = DGGSArray(rand(i_dim, j_dim, n_dim), resolution; name=:height)
+
+        ds1 = DGGSDataset(a1)
+        ds2 = DGGSDataset(a1, a2, a3, a4)
+
+        @test ds1 isa DGGSDataset
+        @test ds2 isa DGGSDataset
+        @test ds1.red isa DGGSArray
+        @test length(keys(ds1)) == 1
+        @test length(keys(ds2)) == 4
+        @test ds2.resolution == ds2.blue.resolution
+        @test ds2.dggsrs == ds2.blue.dggsrs
+        @test_throws ErrorException DGGSDataset(a1, a1)
+    end
+
 end
