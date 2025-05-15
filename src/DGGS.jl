@@ -14,6 +14,7 @@ using Infiltrator
 include("types.jl")
 include("cells.jl")
 include("arrays.jl")
+include("datasets.jl")
 
 const transformations = Channel{Proj.Transformation}(Inf)
 const inv_transformations = Channel{Proj.Transformation}(Inf)
@@ -27,5 +28,5 @@ function __init__()
     @info "DGGS.jl initialized with $(nthreads()) threads"
 end
 
-export to_cell, to_geo, to_dggs_array, to_geo_array, open_dggs_array, save_dggs_array, Cell, DGGSArray
+export to_cell, to_geo, to_dggs_dataset, to_dggs_array, to_geo_array, open_dggs_array, save_dggs_array, Cell, DGGSArray, DGGSDataset
 end

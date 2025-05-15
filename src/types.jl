@@ -47,3 +47,35 @@ struct DGGSArray{T,N,D<:Tuple,R<:Tuple,A<:AbstractArray{T,N},Na,Me} <: AbstractD
         new{T,N,D,R,A,Na,Me}(data, dims, refdims, name, metadata, resolution, dggsrs)
     end
 end
+
+"Set of DGGSArrays with aligned and shared dimensions at the same resolution."
+struct DGGSDataset{K,T,N,L,D<:Tuple,R<:Tuple,LD,M,LM} <: AbstractDimStack{K,T,N,L}
+    # DimStack fields
+    data::L
+    dims::D
+    refdims::R
+    layerdims::NamedTuple{K,LD}
+    metadata::M
+    layermetadata::NamedTuple{K,LM}
+
+    # DGGS fields
+    resolution::Integer
+
+    function DGGSDataset(
+        data, dims, refdims, layerdims::LD, metadata, layermetadata,
+        resolution
+    ) where LD<:NamedTuple{K} where K
+        T = DD.data_eltype(data)
+        N = length(dims)
+        DGGSDataset{K,T,N}(
+            data, dims, refdims, layerdims, metadata, layermetadata, resolution
+        )
+    end
+    function DGGSDataset{K,T,N}(
+        data::L, dims::D, refdims::R, layerdims::NamedTuple, metadata::M, layermetadata::NamedTuple, resolution
+    ) where {K,T,N,L,D,R,M}
+        new{K,T,N,L,D,R,typeof(values(layerdims)),M,typeof(values(layermetadata))}(data, dims, refdims, layerdims, metadata, layermetadata,
+            resolution
+        )
+    end
+end
