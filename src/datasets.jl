@@ -33,12 +33,11 @@ end
 Base.propertynames(ds::DGGSDataset) = union((:resolution, :dggsrs), Base.propertynames(parent(ds)))
 
 function Base.getproperty(ds::DGGSDataset, s::Symbol)
-    if s in keys(ds)
-        return DGGSArray(ds[s], ds.resolution, ds.dggsrs)
-    end
+    s in keys(ds) && return ds.data[s]
     s in fieldnames(DGGSDataset) && return getfield(ds, s)
     error("Key $(s) not found.")
 end
+
 
 function to_dggs_dataset(geo_ds::Dataset, resolution::Integer, crs::String; kwargs...)
     cells = compute_cell_array(geo_ds.X, geo_ds.Y, resolution, crs)
@@ -66,7 +65,7 @@ end
 Base.show(io::IO, a::DGGSArray) = print(io, "DGGSArray $(name(a)) $(a.dggsrs)@$(a.resolution) ")
 Base.show(io::IO, a::DGGSDataset) = print(io, "DGGSDataset $(name(a)) $(a.dggsrs)@$(a.resolution) ")
 
-function print_dggs_block(io, x::Union{DGGSArray,DGGSDataset}; block_width=get(io, :blockwidth, 0))
+function DD.show_after(io::IO, mime, x::Union{DGGSArray,DGGSDataset})
     DD.print_block_separator(io, "DGGS", block_width, block_width)
     println(io, " ")
     println(io, "  DGGSRS:     $(x.dggsrs)")
@@ -74,8 +73,4 @@ function print_dggs_block(io, x::Union{DGGSArray,DGGSDataset}; block_width=get(i
     println(io, "  Resolution: $(x.resolution) (up to $(n_cells_str) cells)")
     println(io, "  Geo BBox:   $(get_geo_bbox(x))")
     DD.print_block_close(io, block_width)
-end
-
-function DD.show_after(io::IO, mime, x::Union{DGGSArray,DGGSDataset})
-    print_dggs_block(io, x)
 end
