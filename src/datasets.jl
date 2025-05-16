@@ -43,7 +43,7 @@ function to_dggs_dataset(geo_ds::Dataset, resolution::Integer, crs::String; kwar
     cells = compute_cell_array(geo_ds.X, geo_ds.Y, resolution, crs)
     dggs_arrays = []
     for (name, geo_array) in geo_ds.cubes
-        dggs_array = to_dggs_array(geo_array, cells; kwargs...)
+        dggs_array = to_dggs_array(geo_array, cells; name=name, kwargs...)
         push!(dggs_arrays, dggs_array)
     end
     return DGGSDataset(dggs_arrays...)

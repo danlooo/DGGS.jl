@@ -85,7 +85,15 @@ function get_geo_bbox(x::Union{DGGSArray,DGGSDataset})
     return bbox
 end
 
-function to_dggs_array(geo_array, cells; agg_func::Function=mean, outtype=Float64, path=tempname() * ".dggs.zarr", kwargs...)
+function to_dggs_array(
+    geo_array,
+    cells;
+    agg_func::Function=mean,
+    outtype=Float64,
+    path=tempname() * ".dggs.zarr",
+    name=get_name(geo_array),
+    kwargs...
+)
     resolution = first(cells).resolution
 
     # get pixels to aggregate for each cell
@@ -126,7 +134,7 @@ function to_dggs_array(geo_array, cells; agg_func::Function=mean, outtype=Float6
     end
 
     return DGGSArray(
-        res.data, dims(res), refdims(res), get_name(geo_array), metadata(geo_array),
+        res.data, dims(res), refdims(res), name, metadata(geo_array),
         resolution, "ISEA4D.Penta"
     )
 end
