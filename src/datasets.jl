@@ -66,6 +66,7 @@ Base.show(io::IO, a::DGGSArray) = print(io, "DGGSArray $(name(a)) $(a.dggsrs)@$(
 Base.show(io::IO, a::DGGSDataset) = print(io, "DGGSDataset $(name(a)) $(a.dggsrs)@$(a.resolution) ")
 
 function DD.show_after(io::IO, mime, x::Union{DGGSArray,DGGSDataset})
+    block_width = get(io, :blockwidth, 0)
     DD.print_block_separator(io, "DGGS", block_width, block_width)
     println(io, " ")
     println(io, "  DGGSRS:     $(x.dggsrs)")
