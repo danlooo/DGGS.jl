@@ -11,6 +11,7 @@ using GeometryBasics
 using Dates
 using Printf
 using Infiltrator
+using Extents
 
 include("types.jl")
 include("cells.jl")

@@ -81,7 +81,7 @@ function get_geo_bbox(x::Union{DGGSArray,DGGSDataset})
 
     lon_min, lon_max = map(x -> x[1], geo_corners) |> x -> (minimum(x), maximum(x))
     lat_min, lat_max = map(x -> x[2], geo_corners) |> x -> (minimum(x), maximum(x))
-    bbox = Rect(Point2(lon_min, lat_min), Point2(lon_max, lat_max))
+    bbox = Extent(X=(lon_min, lon_max), Y=(lat_min, lat_max))
     return bbox
 end
 

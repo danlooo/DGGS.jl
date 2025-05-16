@@ -7,6 +7,9 @@ import DimensionalData as DD
 using Makie.GeometryBasics
 using Dates
 
+
+using Infiltrator
+
 """
 Plot a DGGSArray using Makie.
 
@@ -15,19 +18,22 @@ Plot a DGGSArray using Makie.
 function Makie.plot(
     dggs_array::DGGSArray,
     args...;
-    lon_range=-180:0.25:180,
-    lat_range=-90:0.25:90,
+    extent=DGGS.get_geo_bbox(dggs_array),
     resolution_scale::Real=1,
     kwargs...
 )
     length(DGGS.non_spatial_dims(dggs_array)) == 0 || error("DGGSArray must not have any non-spatial dimension")
     0 <= resolution_scale <= 1 || error("resolution_scale must be between 0 and 1")
 
+    lon_range = range(extent.X..., 100)
+    lat_range = range(extent.Y..., 100)
+
     fig = Figure()
-    ax = Axis(fig[1, 1], limits=(-180, 180, -90, 90), xlabel="longitude [°]", ylabel="latitude [°]")
+    ax = Axis(fig[1, 1], limits=(extent.X..., extent.Y...), xlabel="longitude [°]", ylabel="latitude [°]")
     ax.aspect = DataAspect()
 
     data = Observable(to_geo_array(dggs_array, lon_range, lat_range))
+
     last_update_limits = Observable(ax.finallimits[])
     last_update_viewport_widths = Observable(fig.scene.viewport[].widths)
 
