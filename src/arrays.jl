@@ -25,7 +25,7 @@ function compute_cell_array(x_dim, y_dim, resolution, crs)
         row, col = i.I
         x, y = x_dim[row], y_dim[col]
         trans = take!(transformations)
-        lat, lon = trans(y, x)
+        lat, lon = trans(x, y)
         cell = to_cell(lon, lat, resolution)
         cells[row, col] = cell
         put!(transformations, trans)
@@ -97,6 +97,7 @@ function to_dggs_array(geo_array, cells; agg_func::Function=mean, outtype=Float6
     end
 
     dggs_bbox = get_dggs_bbox(keys(cell_coords))
+
 
     # re-grid
     res = mapCube(
