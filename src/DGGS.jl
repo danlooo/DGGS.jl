@@ -7,6 +7,7 @@ using DimensionalData
 import DimensionalData as DD
 using Statistics
 using CoordinateTransformations
+using GeometryBasics
 using Dates
 using Printf
 using Infiltrator

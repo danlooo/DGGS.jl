@@ -70,7 +70,8 @@ function print_dggs_block(io, x::Union{DGGSArray,DGGSDataset}; block_width=get(i
     DD.print_block_separator(io, "DGGS", block_width, block_width)
     println(io, " ")
     println(io, "  DGGSRS:     $(x.dggsrs)")
-    println(io, "  Resolution: $(x.resolution)")
+    n_cells_str = @sprintf("%.2e", 2 * 2^x.resolution * 2^x.resolution * 5)
+    println(io, "  Resolution: $(x.resolution) (up to $(n_cells_str) cells)")
     println(io, "  Geo BBox:   $(get_geo_bbox(x))")
     DD.print_block_close(io, block_width)
 end

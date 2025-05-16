@@ -68,6 +68,23 @@ function get_dggs_bbox(cells)
     return bbox
 end
 
+function get_geo_bbox(x::Union{DGGSArray,DGGSDataset})
+    i_min, i_max = dims(x, :dggs_i).val.data |> x -> (x.start, x.stop)
+    j_min, j_max = dims(x, :dggs_j).val.data |> x -> (x.start, x.stop)
+    n_min, n_max = dims(x, :dggs_n).val.data |> x -> (x.start, x.stop)
+
+    dggs_corners = [
+        Cell(i, j, n, x.resolution) for
+        i in (i_min, i_max), j in (j_min, j_max), n in (n_min, n_max)
+    ]
+    geo_corners = to_geo.(dggs_corners)
+
+    lon_min, lon_max = map(x -> x[1], geo_corners) |> x -> (minimum(x), maximum(x))
+    lat_min, lat_max = map(x -> x[2], geo_corners) |> x -> (minimum(x), maximum(x))
+    bbox = Rect(Point2(lon_min, lat_min), Point2(lon_max, lat_max))
+    return bbox
+end
+
 function to_dggs_array(geo_array, cells; agg_func::Function=mean, outtype=Float64, path=tempname() * ".dggs.zarr", kwargs...)
     resolution = first(cells).resolution
 
