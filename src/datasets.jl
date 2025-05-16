@@ -42,7 +42,7 @@ end
 function to_dggs_dataset(geo_ds::Dataset, resolution::Integer, crs::String; kwargs...)
     cells = compute_cell_array(geo_ds.X, geo_ds.Y, resolution, crs)
     dggs_arrays = []
-    for (name, geo_array) in geo_ds.cubes
+    Threads.@threads for (name, geo_array) in collect(geo_ds.cubes)
         dggs_array = to_dggs_array(geo_array, cells; name=name, kwargs...)
         push!(dggs_arrays, dggs_array)
     end
@@ -53,7 +53,7 @@ function to_geo_dataset(dggs_ds::DGGSDataset, lon_dim::DD.Dimension, lat_dim::DD
     cells = compute_cell_array(lon_dim, lat_dim, dggs_ds.resolution)
 
     geo_arrays = Dict()
-    for k in keys(dggs_ds)
+    Threads.@threads for k in keys(dggs_ds)
         dggs_array = getproperty(dggs_ds, k)
         geo_array = to_geo_array(dggs_array, cells; kwargs...)
         geo_arrays[k] = geo_array
