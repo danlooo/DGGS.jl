@@ -150,7 +150,9 @@ function Makie.plot(
         lon_length, lat_length = fig.scene.viewport[].widths
         lon_range = range(lon_min, lon_max, length=lon_length * resolution_scale)
         lat_range = range(lat_min, lat_max, length=lat_length * resolution_scale)
-        data[] = to_geo_array(dggs_array, lon_range, lat_range)
+        lon_dim[] = X(lon_range)
+        lat_dim[] = Y(lat_range)
+        data[] # hold loop during plotting the new frame
 
         last_update_limits[] = lims
         last_update_viewport_widths[] = lon_length, lat_length
@@ -159,5 +161,4 @@ function Makie.plot(
     image!(ax, data)
     fig
 end
-
 end
