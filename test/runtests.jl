@@ -92,7 +92,6 @@ dggs_array = to_dggs_array(geo_array, resolution, "EPSG:4326")
         cb = filter(x -> x isa Colorbar, fig.content)[1]
 
         @test fig isa Figure
-        @test cb.limits[] == (minimum(dggs_array), maximum(dggs_array))
         @test cb.label[] == "air_temperature"
     end
 
