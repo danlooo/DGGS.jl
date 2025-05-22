@@ -69,9 +69,9 @@ function get_dggs_bbox(cells)
 end
 
 function get_geo_bbox(x::Union{DGGSArray,DGGSDataset})
-    i_min, i_max = dims(x, :dggs_i).val.data |> x -> (x.start, x.stop)
-    j_min, j_max = dims(x, :dggs_j).val.data |> x -> (x.start, x.stop)
-    n_min, n_max = dims(x, :dggs_n).val.data |> x -> (x.start, x.stop)
+    i_min, i_max = dims(x, :dggs_i).val.data |> x -> (first(x), last(x))
+    j_min, j_max = dims(x, :dggs_j).val.data |> x -> (first(x), last(x))
+    n_min, n_max = dims(x, :dggs_n).val.data |> x -> (first(x), last(x))
 
     dggs_corners = [
         Cell(i, j, n, x.resolution) for
@@ -90,6 +90,7 @@ function to_dggs_array(
     cells;
     agg_func::Function=mean,
     outtype=Float64,
+    backend=:array,
     path=tempname() * ".dggs.zarr",
     name=get_name(geo_array),
     kwargs...
@@ -106,7 +107,6 @@ function to_dggs_array(
 
     dggs_bbox = get_dggs_bbox(keys(cell_coords))
 
-
     # re-grid
     res = mapCube(
         # mapCube can't find axes of other AbstractDimArrays e.g. Raster
@@ -115,13 +115,15 @@ function to_dggs_array(
         outdims=OutDims(
             dggs_bbox...,
             outtype=outtype,
+            backend=backend,
             path=path
         ), kwargs...) do xout, xin
         for ci in CartesianIndices(xout)
             i, j, n = ci.I
             try
                 cell = Cell(dggs_bbox[1][i], dggs_bbox[2][j], dggs_bbox[3][n], resolution)
-                res = agg_func(view(xin, cell_coords[cell]))
+                cells = cell_coords[cell]
+                res = agg_func(view(xin, cells))
                 xout[i, j, n] = res
             catch
                 # fill gap by averaging available neighbors
@@ -155,12 +157,12 @@ function to_dggs_array(geo_array, resolution, crs::AbstractString; agg_func::Fun
     return dggs_array
 end
 
-function to_geo_array(dggs_array::DGGSArray, cells::AbstractDimArray; kwargs...)
+function to_geo_array(dggs_array::DGGSArray, cells::AbstractDimArray; backend=:array, kwargs...)
     lon_dim = dims(cells, :X)
     lat_dim = dims(cells, :Y)
 
     # dggs_array may only contain parts of the world, having only parts of the dimension
-    get_extent(i_dim) = dggs_array.dims[i_dim].val.data |> x -> (x.start, x.stop)
+    get_extent(i_dim) = dggs_array.dims[i_dim].val.data |> x -> (first(x), last(x))
     i_min, i_max = get_extent(1)
     j_min, j_max = get_extent(2)
     n_min, n_max = get_extent(3)
@@ -172,7 +174,7 @@ function to_geo_array(dggs_array::DGGSArray, cells::AbstractDimArray; kwargs...)
             :dggs_j,
             :dggs_n
         ),
-        outdims=OutDims(lon_dim, lat_dim),
+        outdims=OutDims(lon_dim, lat_dim, backend=backend),
         kwargs...
     ) do xout, xin
         for ci in CartesianIndices(xout)
