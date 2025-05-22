@@ -88,6 +88,8 @@ function Makie.plot(
     args...;
     extent=DGGS.get_geo_bbox(ds),
     resolution_scale::Real=1,
+    scale_factor::Real=1,
+    offset::Real=0,
     kwargs...
 )
     red_layer in keys(ds) || error("Red layer $(red_layer) not found in dataset")
@@ -103,15 +105,15 @@ function Makie.plot(
         geo_ds = to_geo_dataset(ds_rgb, $lon_dim, $lat_dim)
 
         picture = map(CartesianIndices(($lon_dim, $lat_dim))) do i
-            r = getproperty(geo_ds, red_layer)[i]
-            g = getproperty(geo_ds, green_layer)[i]
-            b = getproperty(geo_ds, blue_layer)[i]
+            r = getproperty(geo_ds, red_layer)[i] * scale_factor + offset
+            g = getproperty(geo_ds, green_layer)[i] * scale_factor + offset
+            b = getproperty(geo_ds, blue_layer)[i] * scale_factor + offset
 
-            r = ismissing(r) ? 0 : Float64(r)
-            g = ismissing(g) ? 0 : Float64(g)
-            b = ismissing(b) ? 0 : Float64(b)
-
-            Makie.RGBf(r, g, b)
+            if ismissing(r) || ismissing(g) || ismissing(b)
+                Makie.RGBf(1, 1, 1)
+            else
+                Makie.RGBf(r, g, b)
+            end
         end
         picture
     end
