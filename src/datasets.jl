@@ -41,9 +41,20 @@ end
 
 function to_dggs_dataset(geo_ds::Dataset, resolution::Integer, crs::String; kwargs...)
     cells = compute_cell_array(geo_ds.X, geo_ds.Y, resolution, crs)
+
+    # get pixels to aggregate for each cell
+    cell_coords = Dict{eltype(cells),Vector{CartesianIndex{2}}}()
+    for cell_idx in CartesianIndices(cells)
+        cell = cells[cell_idx]
+        current_cells = get!(() -> CartesianIndex{2}[], cell_coords, cell)
+        push!(current_cells, cell_idx)
+    end
+
+    dggs_bbox = get_dggs_bbox(keys(cell_coords))
+
     dggs_arrays = []
     Threads.@threads for (name, geo_array) in collect(geo_ds.cubes)
-        dggs_array = to_dggs_array(geo_array, cells; name=name, kwargs...)
+        dggs_array = to_dggs_array(geo_array, cells, cell_coords, dggs_bbox; name=name, kwargs...)
         push!(dggs_arrays, dggs_array)
     end
     return DGGSDataset(dggs_arrays...)

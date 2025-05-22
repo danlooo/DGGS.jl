@@ -49,23 +49,30 @@ function get_dggs_bbox(cells)
 
     # extend bbox if needed
     for cell in cells
-        cell.i < i_min && (i_min = cell.i)
-        cell.i > i_max && (i_max = cell.i)
+        if cell.i < i_min
+            i_min = cell.i
+        elseif cell.i > i_max
+            i_max = cell.i
+        end
 
-        cell.j < j_min && (j_min = cell.j)
-        cell.j > j_max && (j_max = cell.j)
+        if cell.j < j_min
+            j_min = cell.j
+        elseif cell.j > j_max
+            j_max = cell.j
+        end
 
-        cell.n < n_min && (n_min = cell.n)
-        cell.n > n_max && (n_max = cell.n)
+        if cell.n < n_min
+            n_min = cell.n
+        elseif cell.n > n_max
+            n_max = cell.n
+        end
     end
 
-    bbox = (
+    return (
         Dim{:dggs_i}(i_min:i_max),
         Dim{:dggs_j}(j_min:j_max),
         Dim{:dggs_n}(n_min:n_max)
     )
-
-    return bbox
 end
 
 function get_geo_bbox(x::Union{DGGSArray,DGGSDataset})
@@ -87,7 +94,10 @@ end
 
 function to_dggs_array(
     geo_array,
-    cells;
+    cells,
+    cell_coords,
+    dggs_bbox
+    ;
     agg_func::Function=mean,
     outtype=Float64,
     backend=:array,
@@ -96,16 +106,6 @@ function to_dggs_array(
     kwargs...
 )
     resolution = first(cells).resolution
-
-    # get pixels to aggregate for each cell
-    cell_coords = Dict{eltype(cells),Vector{CartesianIndex{2}}}()
-    for cell_idx in CartesianIndices(cells)
-        cell = cells[cell_idx]
-        current_cells = get!(() -> CartesianIndex{2}[], cell_coords, cell)
-        push!(current_cells, cell_idx)
-    end
-
-    dggs_bbox = get_dggs_bbox(keys(cell_coords))
 
     # re-grid
     res = mapCube(
@@ -153,7 +153,18 @@ function to_dggs_array(geo_array, resolution, crs::AbstractString; x_name=:X, y_
     delete!(properties, "projection")
 
     cells = compute_cell_array(x_dim, y_dim, resolution, crs)
-    dggs_array = to_dggs_array(geo_array, cells)
+
+    # get pixels to aggregate for each cell
+    cell_coords = Dict{eltype(cells),Vector{CartesianIndex{2}}}()
+    for cell_idx in CartesianIndices(cells)
+        cell = cells[cell_idx]
+        current_cells = get!(() -> CartesianIndex{2}[], cell_coords, cell)
+        push!(current_cells, cell_idx)
+    end
+
+    dggs_bbox = get_dggs_bbox(keys(cell_coords))
+
+    dggs_array = to_dggs_array(geo_array, cells, cell_coords, dggs_bbox)
     return dggs_array
 end
 
