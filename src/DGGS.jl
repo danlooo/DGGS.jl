@@ -32,5 +32,5 @@ end
 
 export Cell, DGGSArray, DGGSDatase, Cell, DGGSArray, DGGSDataset
 export to_cell, to_geo, to_dggs_dataset, to_dggs_array, to_geo_dataset, to_geo_array
-export open_dggs_array, save_dggs_array
+export open_dggs_array, open_dggs_dataset, save_dggs_array, save_dggs_dataset
 end
