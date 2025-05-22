@@ -141,7 +141,7 @@ function to_dggs_array(
     )
 end
 
-function to_dggs_array(geo_array, resolution, crs::AbstractString; agg_func::Function=mean, outtype=Float64, path=tempname() * ".dggs.zarr", x_name=:X, y_name=:Y, kwargs...)
+function to_dggs_array(geo_array, resolution, crs::AbstractString; x_name=:X, y_name=:Y, kwargs...)
     x_dim = filter(x -> name(x) == x_name, dims(geo_array))
     y_dim = filter(x -> name(x) == y_name, dims(geo_array))
     isempty(x_dim) && error("X dimension (e.g. longitude) not found")

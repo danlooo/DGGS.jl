@@ -14,6 +14,7 @@ geo_data = [exp(cosd(lon)) + 3(lat / 90) for lon in lon_range, lat in lat_range]
 properties = Dict("standard_name" => "air_temperature", "units" => "K", "description" => "random test data")
 geo_array = YAXArray((lon_range, lat_range), geo_data, properties)
 dggs_array = to_dggs_array(geo_array, resolution, "EPSG:4326")
+dggs_ds = DGGSDataset(dggs_array)
 
 @testset "DGGS.jl" begin
     @testset "Cells" begin
@@ -102,6 +103,16 @@ dggs_array = to_dggs_array(geo_array, resolution, "EPSG:4326")
         dggs_array2 = open_dggs_array(temp_dir)
         @test dggs_array == dggs_array2
         @test name(dggs_array) == name(dggs_array2)
+        rm(temp_dir, recursive=true)
+    end
+
+
+    @testset "Open and save DGGSDataset" begin
+        @test dggs_ds == dggs_ds |> Dataset |> DGGSDataset
+        temp_dir = tempname() * ".dggs.zarr"
+        save_dggs_dataset(temp_dir, dggs_ds)
+        dggs_ds2 = open_dggs_dataset(temp_dir)
+        @test dggs_ds == dggs_ds2
         rm(temp_dir, recursive=true)
     end
 

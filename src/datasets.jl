@@ -75,3 +75,20 @@ function DD.show_after(io::IO, mime, x::Union{DGGSArray,DGGSDataset})
     println(io, "  Geo BBox:   $(get_geo_bbox(x))")
     DD.print_block_close(io, block_width)
 end
+
+#
+# IO:: Serialization of DGGS Datasets
+#
+
+DGGSDataset(ds::Dataset) = DGGSDataset([DGGSArray(v) for (k, v) in ds.cubes]...)
+
+function Dataset(dggs_ds::DGGSDataset)
+    arrays = [k => getproperty(dggs_ds, k) |> YAXArray for k in keys(dggs_ds)]
+    Dataset(; arrays...)
+end
+
+open_dggs_dataset(file_path::String; kwargs...) = file_path |> x -> open_dataset(x; kwargs...) |> DGGSDataset
+
+function save_dggs_dataset(file_path::String, dggs_ds::DGGSDataset; kwargs...)
+    dggs_ds |> Dataset |> x -> savedataset(x; path=file_path, kwargs...)
+end
