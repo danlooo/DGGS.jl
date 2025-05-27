@@ -18,12 +18,15 @@ YAXArrays = "c21b50f5-aa40-41ea-b809-c0f5e47bfa5c"
 
 [weakdeps]
 Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 WGLMakie = "276b4fcb-3e11-5398-bf8b-a0c2d153d008"
 Oxygen = "df9a0d86-3283-4920-82dc-4555fc0d1d8b"
+OteraEngine = "b2d7f28f-acd6-4007-8b26-bc27716e5513"
+HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
 
 [extensions]
 DGGSMakie = "Makie"
-DGGSWebserver = ["WGLMakie", "Oxygen"]
+DGGSWebserver = ["WGLMakie","CairoMakie", "Oxygen", "OteraEngine", "HTTP"]
 
 [compat]
 CoordinateTransformations = "0.6.4"

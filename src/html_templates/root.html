@@ -1,0 +1,14 @@
+{% extends "page.html" %} {% block body %}
+<h1>Hello!</h1>
+DGGSExplorer is a OGC compliant web service to access and vizualize DGGS native
+data cubes.
+
+<h2>Collections</h2>
+<ul>
+  {% for collectionId in collectionIds %}
+  <li>
+    <a href="/collections/{{collectionId}}?f=html"> {{ collectionId }} </a>
+  </li>
+  {% end %}
+</ul>
+{% endblock %}

@@ -1,23 +1,19 @@
 module DGGSWebserver
 
 using DGGS
+using CairoMakie
 using WGLMakie
 using Oxygen
+using OteraEngine
+using HTTP
+using DimensionalData
 
-function request_root()
-    return Dict(
-        :links => [
-            Dict(
-                :rel => "service-doc",
-                :href => "/docs",
-                :type => "text/html",
-                :title => "Swagger documentation",
-            ),
-        ]
-    )
+function request_root(collections)
+    tmpl = Template("src/html_templates/root.html")
+    tmpl(init=Dict(:title => "DGGSExplorer", :collectionIds => keys(collections)))
 end
 
-function request_collections(collections)
+function request_collections_json(collections)
     collections_d = [Dict(
         :id => k,
         :crs => [
@@ -36,12 +32,67 @@ function request_collections(collections)
     )
 end
 
+function request_collections_html(collections)
+    tmpl = Template("src/html_templates/collections.html")
+    tmpl(init=Dict(:title => "collections", :collectionIds => keys(collections)))
+end
+
+function request_collections(req, collections)
+    query_params = queryparams(req)
+    f = get(query_params, "f", "json")
+    if f == "html"
+        return request_collections_html(collections)
+    else
+        return request_collections_json(collections)
+    end
+end
+
+function request_collection(req, collectionId, collections)
+    query_params = queryparams(req)
+    f = get(query_params, "f", "json")
+    collection = get(collections, Symbol(collectionId), nothing)
+
+    isnothing(collection) && error("Collection not found: $collectionId")
+
+    if f == "html"
+        return request_collection_html(collectionId, collection)
+    else
+        return request_collection_json(collectionId, collection)
+    end
+end
+
+
+function request_collection_html(collectionId, collection::DGGSDataset)
+    tmpl = Template("src/html_templates/collection.html")
+    tmpl(init=Dict(
+        :title => "DGGSExplorer",
+        :collectionId => collectionId,
+        :layers => keys(layers(collection)),
+        :collection => collection,
+    ))
+end
+
+
+function request_collection_json(collectionId, collection::DGGSDataset)
+    return Dict(
+        :id => collectionId
+    )
+end
+
+function request_collection_map(req, collectionId, collections)
+    collection = collections[Symbol(collectionId)]
+    fig = CairoMakie.plot(collection, :Red, :Green, :Blue; scale_factor=1 / 255)
+    png(fig)
+end
+
 function Oxygen.serve(
     collections::Dict{Symbol,T};
     kwargs...
 ) where {T<:DGGSDataset}
-    @get "/" request_root
-    @get "/collections" x -> request_collections(collections)
+    @get "/" req -> request_root(collections)
+    @get "/collections" req -> request_collections(req, collections)
+    @get "/collections/{collectionId}" (req, collectionId) -> request_collection(req, collectionId, collections)
+    @get "/collections/{collectionId}/map" (req, collectionId) -> request_collection_map(req, collectionId, collections)
 
     @get "/hello" function ()
         fig = heatmap(rand(50, 50))

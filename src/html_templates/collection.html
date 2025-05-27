@@ -1,0 +1,20 @@
+{% extends "page.html" %} {% block body %}
+<h1>
+  Collection {{ collectionId }}
+  <a href="?f=json">
+    <button class="btn btn-secondary rounded-pill px-3" type="button">
+      JSON
+    </button>
+  </a>
+</h1>
+
+<p>{{collection.dggsrs}} at resolution {{collection.resolution}}</p>
+
+<h2>Layers</h2>
+<ul>
+  {% for layer in layers %}
+  <li>{{ layer }}</li>
+  {% end %}
+</ul>
+
+{% endblock %}
