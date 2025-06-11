@@ -8,7 +8,7 @@ function DGGSDataset(dggs_array::DGGSArray)
     )
 end
 
-function DGGSDataset(dggs_arrays...)
+function DGGSDataset(dggs_arrays...; kwargs...)
     all(map(x -> x isa DGGSArray, dggs_arrays)) || error("All arrays must be of type DGGSArray")
 
     resolution = dggs_arrays[1].resolution
@@ -22,7 +22,7 @@ function DGGSDataset(dggs_arrays...)
     end
 
     array_tuple = map(x -> DD.name(x) => x, dggs_arrays) |> NamedTuple
-    ds = DimStack(array_tuple)
+    ds = DimStack(array_tuple; kwargs...)
 
     return DGGSDataset(
         array_tuple, dims(ds), DD.refdims(ds), DD.layerdims(ds), metadata(ds),
@@ -39,7 +39,7 @@ function Base.getproperty(ds::DGGSDataset, s::Symbol)
 end
 
 
-function to_dggs_dataset(geo_ds::Dataset, resolution::Integer, crs::String; kwargs...)
+function to_dggs_dataset(geo_ds::Dataset, resolution::Integer, crs::String; metadata=Dict(), kwargs...)
     cells = compute_cell_array(geo_ds.X, geo_ds.Y, resolution, crs)
 
     # get pixels to aggregate for each cell
@@ -57,7 +57,7 @@ function to_dggs_dataset(geo_ds::Dataset, resolution::Integer, crs::String; kwar
         dggs_array = to_dggs_array(geo_array, cells, cell_coords, dggs_bbox; name=name, kwargs...)
         push!(dggs_arrays, dggs_array)
     end
-    return DGGSDataset(dggs_arrays...)
+    return DGGSDataset(dggs_arrays...; metadata=metadata)
 end
 
 function to_geo_dataset(dggs_ds::DGGSDataset, lon_dim::DD.Dimension, lat_dim::DD.Dimension; kwargs...)
@@ -91,11 +91,11 @@ end
 # IO:: Serialization of DGGS Datasets
 #
 
-DGGSDataset(ds::Dataset) = DGGSDataset([DGGSArray(v) for (k, v) in ds.cubes]...)
+DGGSDataset(ds::Dataset) = DGGSDataset([DGGSArray(v) for (k, v) in ds.cubes]...; metadata=ds.properties)
 
 function Dataset(dggs_ds::DGGSDataset)
     arrays = [k => getproperty(dggs_ds, k) |> YAXArray for k in keys(dggs_ds)]
-    Dataset(; arrays...)
+    Dataset(; properties=metadata(dggs_ds), arrays...)
 end
 
 open_dggs_dataset(file_path::String; kwargs...) = file_path |> x -> open_dataset(x; kwargs...) |> DGGSDataset
