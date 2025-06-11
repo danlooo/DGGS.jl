@@ -207,6 +207,8 @@ Base.propertynames(::Cell) = (:id, :geo, :lat, :lon, fieldnames(Cell)...)
 
 Base.isless(a::Cell, b::Cell) = a.resolution == b.resolution ? Int(a) < Int(b) : error("Resolutions must be equal")
 
+Base.hash(cell::Cell)::UInt = hash(cell.resolution) + Int(cell)
+
 #
 # conversions
 #
