@@ -6,6 +6,7 @@ using YAXArrays
 using DimensionalData
 using Makie
 using Zarr
+using Statistics
 
 resolution = 5
 lon_range = X(180:-1:-180)
