@@ -39,7 +39,7 @@ function Base.getproperty(ds::DGGSDataset, s::Symbol)
 end
 
 
-function to_dggs_dataset(geo_ds::Dataset, resolution::Integer, crs::String; metadata=Dict(), kwargs...)
+function to_dggs_dataset(geo_ds::Dataset, resolution::Integer, crs::String, agg_func::Function; metadata=Dict(), kwargs...)
     cells = compute_cell_array(geo_ds.X, geo_ds.Y, resolution, crs)
 
     # get pixels to aggregate for each cell
@@ -54,7 +54,7 @@ function to_dggs_dataset(geo_ds::Dataset, resolution::Integer, crs::String; meta
 
     dggs_arrays = []
     Threads.@threads for (name, geo_array) in collect(geo_ds.cubes)
-        dggs_array = to_dggs_array(geo_array, cells, cell_coords, dggs_bbox; name=name, kwargs...)
+        dggs_array = to_dggs_array(geo_array, cells, cell_coords, dggs_bbox, agg_func; name=name, kwargs...)
         push!(dggs_arrays, dggs_array)
     end
     return DGGSDataset(dggs_arrays...; metadata=metadata)

@@ -97,9 +97,9 @@ function to_dggs_array(
     geo_array,
     cells,
     cell_coords,
-    dggs_bbox
+    dggs_bbox,
+    agg_func::Function
     ;
-    agg_func::Function=mean,
     outtype=Float64,
     backend=:array,
     path=tempname() * ".dggs.zarr",
