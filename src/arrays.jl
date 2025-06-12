@@ -148,7 +148,7 @@ function to_dggs_array(
     cells,
     dggs_bbox
     ;
-    outtype=Float64,
+    outtype=eltype(geo_array),
     backend=:array,
     path=tempname() * ".dggs.zarr",
     name=get_name(geo_array),
@@ -168,7 +168,7 @@ function to_dggs_array(
         indims=InDims(dims(geo_array, :X), dims(geo_array, :Y)),
         outdims=OutDims(
             dggs_bbox...,
-            outtype=outtype,
+            outtype=Float64,
             backend=backend,
             path=path
         ), kwargs...) do xout, xin
@@ -189,9 +189,14 @@ function to_dggs_array(
     end
 
     means = sums.data ./ counts
+    data = if outtype <: Integer || outtype <: Union{Missing,Integer}
+        Array{outtype}(round.(means))
+    else
+        Array{outtype}(means)
+    end
 
     return DGGSArray(
-        means, dims(sums), refdims(sums), name, metadata(geo_array),
+        data, dims(sums), refdims(sums), name, metadata(geo_array),
         resolution, "ISEA4D.Penta"
     )
 end
