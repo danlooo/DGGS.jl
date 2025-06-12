@@ -94,7 +94,7 @@ function get_geo_bbox(x::Union{DGGSArray,DGGSDataset})
 end
 
 function to_dggs_array(
-    geo_array,
+    geo_array::AbstractDimArray,
     cells,
     cell_coords,
     dggs_bbox,
@@ -144,11 +144,13 @@ end
 
 "Fast iterative version only supporting mean"
 function to_dggs_array(
-    geo_array,
+    geo_array::AbstractDimArray,
     cells,
     dggs_bbox
     ;
     outtype=eltype(geo_array),
+    outtype_counts=UInt16,
+    outtype_sums=Float64,
     backend=:array,
     path=tempname() * ".dggs.zarr",
     name=get_name(geo_array),
@@ -160,7 +162,7 @@ function to_dggs_array(
     # mean = sum first, then divide by count
     # no slow dict building and lookup needed
 
-    counts = zeros(Int8, length.(dggs_bbox)...)
+    counts = zeros(outtype_counts, length.(dggs_bbox)...)
 
     sums = mapCube(
         # mapCube can't find axes of other AbstractDimArrays e.g. Raster
@@ -168,7 +170,7 @@ function to_dggs_array(
         indims=InDims(dims(geo_array, :X), dims(geo_array, :Y)),
         outdims=OutDims(
             dggs_bbox...,
-            outtype=Float64,
+            outtype=outtype_sums,
             backend=backend,
             path=path
         ), kwargs...) do xout, xin
@@ -184,7 +186,6 @@ function to_dggs_array(
                 xout[i_pos, j_pos, n_pos] += xin[ci]
             end
             counts[i_pos, j_pos, n_pos] += 1
-            counts[i_pos, j_pos, n_pos] >= 256 && error("count array only support up to 255 pixels per cell")
         end
     end
 
@@ -225,6 +226,24 @@ function to_dggs_array(geo_array, resolution, crs::AbstractString, agg_func::Fun
     dggs_bbox = get_dggs_bbox(keys(cell_coords))
 
     dggs_array = to_dggs_array(geo_array, cells, cell_coords, dggs_bbox, agg_func; kwargs...)
+    return dggs_array
+end
+
+function to_dggs_array(geo_array::AbstractDimArray, resolution::Integer, crs::String; x_name=:X, y_name=:Y, kwargs...)
+    x_dim = filter(x -> name(x) == x_name, dims(geo_array))
+    y_dim = filter(x -> name(x) == y_name, dims(geo_array))
+    isempty(x_dim) && error("X dimension (e.g. longitude) not found")
+    isempty(y_dim) && error("Y dimension (e.g. latitude) not found")
+    x_dim = only(x_dim)
+    y_dim = only(y_dim)
+
+    properties = metadata(geo_array)
+    delete!(properties, "projection")
+
+    cells = compute_cell_array(x_dim, y_dim, resolution, crs)
+    dggs_bbox = get_dggs_bbox(cells)
+
+    dggs_array = to_dggs_array(geo_array, cells, dggs_bbox; kwargs...)
     return dggs_array
 end
 

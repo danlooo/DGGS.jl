@@ -86,6 +86,10 @@ dggs_ds = DGGSDataset(dggs_array)
         geo_array3 = open_dataset("data/geomatrix.tif").Gray
         dggs_array3 = to_dggs_array(geo_array3, 10, geo_array3.properties["projection"])
         @test dggs_array3 isa DGGSArray
+
+        # other agg_func
+        dggs_array4 = to_dggs_array(geo_array3, 10, geo_array3.properties["projection"], median)
+        @test dggs_array4 isa DGGSArray
     end
 
     @testset "Plot" begin
