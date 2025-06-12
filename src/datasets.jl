@@ -60,6 +60,19 @@ function to_dggs_dataset(geo_ds::Dataset, resolution::Integer, crs::String, agg_
     return DGGSDataset(dggs_arrays...; metadata=metadata)
 end
 
+"Fast iterative version only supporting mean"
+function to_dggs_dataset(geo_ds::Dataset, resolution::Integer, crs::String; metadata=Dict(), kwargs...)
+    cells = compute_cell_array(geo_ds.X, geo_ds.Y, resolution, crs)
+    dggs_bbox = get_dggs_bbox(cells)
+
+    dggs_arrays = []
+    Threads.@threads for (name, geo_array) in collect(geo_ds.cubes)
+        dggs_array = to_dggs_array(geo_array, cells, dggs_bbox; name=name, kwargs...)
+        push!(dggs_arrays, dggs_array)
+    end
+    return DGGSDataset(dggs_arrays...; metadata=metadata)
+end
+
 function to_geo_dataset(dggs_ds::DGGSDataset, lon_dim::DD.Dimension, lat_dim::DD.Dimension; kwargs...)
     cells = compute_cell_array(lon_dim, lat_dim, dggs_ds.resolution)
 
