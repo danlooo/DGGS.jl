@@ -295,10 +295,10 @@ end
 # DGGSArray features
 #
 
-function DGGSArray(array::AbstractDimArray, resolution::Integer, dggsrs::String="ISEA4D.Penta"; name=DD.name(array), metadata=metadata(array))
+function DGGSArray(array::AbstractDimArray, resolution::Integer, dggsrs::String="ISEA4D.Penta", bbox::Extent; name=DD.name(array), metadata=metadata(array))
     return DGGSArray(
         array.data, dims(array), refdims(array), name, metadata,
-        resolution, dggsrs
+        resolution, dggsrs, bbox
     )
 end
 
@@ -307,9 +307,11 @@ function DGGSArray(array::AbstractDimArray)
 
     "dggs_resolution" in keys(properties) || error("Missing dggs_resolution in metadata")
     "dggs_dggsrs" in keys(properties) || error("Missing dggs_dggsrs in metadata")
+    "dggs_bbox" in keys(properties) || error("Missing dggs_bbox in metadata")
 
     resolution = properties["dggs_resolution"] |> Int
     dggsrs = properties["dggs_dggsrs"] |> String
+    bbox = properties["dggs_bbox"] |> x -> Extent(X=(x[1], x[3]), Y=(x[2], x[4]))
 
     delete!(properties, "dggs_resolution")
     delete!(properties, "dggs_dggsrs")
@@ -321,7 +323,7 @@ function DGGSArray(array::AbstractDimArray)
 
     DGGSArray(
         array.data, dims(array), refdims(array), arr_name, properties,
-        resolution, dggsrs
+        resolution, dggsrs, bbox
     )
 end
 
@@ -337,7 +339,7 @@ end
 function DD.rebuild(
     dggs_array::DGGSArray, data::AbstractArray, dims::Tuple, refdims::Tuple, name, metadata
 )
-    DGGSArray(data, dims, refdims, name, metadata, dggs_array.resolution, dggs_array.dggsrs)
+    DGGSArray(data, dims, refdims, name, metadata, dggs_array.resolution, dggs_array.dggsrs, dggs_array.bbox)
 end
 
 function get_name(array::AbstractDimArray)

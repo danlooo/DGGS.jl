@@ -29,10 +29,11 @@ struct DGGSArray{T,N,D<:Tuple,R<:Tuple,A<:AbstractArray{T,N},Na,Me} <: AbstractD
     # DGGS fields
     resolution::Integer
     dggsrs::String
+    bbox::Extent
 
     function DGGSArray(
         data::A, dims::D, refdims::R, name::Na, metadata::Me,
-        resolution::Integer, dggsrs::String
+        resolution::Integer, dggsrs::String, bbox::Extent
     ) where {D<:Tuple,R<:Tuple,A<:AbstractArray{T,N},Na,Me} where {T,N}
         dims_d = Dict([DD.name(x) => x for x in dims])
 
@@ -44,7 +45,7 @@ struct DGGSArray{T,N,D<:Tuple,R<:Tuple,A<:AbstractArray{T,N},Na,Me} <: AbstractD
         map(x -> 0 <= x <= 2^resolution - 1, dims_d[:dggs_j]) |> all || error("Dimension dggs_j not in range")
         map(x -> 0 <= x <= 4, dims_d[:dggs_n]) |> all || error("Dimension dggs_n not in range")
 
-        new{T,N,D,R,A,Na,Me}(data, dims, refdims, name, metadata, resolution, dggsrs)
+        new{T,N,D,R,A,Na,Me}(data, dims, refdims, name, metadata, resolution, dggsrs, bbox)
     end
 end
 
@@ -61,23 +62,25 @@ struct DGGSDataset{K,T,N,L,D<:Tuple,R<:Tuple,LD,M,LM} <: AbstractDimStack{K,T,N,
     # DGGS fields
     resolution::Integer
     dggsrs::String
+    bbox::Extent
 
     function DGGSDataset(
         data, dims, refdims, layerdims::LD, metadata, layermetadata,
-        resolution, dggsrs
+        resolution, dggsrs, bbox
     ) where LD<:NamedTuple{K} where K
         T = DD.data_eltype(data)
         N = length(dims)
         DGGSDataset{K,T,N}(
             data, dims, refdims, layerdims, metadata, layermetadata,
-            resolution, dggsrs
+            resolution, dggsrs, bbox
         )
     end
     function DGGSDataset{K,T,N}(
-        data::L, dims::D, refdims::R, layerdims::NamedTuple, metadata::M, layermetadata::NamedTuple, resolution, dggsrs
+        data::L, dims::D, refdims::R, layerdims::NamedTuple, metadata::M, layermetadata::NamedTuple, resolution, dggsrs, bbox
     ) where {K,T,N,L,D,R,M}
-        new{K,T,N,L,D,R,typeof(values(layerdims)),M,typeof(values(layermetadata))}(data, dims, refdims, layerdims, metadata, layermetadata,
-            resolution, dggsrs
+        new{K,T,N,L,D,R,typeof(values(layerdims)),M,typeof(values(layermetadata))}(
+            data, dims, refdims, layerdims, metadata, layermetadata,
+            resolution, dggsrs, bbox
         )
     end
 end
