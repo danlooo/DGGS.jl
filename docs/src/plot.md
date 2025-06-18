@@ -22,9 +22,3 @@ Plot as a map:
 ```@example plot
 plot(a; type=:map)
 ```
-
-Plot as a native icosahedron:
-
-```@example plot
-plot(a; type=:native)
-```
