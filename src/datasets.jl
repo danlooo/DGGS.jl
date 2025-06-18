@@ -4,7 +4,7 @@ function DGGSDataset(dggs_array::DGGSArray)
 
     return DGGSDataset(
         arrays, dims(ds), DD.refdims(ds), DD.layerdims(ds), metadata(ds),
-        DD.layermetadata(ds), dggs_array.resolution, dggs_array.dggsrs
+        DD.layermetadata(ds), dggs_array.resolution, dggs_array.dggsrs, dggs_array.bbox
     )
 end
 
