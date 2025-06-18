@@ -67,10 +67,11 @@ end
 function to_dggs_dataset(geo_ds::Dataset, resolution::Integer, crs::String; metadata=Dict(), kwargs...)
     cells = compute_cell_array(geo_ds.X, geo_ds.Y, resolution, crs)
     dggs_bbox = get_dggs_bbox(cells)
+    geo_bbox = get_geo_bbox(geo_ds.cubes |> values |> first, crs)
 
     dggs_arrays = []
     Threads.@threads for (name, geo_array) in collect(geo_ds.cubes)
-        dggs_array = to_dggs_array(geo_array, cells, dggs_bbox; name=name, kwargs...)
+        dggs_array = to_dggs_array(geo_array, cells, dggs_bbox, geo_bbox; name=name, kwargs...)
         push!(dggs_arrays, dggs_array)
     end
     return DGGSDataset(dggs_arrays...; metadata=metadata)
