@@ -4,6 +4,7 @@ using Distances
 using ArchGDAL
 using YAXArrays
 using DimensionalData
+using Extents
 using Makie
 using Zarr
 using Statistics
@@ -36,9 +37,10 @@ dggs_ds = DGGSDataset(dggs_array)
         time_dim = Ti(1:10)
         dim_array = rand(i_dim, j_dim, n_dim, time_dim)
         yax_array = YAXArray(dim_array.dims, dim_array.data)
+        geo_bbox = Extent(X=(-180, 180), Y=(-90, 90))
 
-        @test DGGSArray(dim_array, resolution, "ISEA4D.Penta") isa DGGSArray
-        @test DGGSArray(yax_array, resolution, "ISEA4D.Penta") isa DGGSArray
+        @test DGGSArray(dim_array, resolution, "ISEA4D.Penta", geo_bbox) isa DGGSArray
+        @test DGGSArray(yax_array, resolution, "ISEA4D.Penta", geo_bbox) isa DGGSArray
     end
 
     @testset "Coordinate transformations" begin
