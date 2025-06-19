@@ -76,6 +76,7 @@ function get_dggs_bbox(cells)
     )
 end
 
+"Infere max possible geo extent"
 function get_geo_bbox(x::Union{DGGSArray,DGGSDataset})
     i_min, i_max = dims(x, :dggs_i).val.data |> x -> (first(x), last(x))
     j_min, j_max = dims(x, :dggs_j).val.data |> x -> (first(x), last(x))
@@ -93,11 +94,36 @@ function get_geo_bbox(x::Union{DGGSArray,DGGSDataset})
     return bbox
 end
 
+"Calculate actual geo extent"
+function get_geo_bbox(geo_array::AbstractDimArray, crs::String)
+    # use default thread pool for lat/lon conversion
+    wgs84_crs_geogcs = "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AXIS[\"Latitude\",NORTH],AXIS[\"Longitude\",EAST],AUTHORITY[\"EPSG\",\"4326\"]]"
+    if crs in [wgs84_crs_geogcs, "EPSG:4326"]
+        lon_min, lon_max = geo_array.X[1], geo_array.X[end]
+        lat_min, lat_max = geo_array.Y[1], geo_array.Y[end]
+        # axis might be reversed
+        lon_min, lon_max = minmax(lon_min, lon_max)
+        lat_min, lat_max = minmax(lat_min, lat_max)
+        ext = Extent(X=(lon_min, lon_max), Y=(lat_min, lat_max))
+        return ext
+    else
+        trans = Proj.Transformation(crs, crs_geo)
+        lat_min, lon_min = trans(geo_array.X[1], geo_array.Y[1])
+        lat_max, lon_max = trans(geo_array.X[end], geo_array.Y[end])
+        # axis might be reversed
+        lon_min, lon_max = minmax(lon_min, lon_max)
+        lat_min, lat_max = minmax(lat_min, lat_max)
+        ext = Extent(X=(lon_min, lon_max), Y=(lat_min, lat_max))
+        return ext
+    end
+end
+
 function to_dggs_array(
     geo_array::AbstractDimArray,
     cells,
     cell_coords,
     dggs_bbox,
+    geo_bbox::Extent,
     agg_func::Function
     ;
     outtype=Float64,
@@ -138,7 +164,7 @@ function to_dggs_array(
 
     return DGGSArray(
         res.data, dims(res), refdims(res), name, metadata(geo_array),
-        resolution, "ISEA4D.Penta"
+        resolution, "ISEA4D.Penta", geo_bbox
     )
 end
 
@@ -146,9 +172,10 @@ end
 function to_dggs_array(
     geo_array::AbstractDimArray,
     cells,
-    dggs_bbox
+    dggs_bbox,
+    geo_bbox::Extent
     ;
-    outtype=eltype(geo_array),
+    outtype=Union{eltype(geo_array),Missing},
     outtype_counts=UInt16,
     outtype_sums=Float64,
     backend=:array,
@@ -198,11 +225,14 @@ function to_dggs_array(
 
     return DGGSArray(
         data, dims(sums), refdims(sums), name, metadata(geo_array),
-        resolution, "ISEA4D.Penta"
+        resolution, "ISEA4D.Penta", geo_bbox
     )
 end
 
-function to_dggs_array(geo_array, resolution, crs::AbstractString, agg_func::Function; x_name=:X, y_name=:Y, kwargs...)
+function to_dggs_array(
+    geo_array::AbstractDimArray, resolution::Integer, crs::String, agg_func::Function;
+    x_name=:X, y_name=:Y, kwargs...
+)
     x_dim = filter(x -> name(x) == x_name, dims(geo_array))
     y_dim = filter(x -> name(x) == y_name, dims(geo_array))
     isempty(x_dim) && error("X dimension (e.g. longitude) not found")
@@ -224,8 +254,9 @@ function to_dggs_array(geo_array, resolution, crs::AbstractString, agg_func::Fun
     end
 
     dggs_bbox = get_dggs_bbox(keys(cell_coords))
+    geo_bbox = get_geo_bbox(geo_array, crs)
 
-    dggs_array = to_dggs_array(geo_array, cells, cell_coords, dggs_bbox, agg_func; kwargs...)
+    dggs_array = to_dggs_array(geo_array, cells, cell_coords, dggs_bbox, geo_bbox, agg_func; kwargs...)
     return dggs_array
 end
 
@@ -242,8 +273,9 @@ function to_dggs_array(geo_array::AbstractDimArray, resolution::Integer, crs::St
 
     cells = compute_cell_array(x_dim, y_dim, resolution, crs)
     dggs_bbox = get_dggs_bbox(cells)
+    geo_bbox = get_geo_bbox(geo_array, crs)
 
-    dggs_array = to_dggs_array(geo_array, cells, dggs_bbox; kwargs...)
+    dggs_array = to_dggs_array(geo_array, cells, dggs_bbox, geo_bbox; kwargs...)
     return dggs_array
 end
 
@@ -295,10 +327,10 @@ end
 # DGGSArray features
 #
 
-function DGGSArray(array::AbstractDimArray, resolution::Integer, dggsrs::String="ISEA4D.Penta"; name=DD.name(array), metadata=metadata(array))
+function DGGSArray(array::AbstractDimArray, resolution::Integer, dggsrs::String="ISEA4D.Penta", bbox::Extent=Extent(X=(-180, 180), Y=(-90, 90)); name=DD.name(array), metadata=metadata(array))
     return DGGSArray(
         array.data, dims(array), refdims(array), name, metadata,
-        resolution, dggsrs
+        resolution, dggsrs, bbox
     )
 end
 
@@ -307,12 +339,15 @@ function DGGSArray(array::AbstractDimArray)
 
     "dggs_resolution" in keys(properties) || error("Missing dggs_resolution in metadata")
     "dggs_dggsrs" in keys(properties) || error("Missing dggs_dggsrs in metadata")
+    "dggs_bbox" in keys(properties) || error("Missing dggs_bbox in metadata")
 
     resolution = properties["dggs_resolution"] |> Int
     dggsrs = properties["dggs_dggsrs"] |> String
+    bbox = properties["dggs_bbox"] |> x -> x isa Extent ? x : Extent(X=(x["X"][1], x["X"][2]), Y=(x["Y"][1], x["Y"][2]))
 
     delete!(properties, "dggs_resolution")
     delete!(properties, "dggs_dggsrs")
+    delete!(properties, "dggs_bbox")
 
     arr_name = DD.name(array)
     if arr_name == DD.NoName()
@@ -321,7 +356,7 @@ function DGGSArray(array::AbstractDimArray)
 
     DGGSArray(
         array.data, dims(array), refdims(array), arr_name, properties,
-        resolution, dggsrs
+        resolution, dggsrs, bbox
     )
 end
 
@@ -329,6 +364,7 @@ function YAXArrays.YAXArray(dggs_array::DGGSArray)
     properties = Dict{String,Any}(metadata(dggs_array))
     properties["dggs_resolution"] = dggs_array.resolution
     properties["dggs_dggsrs"] = dggs_array.dggsrs
+    properties["dggs_bbox"] = dggs_array.bbox
 
     return YAXArray(dims(dggs_array), dggs_array.data, properties)
 end
@@ -337,7 +373,7 @@ end
 function DD.rebuild(
     dggs_array::DGGSArray, data::AbstractArray, dims::Tuple, refdims::Tuple, name, metadata
 )
-    DGGSArray(data, dims, refdims, name, metadata, dggs_array.resolution, dggs_array.dggsrs)
+    DGGSArray(data, dims, refdims, name, metadata, dggs_array.resolution, dggs_array.dggsrs, dggs_array.bbox)
 end
 
 function get_name(array::AbstractDimArray)

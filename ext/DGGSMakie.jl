@@ -18,7 +18,7 @@ Plot a DGGSArray using Makie.
 function Makie.plot(
     dggs_array::DGGSArray,
     args...;
-    extent=DGGS.get_geo_bbox(dggs_array),
+    extent=dggs_array.bbox,
     resolution_scale::Real=1,
     kwargs...
 )
@@ -86,7 +86,7 @@ function Makie.plot(
     green_layer::Symbol,
     blue_layer::Symbol,
     args...;
-    extent=DGGS.get_geo_bbox(ds),
+    extent=ds.bbox,
     resolution_scale::Real=1,
     scale_factor::Real=1,
     offset::Real=0,

@@ -4,7 +4,7 @@ function DGGSDataset(dggs_array::DGGSArray)
 
     return DGGSDataset(
         arrays, dims(ds), DD.refdims(ds), DD.layerdims(ds), metadata(ds),
-        DD.layermetadata(ds), dggs_array.resolution, dggs_array.dggsrs
+        DD.layermetadata(ds), dggs_array.resolution, dggs_array.dggsrs, dggs_array.bbox
     )
 end
 
@@ -17,6 +17,9 @@ function DGGSDataset(dggs_arrays...; kwargs...)
     dggsrs = dggs_arrays[1].dggsrs
     all(map(x -> x.dggsrs, dggs_arrays) .== dggsrs) || error("DGGSRS of all DGGS arrays must be the same")
 
+    bbox = dggs_arrays[1].bbox
+    all(dggs_arrays .|> x -> isequal(x.bbox, bbox)) || error("Bounding box of all DGGS arrays must be the same")
+
     if map(x -> DD.name(x), dggs_arrays) |> unique |> length != length(dggs_arrays)
         error("Name of DGGS arrays must be unique")
     end
@@ -26,7 +29,7 @@ function DGGSDataset(dggs_arrays...; kwargs...)
 
     return DGGSDataset(
         array_tuple, dims(ds), DD.refdims(ds), DD.layerdims(ds), metadata(ds),
-        DD.layermetadata(ds), resolution, dggsrs
+        DD.layermetadata(ds), resolution, dggsrs, bbox
     )
 end
 
@@ -64,10 +67,11 @@ end
 function to_dggs_dataset(geo_ds::Dataset, resolution::Integer, crs::String; metadata=Dict(), kwargs...)
     cells = compute_cell_array(geo_ds.X, geo_ds.Y, resolution, crs)
     dggs_bbox = get_dggs_bbox(cells)
+    geo_bbox = get_geo_bbox(geo_ds.cubes |> values |> first, crs)
 
     dggs_arrays = []
     Threads.@threads for (name, geo_array) in collect(geo_ds.cubes)
-        dggs_array = to_dggs_array(geo_array, cells, dggs_bbox; name=name, kwargs...)
+        dggs_array = to_dggs_array(geo_array, cells, dggs_bbox, geo_bbox; name=name, kwargs...)
         push!(dggs_arrays, dggs_array)
     end
     return DGGSDataset(dggs_arrays...; metadata=metadata)
@@ -96,7 +100,7 @@ function DD.show_after(io::IO, mime, x::Union{DGGSArray,DGGSDataset})
     println(io, "  DGGSRS:     $(x.dggsrs)")
     n_cells_str = @sprintf("%.2e", 2 * 2^x.resolution * 2^x.resolution * 5)
     println(io, "  Resolution: $(x.resolution) (up to $(n_cells_str) cells)")
-    println(io, "  Geo BBox:   $(get_geo_bbox(x))")
+    println(io, "  Geo BBox:   $(x.bbox)")
     DD.print_block_close(io, block_width)
 end
 
