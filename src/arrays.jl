@@ -123,7 +123,7 @@ function to_dggs_array(
     cells,
     cell_coords,
     dggs_bbox,
-    geo_bbox,
+    geo_bbox::Extent,
     agg_func::Function
     ;
     outtype=Float64,
@@ -173,7 +173,7 @@ function to_dggs_array(
     geo_array::AbstractDimArray,
     cells,
     dggs_bbox,
-    geo_bbox
+    geo_bbox::Extent
     ;
     outtype=Union{eltype(geo_array),Missing},
     outtype_counts=UInt16,
@@ -229,7 +229,10 @@ function to_dggs_array(
     )
 end
 
-function to_dggs_array(geo_array, resolution, crs::AbstractString, agg_func::Function; x_name=:X, y_name=:Y, kwargs...)
+function to_dggs_array(
+    geo_array::AbstractDimArray, resolution::Integer, crs::String, agg_func::Function;
+    x_name=:X, y_name=:Y, kwargs...
+)
     x_dim = filter(x -> name(x) == x_name, dims(geo_array))
     y_dim = filter(x -> name(x) == y_name, dims(geo_array))
     isempty(x_dim) && error("X dimension (e.g. longitude) not found")
