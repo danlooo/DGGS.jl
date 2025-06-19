@@ -21,7 +21,7 @@ hero:
       link: /api
 features:
   - title: Preview
-    details: Explore the preliminary version of <a href="https://github.com/danlooo/DGGS.jl/tree/pentacube">DGGS.jl 2.0</a> using the faster pentacube index using PROJ. We are also developing <a href="http://dggs.fairsendd.eodchosting.eu">DGGSexplorer</a>, a web server to view DGGS data cubes in a browser.
+    details: Explore the preliminary version of <a href="https://github.com/danlooo/DGGS.jl/tree/pentacube">DGGS.jl 2.0 </a> using the faster pentacube index using PROJ. We are also developing <a href="http://dggs.fairsendd.eodchosting.eu">DGGSexplorer</a>, a web server to view DGGS data cubes in a browser.
   - title: Low distortions
     details: This package is based on <a href="https://github.com/sahrk/DGGRID">DGGRID</a> which has the lowest distortion in shape and area compared to other DGGS.
   - title: DGGS native data cubes

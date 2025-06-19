@@ -27,7 +27,7 @@ Plotting is performed on a `DGGSArray` at a given spatial resolution level. Sele
 plot(a)
 ```
 
-![](inmxbkn.jpeg)
+![](awahjvk.jpeg)
 
 Plot as a map:
 
@@ -35,4 +35,4 @@ Plot as a map:
 plot(a; type=:map)
 ```
 
-![](nmakxbz.jpeg)
+![](knqlfau.jpeg)

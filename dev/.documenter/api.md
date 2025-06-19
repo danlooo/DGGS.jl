@@ -6,7 +6,7 @@
 get a cell of a DGGSArray
 
 
-<Badge type="info" class="source-link" text="source"><a href="https://github.com/danlooo/DGGS.jl/blob/8a9d996cc4830be9d91d4ee967ff86d960ca5d05/src/array.jl#L59" target="_blank" rel="noreferrer">source</a></Badge>
+<Badge type="info" class="source-link" text="source"><a href="https://github.com/danlooo/DGGS.jl/blob/58a9dbf29b301fa86caab93955d77552882f82e2/src/array.jl#L59" target="_blank" rel="noreferrer">source</a></Badge>
 
 </details>
 
@@ -18,7 +18,7 @@ get a cell of a DGGSArray
 get a ring of a DGGArray
 
 
-<Badge type="info" class="source-link" text="source"><a href="https://github.com/danlooo/DGGS.jl/blob/8a9d996cc4830be9d91d4ee967ff86d960ca5d05/src/array.jl#L65" target="_blank" rel="noreferrer">source</a></Badge>
+<Badge type="info" class="source-link" text="source"><a href="https://github.com/danlooo/DGGS.jl/blob/58a9dbf29b301fa86caab93955d77552882f82e2/src/array.jl#L65" target="_blank" rel="noreferrer">source</a></Badge>
 
 </details>
 
@@ -30,7 +30,7 @@ get a ring of a DGGArray
 get a cell of a DGGSArray
 
 
-<Badge type="info" class="source-link" text="source"><a href="https://github.com/danlooo/DGGS.jl/blob/8a9d996cc4830be9d91d4ee967ff86d960ca5d05/src/array.jl#L55" target="_blank" rel="noreferrer">source</a></Badge>
+<Badge type="info" class="source-link" text="source"><a href="https://github.com/danlooo/DGGS.jl/blob/58a9dbf29b301fa86caab93955d77552882f82e2/src/array.jl#L55" target="_blank" rel="noreferrer">source</a></Badge>
 
 </details>
 
@@ -42,7 +42,7 @@ get a cell of a DGGSArray
 filter any dimension of a DGGSArray
 
 
-<Badge type="info" class="source-link" text="source"><a href="https://github.com/danlooo/DGGS.jl/blob/8a9d996cc4830be9d91d4ee967ff86d960ca5d05/src/array.jl#L31" target="_blank" rel="noreferrer">source</a></Badge>
+<Badge type="info" class="source-link" text="source"><a href="https://github.com/danlooo/DGGS.jl/blob/58a9dbf29b301fa86caab93955d77552882f82e2/src/array.jl#L31" target="_blank" rel="noreferrer">source</a></Badge>
 
 </details>
 
@@ -54,7 +54,7 @@ filter any dimension of a DGGSArray
 get a disk of a DGGArray
 
 
-<Badge type="info" class="source-link" text="source"><a href="https://github.com/danlooo/DGGS.jl/blob/8a9d996cc4830be9d91d4ee967ff86d960ca5d05/src/array.jl#L78" target="_blank" rel="noreferrer">source</a></Badge>
+<Badge type="info" class="source-link" text="source"><a href="https://github.com/danlooo/DGGS.jl/blob/58a9dbf29b301fa86caab93955d77552882f82e2/src/array.jl#L78" target="_blank" rel="noreferrer">source</a></Badge>
 
 </details>
 
@@ -66,7 +66,7 @@ get a disk of a DGGArray
 Transforms Vector of (lon,lat) coords to DGGRID indices
 
 
-<Badge type="info" class="source-link" text="source"><a href="https://github.com/danlooo/DGGS.jl/blob/8a9d996cc4830be9d91d4ee967ff86d960ca5d05/src/dggrid.jl#L55" target="_blank" rel="noreferrer">source</a></Badge>
+<Badge type="info" class="source-link" text="source"><a href="https://github.com/danlooo/DGGS.jl/blob/58a9dbf29b301fa86caab93955d77552882f82e2/src/dggrid.jl#L55" target="_blank" rel="noreferrer">source</a></Badge>
 
 </details>
 
@@ -78,7 +78,7 @@ Transforms Vector of (lon,lat) coords to DGGRID indices
 Execute sytem call of DGGRID binary
 
 
-<Badge type="info" class="source-link" text="source"><a href="https://github.com/danlooo/DGGS.jl/blob/8a9d996cc4830be9d91d4ee967ff86d960ca5d05/src/dggrid.jl#L4-L6" target="_blank" rel="noreferrer">source</a></Badge>
+<Badge type="info" class="source-link" text="source"><a href="https://github.com/danlooo/DGGS.jl/blob/58a9dbf29b301fa86caab93955d77552882f82e2/src/dggrid.jl#L4-L6" target="_blank" rel="noreferrer">source</a></Badge>
 
 </details>
 
@@ -90,7 +90,7 @@ Execute sytem call of DGGRID binary
 clip range that may lie in padding to quad boundaries
 
 
-<Badge type="info" class="source-link" text="source"><a href="https://github.com/danlooo/DGGS.jl/blob/8a9d996cc4830be9d91d4ee967ff86d960ca5d05/src/neighbors.jl#L29-L31" target="_blank" rel="noreferrer">source</a></Badge>
+<Badge type="info" class="source-link" text="source"><a href="https://github.com/danlooo/DGGS.jl/blob/58a9dbf29b301fa86caab93955d77552882f82e2/src/neighbors.jl#L29-L31" target="_blank" rel="noreferrer">source</a></Badge>
 
 </details>
 
@@ -102,7 +102,7 @@ clip range that may lie in padding to quad boundaries
 Create a mask of cells arround a center cell within a radius `disk_size`
 
 
-<Badge type="info" class="source-link" text="source"><a href="https://github.com/danlooo/DGGS.jl/blob/8a9d996cc4830be9d91d4ee967ff86d960ca5d05/src/neighbors.jl#L1-L3" target="_blank" rel="noreferrer">source</a></Badge>
+<Badge type="info" class="source-link" text="source"><a href="https://github.com/danlooo/DGGS.jl/blob/58a9dbf29b301fa86caab93955d77552882f82e2/src/neighbors.jl#L1-L3" target="_blank" rel="noreferrer">source</a></Badge>
 
 </details>
 
@@ -114,7 +114,7 @@ Create a mask of cells arround a center cell within a radius `disk_size`
 Apply function f after filtering of missing and NAN values
 
 
-<Badge type="info" class="source-link" text="source"><a href="https://github.com/danlooo/DGGS.jl/blob/8a9d996cc4830be9d91d4ee967ff86d960ca5d05/src/array.jl#L167" target="_blank" rel="noreferrer">source</a></Badge>
+<Badge type="info" class="source-link" text="source"><a href="https://github.com/danlooo/DGGS.jl/blob/58a9dbf29b301fa86caab93955d77552882f82e2/src/array.jl#L167" target="_blank" rel="noreferrer">source</a></Badge>
 
 </details>
 
@@ -126,7 +126,7 @@ Apply function f after filtering of missing and NAN values
 Plot a DGGSArray nativeley on a icosahedron
 
 
-<Badge type="info" class="source-link" text="source"><a href="https://github.com/danlooo/DGGS.jl/blob/8a9d996cc4830be9d91d4ee967ff86d960ca5d05/src/array.jl#L517-L519" target="_blank" rel="noreferrer">source</a></Badge>
+<Badge type="info" class="source-link" text="source"><a href="https://github.com/danlooo/DGGS.jl/blob/58a9dbf29b301fa86caab93955d77552882f82e2/src/array.jl#L517-L519" target="_blank" rel="noreferrer">source</a></Badge>
 
 </details>
 
@@ -138,7 +138,7 @@ Plot a DGGSArray nativeley on a icosahedron
 Create a mask of cells having the same distance `ring_size` to a center cell
 
 
-<Badge type="info" class="source-link" text="source"><a href="https://github.com/danlooo/DGGS.jl/blob/8a9d996cc4830be9d91d4ee967ff86d960ca5d05/src/neighbors.jl#L10-L12" target="_blank" rel="noreferrer">source</a></Badge>
+<Badge type="info" class="source-link" text="source"><a href="https://github.com/danlooo/DGGS.jl/blob/58a9dbf29b301fa86caab93955d77552882f82e2/src/neighbors.jl#L10-L12" target="_blank" rel="noreferrer">source</a></Badge>
 
 </details>
 
@@ -152,7 +152,7 @@ Convert a geographic lat/lon raster to a DGGAArray
 agg_type: `:convert` will return a Float64 array and `:round` will keep the element type that might loose precision
 
 
-<Badge type="info" class="source-link" text="source"><a href="https://github.com/danlooo/DGGS.jl/blob/8a9d996cc4830be9d91d4ee967ff86d960ca5d05/src/array.jl#L180-L184" target="_blank" rel="noreferrer">source</a></Badge>
+<Badge type="info" class="source-link" text="source"><a href="https://github.com/danlooo/DGGS.jl/blob/58a9dbf29b301fa86caab93955d77552882f82e2/src/array.jl#L180-L184" target="_blank" rel="noreferrer">source</a></Badge>
 
 </details>
 
@@ -164,7 +164,7 @@ agg_type: `:convert` will return a Float64 array and `:round` will keep the elem
 Transforms a `YAXArrays.Dataset` in geographic lat/lon ratser to a DGGSLayer at agiven layer
 
 
-<Badge type="info" class="source-link" text="source"><a href="https://github.com/danlooo/DGGS.jl/blob/8a9d996cc4830be9d91d4ee967ff86d960ca5d05/src/layer.jl#L97-L99" target="_blank" rel="noreferrer">source</a></Badge>
+<Badge type="info" class="source-link" text="source"><a href="https://github.com/danlooo/DGGS.jl/blob/58a9dbf29b301fa86caab93955d77552882f82e2/src/layer.jl#L97-L99" target="_blank" rel="noreferrer">source</a></Badge>
 
 </details>
 
@@ -176,7 +176,7 @@ Transforms a `YAXArrays.Dataset` in geographic lat/lon ratser to a DGGSLayer at 
 chunk_size_points: number of points (e.g. pixels) to transform in one block (task of a thread)
 
 
-<Badge type="info" class="source-link" text="source"><a href="https://github.com/danlooo/DGGS.jl/blob/8a9d996cc4830be9d91d4ee967ff86d960ca5d05/src/dggrid.jl#L144-L146" target="_blank" rel="noreferrer">source</a></Badge>
+<Badge type="info" class="source-link" text="source"><a href="https://github.com/danlooo/DGGS.jl/blob/58a9dbf29b301fa86caab93955d77552882f82e2/src/dggrid.jl#L144-L146" target="_blank" rel="noreferrer">source</a></Badge>
 
 </details>
 
@@ -188,7 +188,7 @@ chunk_size_points: number of points (e.g. pixels) to transform in one block (tas
 position of last row or column in a quad matrix of that level
 
 
-<Badge type="info" class="source-link" text="source"><a href="https://github.com/danlooo/DGGS.jl/blob/8a9d996cc4830be9d91d4ee967ff86d960ca5d05/src/pyramid.jl#L93" target="_blank" rel="noreferrer">source</a></Badge>
+<Badge type="info" class="source-link" text="source"><a href="https://github.com/danlooo/DGGS.jl/blob/58a9dbf29b301fa86caab93955d77552882f82e2/src/pyramid.jl#L93" target="_blank" rel="noreferrer">source</a></Badge>
 
 </details>
 
