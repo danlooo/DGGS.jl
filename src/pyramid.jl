@@ -67,7 +67,7 @@ function write_dggs_pyramid(base_path::String, dggs::DGGSPyramid)
         attrs["dggs_level"] = level
 
         ds = Dataset(; properties=attrs, arrs...)
-        savedataset(ds; path=level_path)
+        savedataset(ds; path=level_path, driver=:zarr)
         JSON3.write("$level_path/.zgroup", Dict(:zarr_format => 2))
         Zarr.consolidate_metadata(level_path)
 
@@ -216,7 +216,7 @@ function to_dggs_pyramid(geo_ds::Dataset, level::Integer, args...; verbose=true,
     return dggs
 end
 
-function to_dggs_pyramid(l::DGGSLayer; base_path=tempname(), agg_type::Symbol=:round)
+function to_dggs_pyramid(l::DGGSLayer; agg_type::Symbol=:round, kwargs...)
     pyramid = Dict{Int,DGGSLayer}()
     pyramid[l.level] = l
 
@@ -237,7 +237,7 @@ function to_dggs_pyramid(l::DGGSLayer; base_path=tempname(), agg_type::Symbol=:r
                 outdims=OutDims(
                     Dim{:q2di_i}(range(0; step=1, length=2^(coarser_level - 1))),
                     Dim{:q2di_j}(range(0; step=1, length=2^(coarser_level - 1))),
-                    path=joinpath(base_path, "$(coarser_level)/$(k)")
+                    kwargs...
                 )
             ) do xout, xin
                 n = xin.indices[3]
