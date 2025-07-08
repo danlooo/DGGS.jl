@@ -50,5 +50,5 @@ end
 
 Base.show(io::IO, p::DGGSPyramid) = print(io, "DGGSPyramid $(p.dggsrs) with resolutions $(first(p.data).second.resolution):$(last(p.data).second.resolution)")
 
-open_dggs_pyramid() = error("Please load module Zarr first")
-save_dggs_pyramid() = error("Please load module Zarr first")
+open_dggs_pyramid(args...; kwargs...) = error("Please load module Zarr first")
+save_dggs_pyramid(args...; kwargs...) = error("Please load module Zarr first")
