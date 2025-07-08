@@ -154,12 +154,13 @@ dggs_ds = DGGSDataset(dggs_array)
     @testset "DGGSPyramid" begin
         dggs_p = to_dggs_pyramid(dggs_ds)
         @test dggs_p isa DGGSPyramid
-        @test length(dggs_p.data) == dggs_ds.resolution + 1
+        @test length(dggs_p.data) == dggs_ds.resolution
         @test dggs_p.dggsrs == dggs_ds.dggsrs
         @test dggs_p.bbox == dggs_ds.bbox
 
         # save and open pyramid
-        temp_dir = tempname() * ".dggsp.zarr"
+        temp_dir = tempname() * ".dggs.zarr"
+        @info temp_dir
         save_dggs_pyramid(temp_dir, dggs_p)
         dggs_p2 = open_dggs_pyramid(temp_dir)
         @test dggs_p.bbox == dggs_p2.bbox

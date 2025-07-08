@@ -19,7 +19,7 @@ function DGGS.save_dggs_pyramid(path::String, dggs_p::DGGSPyramid, args...; stor
     group = zgroup(store; attrs=pyramid_attrs)
     for (resolution, dggs_ds) in dggs_p.data
         ds = Dataset(dggs_ds)
-        savedataset(ds; path="$(path)/dggs_s$(resolution)")
+        savedataset(ds; path="$(path)/dggs_s$(resolution)", driver=:zarr)
     end
     return path
 end
@@ -27,6 +27,7 @@ end
 function DGGS.open_dggs_pyramid(path::String, args...; storetype=DirectoryStore)
     store = storetype(path, args...)
     group = zopen(store)
+
     dggsrs = get(group.attrs, "dggs_dggsrs", missing)
     bbox = get(group.attrs, "dggs_bbox", missing)
     resolutions = get(group.attrs, "dggs_resolutions", missing)
@@ -40,7 +41,7 @@ function DGGS.open_dggs_pyramid(path::String, args...; storetype=DirectoryStore)
     data = OrderedDict{Int,DGGSDataset}()
     for resolution in resolutions
         ds_path = "$(path)/dggs_s$(resolution)"
-        ds = open_dataset(ds_path)
+        ds = open_dataset(ds_path; driver=:zarr)
         dggs_ds = DGGSDataset(ds)
         data[resolution] = dggs_ds
     end

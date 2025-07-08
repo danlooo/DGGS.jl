@@ -1,5 +1,5 @@
 function DGGSDataset(dggs_array::DGGSArray)
-    ds = DimStack(dggs_array)
+    ds = DimStack(dggs_array; metadata=Dict())
     arrays = (; DD.name(dggs_array) => dggs_array)
 
     return DGGSDataset(
@@ -112,7 +112,10 @@ DGGSDataset(ds::Dataset) = DGGSDataset([DGGSArray(v) for (k, v) in ds.cubes]...;
 
 function Dataset(dggs_ds::DGGSDataset)
     arrays = [k => getproperty(dggs_ds, k) |> YAXArray for k in keys(dggs_ds)]
-    Dataset(; properties=metadata(dggs_ds), arrays...)
+    properties = Dict{String,Any}(metadata(dggs_ds))
+    properties["dggs_dggsrs"] = dggs_ds.dggsrs
+    properties["dggs_resolution"] = dggs_ds.resolution
+    Dataset(; properties=properties, arrays...)
 end
 
 open_dggs_dataset(file_path::String; kwargs...) = file_path |> x -> open_dataset(x; kwargs...) |> DGGSDataset

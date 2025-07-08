@@ -38,7 +38,7 @@ end
 function to_dggs_pyramid(dggs_ds::DGGSDataset)
     pyramid = DGGSDataset[]
     push!(pyramid, dggs_ds)
-    for resolution in dggs_ds.resolution-1:-1:0
+    for resolution in dggs_ds.resolution-1:-1:1
         current_dggs_ds = pyramid[end]
         coarser_ds = coarsen(current_dggs_ds)
         push!(pyramid, coarser_ds)
