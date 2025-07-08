@@ -2,7 +2,9 @@
 *
 
 !ext
+!ext/**
 !src
+!src/**
 !docs
 !test
 !.gitignore

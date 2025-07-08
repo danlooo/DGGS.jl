@@ -84,3 +84,12 @@ struct DGGSDataset{K,T,N,L,D<:Tuple,R<:Tuple,LD,M,LM} <: AbstractDimStack{K,T,N,
         )
     end
 end
+
+"Set of DGGSDatasets at subsequent spatial refinement levels forming a pyramid"
+struct DGGSPyramid
+    data::OrderedDict{Int,DGGSDataset}
+
+    # DGGS fields
+    dggsrs::String
+    bbox::Extent
+end
