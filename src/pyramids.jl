@@ -1,3 +1,44 @@
+function DGGSPyramid(data::AbstractDict{T,A}, dggsrs, bbox) where {T,A<:DGGSDataset}
+    dimtree = DimTree()
+    # add all res levels as branches
+    for (resolution, dggs_ds) in pairs(data)
+        Base.setproperty!(dimtree, Symbol("dggs_s$(resolution)"), dggs_ds)
+    end
+    res = DGGSPyramid(dimtree, dggsrs, bbox)
+    return res
+end
+
+function DGGSPyramid(dimtree::DimTree, dggsrs, bbox)
+    res = DGGSPyramid(
+        getfield(dimtree, :data), dims(dimtree), DD.refdims(dimtree),
+        DD.layerdims(dimtree), DD.layermetadata(dimtree), metadata(dimtree),
+        DD.branches(dimtree), getfield(dimtree, :tree),
+        dggsrs, bbox
+    )
+    return res
+end
+
+Base.propertynames(dggs_p::DGGSPyramid) = union((:dggsrs, :bbox), keys(dggs_p.branches))
+
+function Base.getproperty(p::DGGSPyramid, s::Symbol)
+    s in fieldnames(DGGSPyramid) && return getfield(p, s)
+    s in keys(p.branches) && return p.branches[s] |> x -> getfield(x, :data) |> values |> first
+    error("Key $(s) not found.")
+end
+
+function Base.getindex(dggs_p::DGGSPyramid, resolution::Int)
+    return getproperty(dggs_p, Symbol("dggs_s$(resolution)"))
+end
+
+function DD.show_after(io::IO, mime, x::DGGSPyramid)
+    block_width = get(io, :blockwidth, 0)
+    DD.print_block_separator(io, "DGGS", block_width, block_width)
+    println(io, " ")
+    println(io, "  DGGSRS:     $(x.dggsrs)")
+    println(io, "  Geo BBox:   $(x.bbox)")
+    DD.print_block_close(io, block_width)
+end
+
 function aggregate_by_factor(xin::AbstractArray, xout::AbstractArray, f::Function)
     fac = ceil(Int, size(xin, 1) / size(xout, 1))
     for j in axes(xout, 2)
@@ -16,6 +57,7 @@ function coarsen(dggs_array::DGGSArray; f=x -> filter(y -> !ismissing(y) && !isn
         dggs_array;
         indims=InDims(:dggs_i, :dggs_j),
         outdims=OutDims(
+            # TODO: restrict range to subset
             Dim{:dggs_i}(range(0; step=1, length=2 * 2^coarser_level)),
             Dim{:dggs_j}(range(0; step=1, length=2^coarser_level))
         )

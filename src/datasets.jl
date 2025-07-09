@@ -110,7 +110,7 @@ end
 
 DGGSDataset(ds::Dataset) = DGGSDataset([DGGSArray(v) for (k, v) in ds.cubes]...; metadata=ds.properties)
 
-function Dataset(dggs_ds::DGGSDataset)
+function YAXArrays.Dataset(dggs_ds::DGGSDataset)
     arrays = [k => getproperty(dggs_ds, k) |> YAXArray for k in keys(dggs_ds)]
     properties = Dict{String,Any}(metadata(dggs_ds))
     properties["dggs_dggsrs"] = dggs_ds.dggsrs
