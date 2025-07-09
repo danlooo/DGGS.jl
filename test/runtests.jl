@@ -175,6 +175,10 @@ dggs_ds = DGGSDataset(dggs_array, dggs_array2)
         @test dggs_p.dggsrs == dggs_p2.dggsrs
         @test length(dggs_p.data) == length(dggs_p2.data)
         @test all(keys(dggs_p.data) .== keys(dggs_p2.data))
+
+        # both layers must be present after save and open
+        @test name(dggs_p.dggs_s3.air_temperature) == name(dggs_p2.dggs_s3.air_temperature)
+        @test name(dggs_p.dggs_s3.precipitation) == name(dggs_p2.dggs_s3.precipitation)
         rm(temp_dir, recursive=true)
     end
 end
