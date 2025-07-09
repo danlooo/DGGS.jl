@@ -12,11 +12,13 @@ using Dates
 using Printf
 using Infiltrator
 using Extents
+using OrderedCollections
 
 include("types.jl")
 include("cells.jl")
 include("arrays.jl")
 include("datasets.jl")
+include("pyramids.jl")
 
 const transformations = Channel{Proj.Transformation}(Inf)
 const inv_transformations = Channel{Proj.Transformation}(Inf)
@@ -30,7 +32,8 @@ function __init__()
     @info "DGGS.jl initialized with $(nthreads()) threads"
 end
 
-export Cell, DGGSArray, DGGSDatase, Cell, DGGSArray, DGGSDataset
-export to_cell, to_geo, to_dggs_dataset, to_dggs_array, to_geo_dataset, to_geo_array
-export open_dggs_array, open_dggs_dataset, save_dggs_array, save_dggs_dataset
+export Cell, DGGSArray, DGGSDatase, Cell, DGGSArray, DGGSDataset, DGGSPyramid
+export to_cell, to_geo, to_dggs_pyramid, to_dggs_dataset, to_dggs_array, to_geo_dataset, to_geo_array
+export open_dggs_array, open_dggs_dataset, open_dggs_pyramid
+export save_dggs_array, save_dggs_dataset, save_dggs_pyramid
 end

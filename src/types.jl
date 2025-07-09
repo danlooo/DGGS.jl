@@ -84,3 +84,20 @@ struct DGGSDataset{K,T,N,L,D<:Tuple,R<:Tuple,LD,M,LM} <: AbstractDimStack{K,T,N,
         )
     end
 end
+
+"Set of DGGSDatasets with subsequent spatial refinement levels forming a pyramid"
+@kwdef mutable struct DGGSPyramid <: AbstractDimTree
+    # DimTree fields
+    data::DD.DataDict = DD.DataDict()
+    dims::Tuple = ()
+    refdims::Tuple = ()
+    layerdims::DD.TupleDict = DD.TupleDict()
+    layermetadata::DD.DataDict = DD:DataDict(Base.keys(layerdims) .=> DD.NoMetadata())
+    metadata::Any = DD.NoMetadata()
+    branches::DD.TreeDict = DD.TreeDict()
+    tree::Union{Nothing,AbstractDimTree} = nothing
+
+    # DGGS fields
+    dggsrs::String
+    bbox::Extent
+end

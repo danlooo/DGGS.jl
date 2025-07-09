@@ -124,6 +124,7 @@ dggs_ds = DGGSDataset(dggs_array)
         rm(temp_dir, recursive=true)
     end
 
+
     @testset "DGGSDataset" begin
         resolution = 3
         i_dim = Dim{:dggs_i}(0:2*2^resolution-1)
@@ -150,4 +151,23 @@ dggs_ds = DGGSDataset(dggs_array)
         @test_throws ErrorException DGGSDataset(a1, a1)
     end
 
+    @testset "DGGSPyramid" begin
+        dggs_p = to_dggs_pyramid(dggs_ds)
+        @test dggs_p isa DGGSPyramid
+        @test length(dggs_p.branches) == dggs_ds.resolution
+        @test dggs_p.dggsrs == dggs_ds.dggsrs
+        @test dggs_p.bbox == dggs_ds.bbox
+        @test dggs_p.dggs_s3 == dggs_p[3]
+
+        # save and open pyramid
+        temp_dir = tempname() * ".dggs.zarr"
+        @info temp_dir
+        save_dggs_pyramid(temp_dir, dggs_p)
+        dggs_p2 = open_dggs_pyramid(temp_dir)
+        @test dggs_p.bbox == dggs_p2.bbox
+        @test dggs_p.dggsrs == dggs_p2.dggsrs
+        @test length(dggs_p.data) == length(dggs_p2.data)
+        @test all(keys(dggs_p.data) .== keys(dggs_p2.data))
+        rm(temp_dir, recursive=true)
+    end
 end
