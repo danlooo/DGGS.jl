@@ -16,7 +16,12 @@ geo_data = [exp(cosd(lon)) + 3(lat / 90) for lon in lon_range, lat in lat_range]
 properties = Dict("standard_name" => "air_temperature", "units" => "K", "description" => "random test data")
 geo_array = YAXArray((lon_range, lat_range), geo_data, properties)
 dggs_array = to_dggs_array(geo_array, resolution, "EPSG:4326")
-dggs_ds = DGGSDataset(dggs_array)
+
+properties2 = Dict("standard_name" => "precipitation")
+geo_array2 = YAXArray((lon_range, lat_range), geo_data, properties2)
+dggs_array2 = to_dggs_array(geo_array2, resolution, "EPSG:4326")
+
+dggs_ds = DGGSDataset(dggs_array, dggs_array2)
 
 @testset "DGGS.jl" begin
     @testset "Cells" begin
@@ -154,6 +159,8 @@ dggs_ds = DGGSDataset(dggs_array)
     @testset "DGGSPyramid" begin
         dggs_p = to_dggs_pyramid(dggs_ds)
         @test dggs_p isa DGGSPyramid
+        @test dggs_p.dggs_s3 isa DGGSDataset
+        @test dggs_p.dggs_s3.air_temperature isa DGGSArray
         @test length(dggs_p.branches) == dggs_ds.resolution
         @test dggs_p.dggsrs == dggs_ds.dggsrs
         @test dggs_p.bbox == dggs_ds.bbox
@@ -168,6 +175,10 @@ dggs_ds = DGGSDataset(dggs_array)
         @test dggs_p.dggsrs == dggs_p2.dggsrs
         @test length(dggs_p.data) == length(dggs_p2.data)
         @test all(keys(dggs_p.data) .== keys(dggs_p2.data))
+
+        # both layers must be present after save and open
+        @test name(dggs_p.dggs_s3.air_temperature) == name(dggs_p2.dggs_s3.air_temperature)
+        @test name(dggs_p.dggs_s3.precipitation) == name(dggs_p2.dggs_s3.precipitation)
         rm(temp_dir, recursive=true)
     end
 end

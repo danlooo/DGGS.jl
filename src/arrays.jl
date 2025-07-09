@@ -98,21 +98,18 @@ end
 function get_geo_bbox(geo_array::AbstractDimArray, crs::String)
     # use default thread pool for lat/lon conversion
     wgs84_crs_geogcs = "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AXIS[\"Latitude\",NORTH],AXIS[\"Longitude\",EAST],AUTHORITY[\"EPSG\",\"4326\"]]"
+
+    x_min, x_max = extrema(geo_array.X)
+    y_min, y_max = extrema(geo_array.Y)
+
     if crs in [wgs84_crs_geogcs, "EPSG:4326"]
-        lon_min, lon_max = geo_array.X[1], geo_array.X[end]
-        lat_min, lat_max = geo_array.Y[1], geo_array.Y[end]
-        # axis might be reversed
-        lon_min, lon_max = minmax(lon_min, lon_max)
-        lat_min, lat_max = minmax(lat_min, lat_max)
-        ext = Extent(X=(lon_min, lon_max), Y=(lat_min, lat_max))
+        ext = Extent(X=(x_min, x_max), Y=(y_min, y_max))
         return ext
     else
         trans = Proj.Transformation(crs, crs_geo)
-        lat_min, lon_min = trans(geo_array.X[1], geo_array.Y[1])
-        lat_max, lon_max = trans(geo_array.X[end], geo_array.Y[end])
-        # axis might be reversed
-        lon_min, lon_max = minmax(lon_min, lon_max)
-        lat_min, lat_max = minmax(lat_min, lat_max)
+        lat_min, lon_min = trans(x_min, y_min)
+        lat_max, lon_max = trans(x_max, y_max)
+
         ext = Extent(X=(lon_min, lon_max), Y=(lat_min, lat_max))
         return ext
     end

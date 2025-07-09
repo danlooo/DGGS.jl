@@ -2,7 +2,7 @@ function DGGSPyramid(data::AbstractDict{T,A}, dggsrs, bbox) where {T,A<:DGGSData
     dimtree = DimTree()
     # add all res levels as branches
     for (resolution, dggs_ds) in pairs(data)
-        Base.setproperty!(dimtree, Symbol("dggs_s$(resolution)"), dggs_ds)
+        Base.setproperty!(dimtree, Symbol("dggs_s$(resolution)"), DimTree(dggs_ds))
     end
     res = DGGSPyramid(dimtree, dggsrs, bbox)
     return res
@@ -20,9 +20,18 @@ end
 
 Base.propertynames(dggs_p::DGGSPyramid) = union((:dggsrs, :bbox), keys(dggs_p.branches))
 
+function extract_dggs_dataset(dggs_p::DGGSPyramid, layer_name::Symbol)
+    # DimTree stores leaves as DimTree objects. Re-create DGGSDataset from layers
+    branch = DD.branches(dggs_p)[layer_name]
+    dggs_layers = keys(branch)
+    arrays = map(x -> branch[x].data, dggs_layers)
+    dggs_ds = DGGSDataset(arrays...)
+    return dggs_ds
+end
+
 function Base.getproperty(p::DGGSPyramid, s::Symbol)
     s in fieldnames(DGGSPyramid) && return getfield(p, s)
-    s in keys(p.branches) && return p.branches[s] |> x -> getfield(x, :data) |> values |> first
+    s in keys(p.branches) && return extract_dggs_dataset(p, s)
     error("Key $(s) not found.")
 end
 
@@ -76,7 +85,7 @@ end
 
 function coarsen(dggs_ds::DGGSDataset; kwargs...)
     coarser_arrays = []
-    Threads.@threads for key in keys(dggs_ds)
+    for key in keys(dggs_ds)
         dggs_array = getproperty(dggs_ds, key)
         coarser_dggs_array = coarsen(dggs_array; kwargs...)
         push!(coarser_arrays, coarser_dggs_array)
@@ -93,7 +102,7 @@ function to_dggs_pyramid(dggs_ds::DGGSDataset; kwargs...)
         coarser_ds = coarsen(current_dggs_ds; kwargs...)
         push!(pyramid, coarser_ds)
     end
-    data = (pyramid |> reverse .|> x -> x.resolution => x) |> OrderedDict
+    data = (pyramid |> reverse .|> x -> x.resolution => x) |> Dict
     pyramid = DGGSPyramid(data, dggs_ds.dggsrs, dggs_ds.bbox)
     return pyramid
 end
