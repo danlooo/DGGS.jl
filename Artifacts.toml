@@ -1,5 +1,0 @@
-[isea-obj]
-git-tree-sha1 = "bfb2e3c38fa225e49d3ca6de2639ce7b137916d0"
-[[isea-obj.download]]
-url = "https://github.com/danlooo/DGGS.jl/raw/62d5487643f7ab34c6f3ae617583ccb4600d6c95/artefacts/isea.obj.tar.gz"
-sha256 = "24810d204d549b50b94b74d4998c58ab46fca1d265f908b645c2269e0f87f0a9"
