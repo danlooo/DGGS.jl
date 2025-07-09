@@ -154,7 +154,7 @@ dggs_ds = DGGSDataset(dggs_array)
     @testset "DGGSPyramid" begin
         dggs_p = to_dggs_pyramid(dggs_ds)
         @test dggs_p isa DGGSPyramid
-        @test length(dggs_p.data) == dggs_ds.resolution
+        @test length(dggs_p.branches) == dggs_ds.resolution
         @test dggs_p.dggsrs == dggs_ds.dggsrs
         @test dggs_p.bbox == dggs_ds.bbox
         @test dggs_p.dggs_s3 == dggs_p[3]
