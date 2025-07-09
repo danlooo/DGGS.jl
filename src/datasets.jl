@@ -33,6 +33,16 @@ function DGGSDataset(dggs_arrays...; kwargs...)
     )
 end
 
+# # serialise to dimtree node
+# function DimTree(dggs_ds::DGGSDataset)
+#     attrs = Dict{String,Any}()
+#     attrs["dggs_dggsrs"] = dggs_ds.dggsrs
+#     attrs["dggs_resolution"] = dggs_ds.resolution
+#     ds = DimStack(dggs_ds; metadata=Dict(:foo => 2))
+#     dimtree = DimTree(ds; metadata=Dict(:foo => 2))
+#     return dimtree
+# end
+
 Base.propertynames(ds::DGGSDataset) = union((:resolution, :dggsrs), Base.propertynames(parent(ds)))
 
 function Base.getproperty(ds::DGGSDataset, s::Symbol)
