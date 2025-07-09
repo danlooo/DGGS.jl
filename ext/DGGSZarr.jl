@@ -14,7 +14,6 @@ function DGGS.save_dggs_pyramid(path::String, dggs_p::DGGSPyramid, args...; stor
     pyramid_attrs = Dict(
         "dggs_bbox" => dggs_p.bbox,
         "dggs_dggsrs" => dggs_p.dggsrs,
-        "dggs_resolutions" => keys(dggs_p.data)
     )
     store = storetype(path, args...)
     group = zgroup(store; attrs=pyramid_attrs)
@@ -32,11 +31,9 @@ function DGGS.open_dggs_pyramid(path::String, args...; storetype=DirectoryStore)
 
     dggsrs = get(group.attrs, "dggs_dggsrs", missing)
     bbox = get(group.attrs, "dggs_bbox", missing)
-    resolutions = get(group.attrs, "dggs_resolutions", missing)
 
     ismissing(dggsrs) && error("DGGSRS not found in the pyramid metadata")
     ismissing(bbox) && error("Bounding box not found in the pyramid metadata")
-    ismissing(resolutions) && error("Resolutions not found in the pyramid metadata")
 
     bbox = Extent(X=(bbox["X"][1], bbox["X"][2]), Y=(bbox["Y"][1], bbox["Y"][2]))
 
