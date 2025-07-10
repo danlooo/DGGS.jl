@@ -6,6 +6,7 @@ Load and subset geographical data:
 using DGGS
 using YAXArrays
 using ArchGDAL
+using GLMakie
 
 geo_ds = open_dataset("https://github.com/danlooo/DGGS.jl/raw/refs/heads/main/test/data/s2-ndvi-irrigation.tif")
 plot(geo_ds.nir)
