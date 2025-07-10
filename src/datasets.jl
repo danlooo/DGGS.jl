@@ -1,9 +1,9 @@
-function DGGSDataset(dggs_array::DGGSArray)
-    ds = DimStack(dggs_array; metadata=Dict())
-    arrays = (; DD.name(dggs_array) => dggs_array)
+function DGGSDataset(dggs_array::DGGSArray; kwargs...)
+    array_tuple = (layer1=dggs_array,)
+    ds = DimStack(array_tuple; kwargs...)
 
     return DGGSDataset(
-        arrays, dims(ds), DD.refdims(ds), DD.layerdims(ds), metadata(ds),
+        array_tuple, dims(ds), DD.refdims(ds), DD.layerdims(ds), metadata(ds),
         DD.layermetadata(ds), dggs_array.resolution, dggs_array.dggsrs, dggs_array.bbox
     )
 end
@@ -33,15 +33,6 @@ function DGGSDataset(dggs_arrays...; kwargs...)
     )
 end
 
-# # serialise to dimtree node
-# function DimTree(dggs_ds::DGGSDataset)
-#     attrs = Dict{String,Any}()
-#     attrs["dggs_dggsrs"] = dggs_ds.dggsrs
-#     attrs["dggs_resolution"] = dggs_ds.resolution
-#     ds = DimStack(dggs_ds; metadata=Dict(:foo => 2))
-#     dimtree = DimTree(ds; metadata=Dict(:foo => 2))
-#     return dimtree
-# end
 
 Base.propertynames(ds::DGGSDataset) = union((:resolution, :dggsrs), Base.propertynames(parent(ds)))
 

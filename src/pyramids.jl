@@ -107,6 +107,12 @@ function to_dggs_pyramid(dggs_ds::DGGSDataset; kwargs...)
     return pyramid
 end
 
+function to_dggs_pyramid(dggs_array::DGGSArray; kwargs...)
+    dggs_ds = DGGSDataset(dggs_array)
+    pyramid = to_dggs_pyramid(dggs_ds; kwargs...)
+    return pyramid
+end
+
 Base.show(io::IO, p::DGGSPyramid) = print(io, "DGGSPyramid $(p.dggsrs) with resolutions $(first(p.data).second.resolution):$(last(p.data).second.resolution)")
 
 open_dggs_pyramid(args...; kwargs...) = error("Please load module Zarr first")

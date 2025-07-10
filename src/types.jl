@@ -68,7 +68,7 @@ struct DGGSDataset{K,T,N,L,D<:Tuple,R<:Tuple,LD,M,LM} <: AbstractDimStack{K,T,N,
         data, dims, refdims, layerdims::LD, metadata, layermetadata,
         resolution, dggsrs, bbox
     ) where LD<:NamedTuple{K} where K
-        T = DD.data_eltype(data)
+        T = eltype(data)
         N = length(dims)
         DGGSDataset{K,T,N}(
             data, dims, refdims, layerdims, metadata, layermetadata,

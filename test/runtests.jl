@@ -180,5 +180,9 @@ dggs_ds = DGGSDataset(dggs_array, dggs_array2)
         @test name(dggs_p.dggs_s3.air_temperature) == name(dggs_p2.dggs_s3.air_temperature)
         @test name(dggs_p.dggs_s3.precipitation) == name(dggs_p2.dggs_s3.precipitation)
         rm(temp_dir, recursive=true)
+
+        # pyramid from just one array
+        dggs_p2 = to_dggs_pyramid(dggs_array)
+        @test all([dggs_p2[x].layer1 isa DGGSArray for x in 1:3])
     end
 end
