@@ -16,11 +16,14 @@ makedocs(;
     ),
     pages=[
         "Home" => "index.md",
-        "Guide" => [
+        "API" => "api.md",
+        "User Guide" => [
             "Get Started" => "get_started.md",
             "Background" => "background.md",
         ],
-        "API" => "api.md",
+        "Tutorials" => [
+            "Sentinel-2 NDVI" => "sentinel-2-ndvi.md",
+        ],
     ]
 )
 
