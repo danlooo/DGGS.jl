@@ -183,6 +183,7 @@ dggs_ds = DGGSDataset(dggs_array, dggs_array2)
 
         # pyramid from just one array
         dggs_p2 = to_dggs_pyramid(dggs_array)
-        @test all([dggs_p2[x].layer1 isa DGGSArray for x in 1:3])
+        @test all([dggs_p2[x] isa DGGSDataset for x in 1:3])
+        @test all([dggs_p2[x].air_temperature isa DGGSArray for x in 1:3])
     end
 end

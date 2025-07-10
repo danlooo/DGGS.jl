@@ -1,13 +1,3 @@
-function DGGSDataset(dggs_array::DGGSArray; kwargs...)
-    array_tuple = (layer1=dggs_array,)
-    ds = DimStack(array_tuple; kwargs...)
-
-    return DGGSDataset(
-        array_tuple, dims(ds), DD.refdims(ds), DD.layerdims(ds), metadata(ds),
-        DD.layermetadata(ds), dggs_array.resolution, dggs_array.dggsrs, dggs_array.bbox
-    )
-end
-
 function DGGSDataset(dggs_arrays...; kwargs...)
     all(map(x -> x isa DGGSArray, dggs_arrays)) || error("All arrays must be of type DGGSArray")
 
@@ -32,7 +22,6 @@ function DGGSDataset(dggs_arrays...; kwargs...)
         DD.layermetadata(ds), resolution, dggsrs, bbox
     )
 end
-
 
 Base.propertynames(ds::DGGSDataset) = union((:resolution, :dggsrs), Base.propertynames(parent(ds)))
 
