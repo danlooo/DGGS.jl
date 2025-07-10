@@ -1,4 +1,5 @@
 [deps]
+ArchGDAL = "c9ce4bd3-c3d5-55b8-8973-c0e20141b8c3"
 DGGS = "1b1208a4-f9dd-4606-8704-9f68bba98fd1"
 DimensionalData = "0703355e-b756-11e9-17c0-8b28908087d0"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
