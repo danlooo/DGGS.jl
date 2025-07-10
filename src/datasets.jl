@@ -14,7 +14,8 @@ function DGGSDataset(dggs_arrays...; kwargs...)
         error("Name of DGGS arrays must be unique")
     end
 
-    array_tuple = map(x -> DD.name(x) => x, dggs_arrays) |> NamedTuple
+    extract_name(a) = a.name == DD.NoName() ? :layer1 : a.name
+    array_tuple = map(x -> extract_name(x) => x, dggs_arrays) |> NamedTuple
     ds = DimStack(array_tuple; kwargs...)
 
     return DGGSDataset(

@@ -142,12 +142,15 @@ dggs_ds = DGGSDataset(dggs_array, dggs_array2)
         a2 = DGGSArray(dim_array, resolution; name=:blue)
         a3 = DGGSArray(dim_array, resolution; name=:green)
         a4 = DGGSArray(rand(i_dim, j_dim, n_dim), resolution; name=:height)
+        a5 = DGGSArray(dim_array, resolution)
 
         ds1 = DGGSDataset(a1)
         ds2 = DGGSDataset(a1, a2, a3, a4)
+        ds3 = DGGSDataset(a5)
 
         @test ds1 isa DGGSDataset
         @test ds2 isa DGGSDataset
+        @test ds3 isa DGGSDataset
         @test ds1.red isa DGGSArray
         @test length(keys(ds1)) == 1
         @test length(keys(ds2)) == 4
