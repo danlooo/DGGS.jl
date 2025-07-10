@@ -107,6 +107,34 @@ function to_dggs_pyramid(dggs_ds::DGGSDataset; kwargs...)
     return pyramid
 end
 
+function to_dggs_pyramid(dggs_array::DGGSArray; kwargs...)
+    dggs_ds = DGGSDataset(dggs_array)
+    pyramid = to_dggs_pyramid(dggs_ds; kwargs...)
+    return pyramid
+end
+
+function to_dggs_pyramid(
+    geo_ds::YAXArrays.Dataset, resolution::Integer, crs::String, agg_func::Function;
+    kwargs...
+)
+    dggs_ds = to_dggs_dataset(geo_ds, resolution, crs, agg_func; kwargs...)
+    dggs_pyramid = to_dggs_pyramid(dggs_ds)
+    return dggs_pyramid
+end
+
+function to_dggs_pyramid(geo_ds::YAXArrays.Dataset, resolution::Integer, crs::String; kwargs...)
+    dggs_ds = to_dggs_dataset(geo_ds, resolution, crs; kwargs...)
+    dggs_pyramid = to_dggs_pyramid(dggs_ds)
+    return dggs_pyramid
+end
+
+function to_dggs_pyramid(geo_array::YAXArrays.YAXArray, resolution::Integer, crs::String; kwargs...)
+    dggs_array = to_dggs_array(geo_array, resolution, crs; kwargs...)
+    dggs_pyramid = to_dggs_pyramid(dggs_array)
+    return dggs_pyramid
+end
+
+
 Base.show(io::IO, p::DGGSPyramid) = print(io, "DGGSPyramid $(p.dggsrs) with resolutions $(first(p.data).second.resolution):$(last(p.data).second.resolution)")
 
 open_dggs_pyramid(args...; kwargs...) = error("Please load module Zarr first")

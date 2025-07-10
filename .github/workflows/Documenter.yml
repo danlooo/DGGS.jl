@@ -8,7 +8,7 @@ on:
   push:
     branches:
       - main
-    tags: ['*']
+    tags: ["*"]
   pull_request:
 
   # Allows you to run this workflow manually from the Actions tab
@@ -50,4 +50,4 @@ jobs:
           JULIA_DEBUG: "Documenter"
           DATADEPS_ALWAYS_ACCEPT: true
         run: |
-          DISPLAY=:0 xvfb-run -s '-screen 0 1024x768x24' julia --project=docs/ --color=yes docs/make.jl
+          DISPLAY=:0 xvfb-run -s '-screen 0 1024x768x24' julia --threads=auto --project=docs/ --color=yes docs/make.jl

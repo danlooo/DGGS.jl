@@ -142,12 +142,15 @@ dggs_ds = DGGSDataset(dggs_array, dggs_array2)
         a2 = DGGSArray(dim_array, resolution; name=:blue)
         a3 = DGGSArray(dim_array, resolution; name=:green)
         a4 = DGGSArray(rand(i_dim, j_dim, n_dim), resolution; name=:height)
+        a5 = DGGSArray(dim_array, resolution)
 
         ds1 = DGGSDataset(a1)
         ds2 = DGGSDataset(a1, a2, a3, a4)
+        ds3 = DGGSDataset(a5)
 
         @test ds1 isa DGGSDataset
         @test ds2 isa DGGSDataset
+        @test ds3 isa DGGSDataset
         @test ds1.red isa DGGSArray
         @test length(keys(ds1)) == 1
         @test length(keys(ds2)) == 4
@@ -180,5 +183,10 @@ dggs_ds = DGGSDataset(dggs_array, dggs_array2)
         @test name(dggs_p.dggs_s3.air_temperature) == name(dggs_p2.dggs_s3.air_temperature)
         @test name(dggs_p.dggs_s3.precipitation) == name(dggs_p2.dggs_s3.precipitation)
         rm(temp_dir, recursive=true)
+
+        # pyramid from just one array
+        dggs_p2 = to_dggs_pyramid(dggs_array)
+        @test all([dggs_p2[x] isa DGGSDataset for x in 1:3])
+        @test all([dggs_p2[x].air_temperature isa DGGSArray for x in 1:3])
     end
 end
