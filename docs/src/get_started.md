@@ -62,26 +62,21 @@ plot(geo_array)
 Convert it into DGGS:
 
 ```@example get_started
-resolution = 3
-dggs_array = to_dggs_array(geo_array, resolution, "EPSG:4326")
+resolution = 4
+dggs_pyramid = to_dggs_pyramid(geo_array, resolution, "EPSG:4326")
 ```
 
-Plot the DGGS data:
+Extract a single variable at a given spatial refinement level:
+
+```@example get_started
+dggs_array = dggs_pyramid[3].layer1
+```
+
+Plot the array:
 
 ```@example get_started
 plot(dggs_array)
 ```
 
 The resolution is set extremely low to demonstrate the cell shapes.
-In practice, one sets it high enough to prevent loosing spatial resolution.
-
-## Building Pyramids
-
-DGGS is a system of grids at different spatial resolutions.
-Lets calculate all coarser levels:
-
-```@example get_started
-dggs_pyramid = to_dggs_pyramid(dggs_array)
-```
-
-Each subsequent coarser resolution has only half the number of rows and colums at the dimensions `dggs_i` and `dggs_j`, respectiveley, yielding an aperture of 4.
+In practice, one sets it high enough to prevent losing spatial resolution.
