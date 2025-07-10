@@ -55,7 +55,7 @@ geo_array = YAXArray((lon_range, lat_range), geo_data)
 Plot the geo data:
 
 ```@example get_started
-using CairoMakie
+using GLMakie
 plot(geo_array)
 ```
 
