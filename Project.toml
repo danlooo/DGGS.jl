@@ -27,6 +27,7 @@ DGGSZarr = "Zarr"
 
 [compat]
 CoordinateTransformations = "0.6.4"
+DimensionalData = "0.29"
 Extents = "0.1.5"
 GeometryBasics = "0.5.9"
 Infiltrator = "1.8.8"
