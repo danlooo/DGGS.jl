@@ -55,8 +55,8 @@ function to_dggs_dataset(geo_ds::Dataset, resolution::Integer, crs::String, agg_
 end
 
 "Fast iterative version only supporting mean"
-function to_dggs_dataset(geo_ds::Dataset, resolution::Integer, crs::String; metadata=Dict(), kwargs...)
-    cells = compute_cell_array(geo_ds.X, geo_ds.Y, resolution, crs)
+function to_dggs_dataset(geo_ds::Dataset, resolution::Integer, crs::String; x_name=:X, y_name=:Y, metadata=Dict(), kwargs...)
+    cells = compute_cell_array(geo_ds.axes[x_name], geo_ds.axes[y_name], resolution, crs)
     dggs_bbox = get_dggs_bbox(cells)
     geo_bbox = get_geo_bbox(geo_ds.cubes |> values |> first, crs)
 
