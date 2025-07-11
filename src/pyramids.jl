@@ -59,17 +59,25 @@ function aggregate_by_factor(xin::AbstractArray, xout::AbstractArray, f::Functio
     end
 end
 
-function coarsen(dggs_array::DGGSArray; f=x -> filter(y -> !ismissing(y) && !isnan(y), x) |> mean)
+
+function coarsen(
+    dggs_array::DGGSArray;
+    f=x -> filter(y -> !ismissing(y) && !isnan(y), x) |> mean
+)
     coarser_level = dggs_array.resolution - 1
+
+    # analog to GeoTIFF overviews 
+    coarser_dims = map((:dggs_i, :dggs_j)) do dim
+        dim_min, dim_max = dims(dggs_array, dim) |> extrema
+        dim_min = floor(dim_min / 2) |> Int
+        dim_max = floor(dim_max / 2) |> Int
+        Dim{dim}(dim_min:dim_max)
+    end
 
     coarser_arr = mapCube(
         dggs_array;
         indims=InDims(:dggs_i, :dggs_j),
-        outdims=OutDims(
-            # TODO: restrict range to subset
-            Dim{:dggs_i}(range(0; step=1, length=2 * 2^coarser_level)),
-            Dim{:dggs_j}(range(0; step=1, length=2^coarser_level))
-        )
+        outdims=OutDims(coarser_dims...)
     ) do xout, xin
         xout = aggregate_by_factor(xin, xout, f)
     end

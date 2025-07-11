@@ -188,5 +188,9 @@ dggs_ds = DGGSDataset(dggs_array, dggs_array2)
         dggs_p2 = to_dggs_pyramid(dggs_array)
         @test all([dggs_p2[x] isa DGGSDataset for x in 1:3])
         @test all([dggs_p2[x].air_temperature isa DGGSArray for x in 1:3])
+
+        # pyramid from a subset
+        geo_array4 = geo_array[X=20:30, Y=17:22]
+        p = to_dggs_pyramid(geo_array4, resolution, "EPSG:4326")
     end
 end
