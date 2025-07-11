@@ -23,6 +23,7 @@ makedocs(;
         ],
         "Tutorials" => [
             "Sentinel-2 NDVI" => "sentinel-2-ndvi.md",
+            "NetCDF Climate" => "netcdf-climate.md"
         ],
     ]
 )
