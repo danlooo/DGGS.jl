@@ -130,15 +130,19 @@ function to_dggs_pyramid(
     return dggs_pyramid
 end
 
-function to_dggs_pyramid(geo_ds::YAXArrays.Dataset, resolution::Integer, crs::String; kwargs...)
+function to_dggs_pyramid(geo_ds::YAXArrays.Dataset, resolution::Integer, crs::String;
+    f=x -> filter(y -> !ismissing(y) && !isnan(y), x) |> mean, kwargs...
+)
     dggs_ds = to_dggs_dataset(geo_ds, resolution, crs; kwargs...)
-    dggs_pyramid = to_dggs_pyramid(dggs_ds)
+    dggs_pyramid = to_dggs_pyramid(dggs_ds; f=f)
     return dggs_pyramid
 end
 
-function to_dggs_pyramid(geo_array::YAXArrays.YAXArray, resolution::Integer, crs::String; kwargs...)
+function to_dggs_pyramid(geo_array::YAXArrays.YAXArray, resolution::Integer, crs::String;
+    f=x -> filter(y -> !ismissing(y) && !isnan(y), x) |> mean,
+    kwargs...)
     dggs_array = to_dggs_array(geo_array, resolution, crs; kwargs...)
-    dggs_pyramid = to_dggs_pyramid(dggs_array)
+    dggs_pyramid = to_dggs_pyramid(dggs_array; f=f)
     return dggs_pyramid
 end
 
