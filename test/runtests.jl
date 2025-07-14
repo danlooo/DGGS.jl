@@ -192,5 +192,17 @@ dggs_ds = DGGSDataset(dggs_array, dggs_array2)
         # pyramid from a subset
         geo_array4 = geo_array[X=20:30, Y=17:22]
         p = to_dggs_pyramid(geo_array4, resolution, "EPSG:4326")
+
+        # plot colormap pyramids
+        @test plot(dggs_p, :air_temperature) isa Figure
+
+        # plot RGB pyramids
+        dggs_ds_rgb = DGGSDataset(
+            rebuild(dggs_array; name=:Red, metadata=Dict()),
+            rebuild(dggs_array; name=:Green, metadata=Dict()),
+            rebuild(dggs_array; name=:Blue, metadata=Dict()),
+        )
+        dggs_p_rgb = to_dggs_pyramid(dggs_ds_rgb)
+        @test plot(dggs_p_rgb, :Red, :Green, :Blue)
     end
 end

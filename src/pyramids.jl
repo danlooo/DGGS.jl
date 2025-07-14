@@ -20,6 +20,17 @@ end
 
 Base.propertynames(dggs_p::DGGSPyramid) = union((:dggsrs, :bbox), keys(dggs_p.branches))
 
+get_resolutions(dggs_p::DGGSPyramid) = (keys(dggs_p.branches) .|> x -> String(x)[7:end] .|> x -> parse(Int, x)) |> sort
+
+function DD.label(p::DGGSPyramid)
+    layer_keys = p.branches |> values |> first |> DD.layers |> keys
+    if length(layer_keys) == 1
+        return String(layer_keys[1])
+    else
+        return ""
+    end
+end
+
 function extract_dggs_dataset(dggs_p::DGGSPyramid, layer_name::Symbol)
     # DimTree stores leaves as DimTree objects. Re-create DGGSDataset from layers
     branch = DD.branches(dggs_p)[layer_name]
