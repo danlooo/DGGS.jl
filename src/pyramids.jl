@@ -48,13 +48,17 @@ function DD.show_after(io::IO, mime, x::DGGSPyramid)
     DD.print_block_close(io, block_width)
 end
 
-function aggregate_by_factor(xin::AbstractArray, xout::AbstractArray, f::Function)
+function aggregate_by_factor(
+    xin::AbstractArray,
+    xout::AbstractArray,
+    pyramid_agg_func::Function=x -> filter(y -> !ismissing(y) && !isnan(y), x) |> mean
+)
     fac = ceil(Int, size(xin, 1) / size(xout, 1))
     for j in axes(xout, 2)
         for i in axes(xout, 1)
             xview = ((i-1)*fac+1):min(size(xin, 1), (i * fac))
             yview = ((j-1)*fac+1):min(size(xin, 2), (j * fac))
-            xout[i, j] = f(view(xin, xview, yview))
+            xout[i, j] = pyramid_agg_func(view(xin, xview, yview))
         end
     end
 end
@@ -62,7 +66,7 @@ end
 
 function coarsen(
     dggs_array::DGGSArray;
-    f=x -> filter(y -> !ismissing(y) && !isnan(y), x) |> mean
+    pyramid_agg_func::Function=x -> filter(y -> !ismissing(y) && !isnan(y), x) |> mean
 )
     coarser_level = dggs_array.resolution - 1
 
@@ -79,7 +83,7 @@ function coarsen(
         indims=InDims(:dggs_i, :dggs_j),
         outdims=OutDims(coarser_dims...)
     ) do xout, xin
-        xout = aggregate_by_factor(xin, xout, f)
+        xout = aggregate_by_factor(xin, xout, pyramid_agg_func)
     end
 
     properties = Dict{String,Any}(metadata(dggs_array))
@@ -130,20 +134,29 @@ function to_dggs_pyramid(
     return dggs_pyramid
 end
 
-function to_dggs_pyramid(geo_ds::YAXArrays.Dataset, resolution::Integer, crs::String; kwargs...)
+function to_dggs_pyramid(
+    geo_ds::YAXArrays.Dataset,
+    resolution::Integer,
+    crs::String;
+    pyramid_agg_func::Function=x -> filter(y -> !ismissing(y) && !isnan(y), x) |> mean,
+    kwargs...
+)
     dggs_ds = to_dggs_dataset(geo_ds, resolution, crs; kwargs...)
-    dggs_pyramid = to_dggs_pyramid(dggs_ds)
+    dggs_pyramid = to_dggs_pyramid(dggs_ds; pyramid_agg_func=pyramid_agg_func)
     return dggs_pyramid
 end
 
-function to_dggs_pyramid(geo_array::YAXArrays.YAXArray, resolution::Integer, crs::String; kwargs...)
+function to_dggs_pyramid(
+    geo_array::YAXArrays.YAXArray,
+    resolution::Integer,
+    crs::String;
+    pyramid_agg_func::Function=x -> filter(y -> !ismissing(y) && !isnan(y), x) |> mean,
+    kwargs...
+)
     dggs_array = to_dggs_array(geo_array, resolution, crs; kwargs...)
-    dggs_pyramid = to_dggs_pyramid(dggs_array)
+    dggs_pyramid = to_dggs_pyramid(dggs_array; pyramid_agg_func=pyramid_agg_func)
     return dggs_pyramid
 end
-
-
-Base.show(io::IO, p::DGGSPyramid) = print(io, "DGGSPyramid $(p.dggsrs) with resolutions $(first(p.data).second.resolution):$(last(p.data).second.resolution)")
 
 open_dggs_pyramid(args...; kwargs...) = error("Please load module Zarr first")
 save_dggs_pyramid(args...; kwargs...) = error("Please load module Zarr first")
