@@ -20,6 +20,17 @@ end
 
 Base.propertynames(dggs_p::DGGSPyramid) = union((:dggsrs, :bbox), keys(dggs_p.branches))
 
+get_resolutions(dggs_p::DGGSPyramid) = (keys(dggs_p.branches) .|> x -> String(x)[7:end] .|> x -> parse(Int, x)) |> sort
+
+function DD.label(p::DGGSPyramid)
+    layer_keys = p.branches |> values |> first |> DD.layers |> keys
+    if length(layer_keys) == 1
+        return String(layer_keys[1])
+    else
+        return ""
+    end
+end
+
 function extract_dggs_dataset(dggs_p::DGGSPyramid, layer_name::Symbol)
     # DimTree stores leaves as DimTree objects. Re-create DGGSDataset from layers
     branch = DD.branches(dggs_p)[layer_name]
@@ -92,6 +103,8 @@ function coarsen(
     properties["dggs_bbox"] = dggs_array.bbox
 
     coarser_dggs_arr = YAXArray(dims(coarser_arr), coarser_arr.data, properties) |> DGGSArray
+    coarser_dggs_arr = rebuild(coarser_dggs_arr; name=name(dggs_array))
+
     return coarser_dggs_arr
 end
 
@@ -114,7 +127,7 @@ function to_dggs_pyramid(dggs_ds::DGGSDataset; kwargs...)
         coarser_ds = coarsen(current_dggs_ds; kwargs...)
         push!(pyramid, coarser_ds)
     end
-    data = (pyramid |> reverse .|> x -> x.resolution => x) |> Dict
+    data = (pyramid |> reverse .|> x -> x.resolution => x) |> OrderedDict
     pyramid = DGGSPyramid(data, dggs_ds.dggsrs, dggs_ds.bbox)
     return pyramid
 end
