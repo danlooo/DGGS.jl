@@ -127,7 +127,7 @@ function to_dggs_pyramid(dggs_ds::DGGSDataset; kwargs...)
         coarser_ds = coarsen(current_dggs_ds; kwargs...)
         push!(pyramid, coarser_ds)
     end
-    data = (pyramid |> reverse .|> x -> x.resolution => x) |> Dict
+    data = (pyramid |> reverse .|> x -> x.resolution => x) |> OrderedDict
     pyramid = DGGSPyramid(data, dggs_ds.dggsrs, dggs_ds.bbox)
     return pyramid
 end
