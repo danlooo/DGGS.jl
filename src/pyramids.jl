@@ -103,6 +103,8 @@ function coarsen(
     properties["dggs_bbox"] = dggs_array.bbox
 
     coarser_dggs_arr = YAXArray(dims(coarser_arr), coarser_arr.data, properties) |> DGGSArray
+    coarser_dggs_arr = rebuild(coarser_dggs_arr; name=name(dggs_array))
+
     return coarser_dggs_arr
 end
 
