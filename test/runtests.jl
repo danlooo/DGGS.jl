@@ -203,6 +203,6 @@ dggs_ds = DGGSDataset(dggs_array, dggs_array2)
             rebuild(dggs_array; name=:Blue, metadata=Dict()),
         )
         dggs_p_rgb = to_dggs_pyramid(dggs_ds_rgb)
-        @test plot(dggs_p_rgb, :Red, :Green, :Blue)
+        @test plot(dggs_p_rgb, :Red, :Green, :Blue) isa Figure
     end
 end
