@@ -77,7 +77,8 @@ end
 
 function coarsen(
     dggs_array::DGGSArray;
-    pyramid_agg_func::Function=x -> filter(y -> !ismissing(y) && !isnan(y), x) |> mean
+    pyramid_agg_func::Function=x -> filter(y -> !ismissing(y) && !isnan(y), x) |> mean,
+    kwargs...
 )
     coarser_level = dggs_array.resolution - 1
 
@@ -92,7 +93,7 @@ function coarsen(
     coarser_arr = mapCube(
         dggs_array;
         indims=InDims(:dggs_i, :dggs_j),
-        outdims=OutDims(coarser_dims...)
+        outdims=OutDims(coarser_dims...; kwargs...)
     ) do xout, xin
         xout = aggregate_by_factor(xin, xout, pyramid_agg_func)
     end
@@ -152,10 +153,12 @@ function to_dggs_pyramid(
     resolution::Integer,
     crs::String;
     pyramid_agg_func::Function=x -> filter(y -> !ismissing(y) && !isnan(y), x) |> mean,
+    outtype_sums,
+    outtype,
     kwargs...
 )
-    dggs_ds = to_dggs_dataset(geo_ds, resolution, crs; kwargs...)
-    dggs_pyramid = to_dggs_pyramid(dggs_ds; pyramid_agg_func=pyramid_agg_func)
+    dggs_ds = to_dggs_dataset(geo_ds, resolution, crs; outtype=outtype, outtype_sums=outtype_sums, kwargs...)
+    dggs_pyramid = to_dggs_pyramid(dggs_ds; pyramid_agg_func=pyramid_agg_func, kwargs...)
     return dggs_pyramid
 end
 
@@ -167,7 +170,7 @@ function to_dggs_pyramid(
     kwargs...
 )
     dggs_array = to_dggs_array(geo_array, resolution, crs; kwargs...)
-    dggs_pyramid = to_dggs_pyramid(dggs_array; pyramid_agg_func=pyramid_agg_func)
+    dggs_pyramid = to_dggs_pyramid(dggs_array; pyramid_agg_func=pyramid_agg_func, kwargs...)
     return dggs_pyramid
 end
 
