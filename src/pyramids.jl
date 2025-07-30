@@ -31,6 +31,9 @@ function DD.label(p::DGGSPyramid)
     end
 end
 
+# is defined on data filed by default which is empty in DGGSPyramid
+Base.keys(p::DGGSPyramid) = Base.keys(p.branches)
+
 function extract_dggs_dataset(dggs_p::DGGSPyramid, layer_name::Symbol)
     # DimTree stores leaves as DimTree objects. Re-create DGGSDataset from layers
     branch = DD.branches(dggs_p)[layer_name]

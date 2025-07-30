@@ -20,9 +20,26 @@ function get_resolution(dggs_pyramid::DGGSPyramid, lon_dim::X, lat_dim::Y)
     return available_resolution
 end
 
-function get_texture(dggs_pyramid::DGGSPyramid, lon_dim::X, lat_dim::Y, layer::Symbol)
+function get_texture(
+    dggs_pyramid::DGGSPyramid,
+    lon_dim::X,
+    lat_dim::Y,
+    layer::Symbol
+)
     resolution = get_resolution(dggs_pyramid, lon_dim, lat_dim)
     dggs_array = getproperty(dggs_pyramid[resolution], layer)
+    return get_texture(dggs_array, lon_dim, lat_dim)
+end
+
+function get_texture(
+    dggs_pyramid::DGGSPyramid,
+    lon_dim::X,
+    lat_dim::Y,
+)
+    layer_keys = dggs_pyramid.branches[dggs_pyramid|>keys|>first] |> keys
+    length(layer_keys) == 1 || error("Multiple layers found: $(layer_keys). Please specify a layer.")
+    resolution = get_resolution(dggs_pyramid, lon_dim, lat_dim)
+    dggs_array = getproperty(dggs_pyramid[resolution], layer_keys[1])
     return get_texture(dggs_array, lon_dim, lat_dim)
 end
 
@@ -45,9 +62,14 @@ function get_texture(dggs_ds::DGGSDataset, lon_dim::X, lat_dim::Y, layer::Symbol
 end
 
 function get_texture(
-    ds::DGGSDataset, lon_dim::X, lat_dim::Y,
-    red_layer::Symbol, green_layer::Symbol, blue_layer::Symbol,
-    scale_factor::Real=1, offset::Real=0
+    ds::DGGSDataset,
+    lon_dim::X,
+    lat_dim::Y,
+    red_layer::Symbol,
+    green_layer::Symbol,
+    blue_layer::Symbol,
+    scale_factor::Real=1,
+    offset::Real=0
 )
     ds_rgb = DGGSDataset(getproperty(ds, red_layer), getproperty(ds, green_layer), getproperty(ds, blue_layer))
     geo_ds = to_geo_dataset(ds_rgb, lon_dim, lat_dim)
@@ -98,7 +120,7 @@ function Makie.plot(
         lon_dim = X(lon_range)
         lat_dim = Y(lat_range)
 
-        get_texture(dggs, lon_dim::X, lat_dim::Y, args...)
+        get_texture(dggs, lon_dim, lat_dim, args...)
     end
 
     last_update_limits = Observable(ax.finallimits[])

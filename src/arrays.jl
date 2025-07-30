@@ -184,7 +184,7 @@ function to_dggs_array(
 
     # re-grid
     # mean = sum first, then divide by count
-    # no slow dict building and lookup needed
+    # no slow dict building and lookup needed 
 
     counts = zeros(outtype_counts, length.(dggs_bbox)...)
 
