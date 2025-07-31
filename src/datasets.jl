@@ -109,7 +109,7 @@ function YAXArrays.Dataset(dggs_ds::DGGSDataset)
     Dataset(; properties=properties, arrays...)
 end
 
-open_dggs_dataset(file_path::String; kwargs...) = file_path |> x -> open_dataset(x; kwargs...) |> DGGSDataset
+open_dggs_dataset(file_path::String; kwargs...) = file_path |> x -> open_dataset(x; kwargs...) |> cache |> DGGSDataset
 
 function save_dggs_dataset(file_path::String, dggs_ds::DGGSDataset; kwargs...)
     dggs_ds |> Dataset |> x -> savedataset(x; path=file_path, kwargs...)

@@ -40,7 +40,7 @@ function DGGS.open_dggs_pyramid(path::String, args...; storetype=DirectoryStore)
     dimtree = DimTree()
     groups = sort(group.groups, by=k -> group.groups[k].attrs["dggs_resolution"])
     for (k, v) in pairs(groups)
-        ds = open_dataset(v; driver=:zarr)
+        ds = open_dataset(v; driver=:zarr) |> cache
         dggs_ds = DGGSDataset(ds)
         setproperty!(dimtree, Symbol(k), dggs_ds)
     end

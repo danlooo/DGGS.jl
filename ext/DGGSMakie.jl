@@ -43,9 +43,15 @@ function get_texture(
     return get_texture(dggs_array, lon_dim, lat_dim)
 end
 
-function get_texture(dggs_pyramid::DGGSPyramid, lon_dim::X, lat_dim::Y,
-    red_layer::Symbol, green_layer::Symbol, blue_layer::Symbol,
-    scale_factor::Real=1, offset::Real=0
+function get_texture(
+    dggs_pyramid::DGGSPyramid,
+    lon_dim::X,
+    lat_dim::Y,
+    red_layer::Symbol,
+    green_layer::Symbol,
+    blue_layer::Symbol,
+    scale_factor::Real=1,
+    offset::Real=0
 )
     resolution = get_resolution(dggs_pyramid, lon_dim, lat_dim)
     dggs_ds = dggs_pyramid[resolution]
@@ -135,10 +141,6 @@ function Makie.plot(
             sleep(Millisecond(30))
             continue
         end
-
-        # delay plotting if small zoom/pan detected
-        change_frac = maximum(abs.(ax.finallimits[].origin .- last_update_limits[].origin) ./ last_update_limits[].widths)
-        change_frac < 0.2 && sleep(Millisecond(500))
 
         data[]
         last_update_limits[] = lims

@@ -13,6 +13,7 @@ using Printf
 using Infiltrator
 using Extents
 using OrderedCollections
+using DiskArrayTools
 
 include("types.jl")
 include("cells.jl")

@@ -286,22 +286,31 @@ function to_geo_array(dggs_array::DGGSArray, cells::AbstractDimArray; backend=:a
     j_min, j_max = get_extent(2)
     n_min, n_max = get_extent(3)
 
-    geo_array = mapCube(
-        dggs_array,
-        indims=InDims(
-            :dggs_i,
-            :dggs_j,
-            :dggs_n
-        ),
-        outdims=OutDims(lon_dim, lat_dim, backend=backend),
-        kwargs...
-    ) do xout, xin
-        for ci in CartesianIndices(xout)
-            try
-                cell_ci = cells[ci] |> x -> CartesianIndex(x.i - i_min + 1, x.j - j_min + 1, x.n - n_min + 1)
-                xout[ci] = xin[cell_ci]
-            catch
-                # not data available for this pixel
+    geo_array = if backend == :array
+        # in memory calculation
+        # mapCube can write to disk but can not utilize the cache
+        if dggs_array.data isa DiskArrayTools.CFDiskArray
+            dggs_array = cache(dggs_array)
+        end
+        map(x -> dggs_array[x], cells)
+    else
+        mapCube(
+            dggs_array,
+            indims=InDims(
+                :dggs_i,
+                :dggs_j,
+                :dggs_n
+            ),
+            outdims=OutDims(lon_dim, lat_dim, backend=backend),
+            kwargs...
+        ) do xout, xin
+            for ci in CartesianIndices(xout)
+                try
+                    cell_ci = cells[ci] |> x -> CartesianIndex(x.i - i_min + 1, x.j - j_min + 1, x.n - n_min + 1)
+                    xout[ci] = xin[cell_ci]
+                catch
+                    # not data available for this pixel
+                end
             end
         end
     end
@@ -391,12 +400,14 @@ function non_spatial_dims(dggs_array::DGGSArray)
     filter(x -> !(name(x) in spatial_dim_names), dggs_array.dims)
 end
 
+Base.getindex(a::DGGSArray, c::Cell) = a[dggs_i=At(c.i), dggs_j=At(c.j), dggs_n=At(c.n)]
+
 #
 # IO:: Serialization of DGGS Arrays
 #
 
 function open_dggs_array(file_path::String)
-    ds = open_dataset(file_path)
+    ds = open_dataset(file_path) |> cache
     length(ds.cubes) == 1 || error("Path contains more than one Array")
 
     arr_name, arr = first(ds.cubes)
