@@ -49,16 +49,15 @@ function get_texture(
     lat_dim::Y,
     red_layer::Symbol,
     green_layer::Symbol,
-    blue_layer::Symbol,
-    scale_factor::Real=1,
-    offset::Real=0
+    blue_layer::Symbol;
+    kwargs...
 )
     resolution = get_resolution(dggs_pyramid, lon_dim, lat_dim)
     dggs_ds = dggs_pyramid[resolution]
     return get_texture(
         dggs_ds, lon_dim, lat_dim,
-        red_layer, green_layer, blue_layer,
-        scale_factor, offset
+        red_layer, green_layer, blue_layer;
+        kwargs...
     )
 end
 
@@ -73,7 +72,7 @@ function get_texture(
     lat_dim::Y,
     red_layer::Symbol,
     green_layer::Symbol,
-    blue_layer::Symbol,
+    blue_layer::Symbol;
     scale_factor::Real=1,
     offset::Real=0
 )
@@ -103,7 +102,8 @@ function Makie.plot(
     args...
     ;
     extent=dggs.bbox,
-    resolution_scale::Real=1
+    resolution_scale::Real=1,
+    kwargs...
 )
     fig = Figure()
     ax = Axis(fig[1, 1], limits=(extent.X..., extent.Y...), xlabel="longitude [°]", ylabel="latitude [°]")
@@ -126,7 +126,7 @@ function Makie.plot(
         lon_dim = X(lon_range)
         lat_dim = Y(lat_range)
 
-        get_texture(dggs, lon_dim, lat_dim, args...)
+        get_texture(dggs, lon_dim, lat_dim, args...; kwargs...)
     end
 
     last_update_limits = Observable(ax.finallimits[])
