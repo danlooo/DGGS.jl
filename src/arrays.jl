@@ -292,7 +292,13 @@ function to_geo_array(dggs_array::DGGSArray, cells::AbstractDimArray; backend=:a
         if dggs_array.data isa DiskArrayTools.CFDiskArray
             dggs_array = cache(dggs_array)
         end
-        map(x -> dggs_array[x], cells) |> x -> YAXArray(dims(x), x.data, Dict())
+        map(cells) do c
+            try
+                dggs_array[c]
+            catch
+                missing
+            end
+        end |> x -> YAXArray(dims(x), x.data, Dict())
     else
         mapCube(
             dggs_array,
