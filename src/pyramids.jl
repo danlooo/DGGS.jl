@@ -33,6 +33,8 @@ end
 
 # is defined on data filed by default which is empty in DGGSPyramid
 Base.keys(p::DGGSPyramid) = Base.keys(p.branches)
+Base.first(p::DGGSPyramid) = p |> keys |> first |> x -> getproperty(p, x)
+Base.last(p::DGGSPyramid) = p |> keys |> collect |> last |> x -> getproperty(p, x)
 
 function extract_dggs_dataset(dggs_p::DGGSPyramid, layer_name::Symbol)
     # DimTree stores leaves as DimTree objects. Re-create DGGSDataset from layers
