@@ -99,8 +99,8 @@ function get_geo_bbox(geo_array::AbstractDimArray, crs::String)
     # use default thread pool for lat/lon conversion
     wgs84_crs_geogcs = "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AXIS[\"Latitude\",NORTH],AXIS[\"Longitude\",EAST],AUTHORITY[\"EPSG\",\"4326\"]]"
 
-    x_min, x_max = extrema(geo_array.X)
-    y_min, y_max = extrema(geo_array.Y)
+    x_min, x_max = dims(geo_array, :X) |> extrema
+    y_min, y_max = dims(geo_array, :Y) |> extrema
 
     if crs in [wgs84_crs_geogcs, "EPSG:4326"]
         ext = Extent(X=(x_min, x_max), Y=(y_min, y_max))
@@ -266,7 +266,6 @@ function to_dggs_array(geo_array::AbstractDimArray, resolution::Integer, crs::St
     y_dim = only(y_dim)
 
     properties = metadata(geo_array)
-    delete!(properties, "projection")
 
     cells = compute_cell_array(x_dim, y_dim, resolution, crs)
     dggs_bbox = get_dggs_bbox(cells)
@@ -391,10 +390,10 @@ end
 function get_name(array::AbstractDimArray)
     # as implemented in python xarray
     # uses CF conventions
-    isempty(array.properties) && return DD.NoName()
-    haskey(array.properties, "long_name") && return array.properties["long_name"] |> Symbol
-    haskey(array.properties, "standard_name") && return array.properties["standard_name"] |> Symbol
-    haskey(array.properties, "name") && return array.properties["name"] |> Symbol
+    isempty(array.metadata) && return DD.NoName()
+    haskey(array.metadata, "long_name") && return array.metadata["long_name"] |> Symbol
+    haskey(array.metadata, "standard_name") && return array.metadata["standard_name"] |> Symbol
+    haskey(array.metadata, "name") && return array.metadata["name"] |> Symbol
     return DD.NoName()
 end
 
