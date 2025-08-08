@@ -390,10 +390,10 @@ end
 function get_name(array::AbstractDimArray)
     # as implemented in python xarray
     # uses CF conventions
-    isempty(array.metadata) && return DD.NoName()
-    haskey(array.metadata, "long_name") && return array.metadata["long_name"] |> Symbol
-    haskey(array.metadata, "standard_name") && return array.metadata["standard_name"] |> Symbol
-    haskey(array.metadata, "name") && return array.metadata["name"] |> Symbol
+    isempty(metadata(array)) && return DD.NoName()
+    haskey(metadata(array), "long_name") && return metadata(array)["long_name"] |> Symbol
+    haskey(metadata(array), "standard_name") && return metadata(array)["standard_name"] |> Symbol
+    haskey(metadata(array), "name") && return metadata(array)["name"] |> Symbol
     return DD.NoName()
 end
 
