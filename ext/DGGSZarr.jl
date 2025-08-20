@@ -28,7 +28,10 @@ end
 function DGGS.open_dggs_pyramid(path::String, args...; storetype=DirectoryStore)
     store = storetype(path, args...)
     group = zopen(store)
+    pyramid = DGGS.open_dggs_pyramid(group)
+end
 
+function DGGS.open_dggs_pyramid(group::ZGroup)
     dggsrs = get(group.attrs, "dggs_dggsrs", missing)
     bbox = get(group.attrs, "dggs_bbox", missing)
 
@@ -47,5 +50,4 @@ function DGGS.open_dggs_pyramid(path::String, args...; storetype=DirectoryStore)
     res = DGGSPyramid(dimtree, dggsrs, bbox)
     return res
 end
-
 end
