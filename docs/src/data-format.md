@@ -15,7 +15,7 @@ The final DGGS in an image pyramid of datasets at a given refinement level and a
 ## Data Format
 
 The data is stored according to the [Unidata's Common Data Model (CDM)](https://docs.unidata.ucar.edu/netcdf-c/current/netcdf_data_model.html) using [CF Metadata Conventions](https://cfconventions.org/) by extending attributes and dimensions with the prefix `dggs_`.
-An example in Zarr forma is provided at [https://github.com/danlooo/blue-marble.dggs.zarr](https://github.com/danlooo/blue-marble.dggs.zarr).
+An example in Zarr format is provided at [https://github.com/danlooo/blue-marble.dggs.zarr](https://github.com/danlooo/blue-marble.dggs.zarr).
 The root group contains a group for all spatial refinement levels (dataset) that contain all variables (arrays) for variables and dimensions at the given level.
 Each dataset MUST contain spatial dimensions `dggs_i`, `dggs_j`, and `dggs_n`.
 
