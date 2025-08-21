@@ -22,6 +22,7 @@ makedocs(;
             "Background" => "background.md",
         ],
         "Tutorials" => [
+            "Remote Data" => "remote-blue-marble.md",
             "Sentinel-2 NDVI" => "sentinel-2-ndvi.md",
             "NetCDF Climate" => "netcdf-climate.md"
         ],
