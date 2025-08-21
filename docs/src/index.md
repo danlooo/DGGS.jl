@@ -13,7 +13,7 @@ hero:
   actions:
     - theme: brand
       text: Get Started
-      link: /get_started
+      link: /get-started
     - theme: alt
       text: View on Github
       link: https://github.com/danlooo/DGGS.jl
