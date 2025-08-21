@@ -9,10 +9,9 @@ using ArchGDAL
 using GLMakie
 
 geo_ds = open_dataset("https://github.com/danlooo/DGGS.jl/raw/refs/heads/main/test/data/s2-ndvi-irrigation.tif")
-plot(geo_ds.nir)
 ```
 
-Convert it into a DGGS array:
+Convert it into a DGGS dataset:
 
 ```@example s2_ndvi
 dggs_ds = to_dggs_dataset(geo_ds, 19, geo_ds.nir.properties["projection"])
