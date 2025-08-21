@@ -7,9 +7,6 @@
 
 DGGS.jl is a Julia Package for scalable geospatial analysis using Discrete Global Grid Systems (DGGS), which tessellate the surface of the earth with hierarchical cells of equal area, minimizing distortion and loading time of large geospatial datasets, which is crucial in spatial statistics and building Machine Learning models.
 
-> [!WARNING]  
-> This package is still in its early development.
-
 ## Get Started
 
 Install:
