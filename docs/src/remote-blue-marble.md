@@ -17,13 +17,13 @@ Plot the pyramid:
 plot(p, :Red, :Green, :Blue; scale_factor=1/255)
 ```
 
-Denkark is covered by two different faces of the icosahedron, yielding different oritentations of the DGGS zones:
-
+A vertex of the icosahedron used for projection is near Gothenburg, Sweeden.
+This results into different oritentations of the DGGS zones, depending on which polyhedral face they belong to:
 
 ```@example remote_blue_marble
 using Extents
-bbox_dk = Extent(X = (8.5,9.5), Y=(56,57.0))
-plot(p, :Red, :Green, :Blue; scale_factor=1/255, extent=bbox_dk)
+bbox = Extent(X = (10.5,12), Y=(57.5,59))
+plot(p, :Red, :Green, :Blue; scale_factor=1/255, extent=bbox)
 ```
 
 
