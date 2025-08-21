@@ -23,13 +23,6 @@ Steps top create a DGGS:
 4. Tessellate the faces of the polyhedron (e.g. triangles, diamonds, or hexagons). One must introduce 12 pentagons at the vertices of the polyhedron to enable a tesselation of the 3D surface with hexagons. Polygons are regular on the faces of the polyhedron but may be distorted after re-projection to the sphere.
 5. Redo the tessellation with increasing resolutions forming a grid system
 
-![](assets/dggrid-grids-multi-levels.png)
-DGGRID ISEA4H grid at different spatial resolutions
-
-![](assets/modis-ndvi-level6.png)
-MODIS NDVI at resolution level 6
-
-
 # When to use a DGGS
 
 - Integration of data originated from different spatial resolutions (e.g. [Li et al. 2022](https://doi.org/10.3390/ijgi11120627))

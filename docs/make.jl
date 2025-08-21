@@ -18,8 +18,9 @@ makedocs(;
         "Home" => "index.md",
         "API" => "api.md",
         "User Guide" => [
-            "Get Started" => "get_started.md",
+            "Get Started" => "get-started.md",
             "Background" => "background.md",
+            "Data Format" => "data-format.md"
         ],
         "Tutorials" => [
             "Remote Data" => "remote-blue-marble.md",
