@@ -165,8 +165,57 @@ function to_dggs_array(
     )
 end
 
+to_dggs_array(args...; kwargs...) = to_dggs_array_nearest(args...; kwargs...)
+
+function to_dggs_array_nearest(geo_a, is, js, ns, resolution::Integer)
+    n = ns[1] - 1
+    # allocate in result matrix bulk
+    res = Matrix{eltype(geo_a)}(undef, length(is), length(js))
+    for (idx_i, i) in enumerate(is)
+        for (idx_j, j) in enumerate(js)
+            cell = DGGS.Cell(i - 1, j - 1, n, resolution)
+            lon, lat = DGGS.to_geo(cell)
+            res[idx_i, idx_j] = geo_a[Near(lon), Near(lat)] # TODO: geo_a is not cached
+        end
+    end
+    return res
+end
+
 "Fast iterative version only supporting mean"
-function to_dggs_array(
+function to_dggs_array_nearest(
+    geo_array::AbstractDimArray,
+    cells,
+    dggs_bbox,
+    geo_bbox::Extent
+    ;
+    path=tempname() * ".dggs.zarr",
+    name=get_name(geo_array),
+    chunk_size=2048,
+    kwargs...
+)
+    resolution = first(cells).resolution
+    data = Zeros(Union{Missing,eltype(geo_array)}, length.(dggs_bbox))
+    chunks = DiskArrays.GridChunks(data, (chunk_size, chunk_size, 1))
+    properties = Dict(
+        "dggs_resolution" => resolution,
+        "dggs_dggsrs" => "ISEA4D.Penta",
+        "dggs_bbox" => geo_bbox
+    )
+    dggs_a = YAXArray(dggs_bbox, data, properties, chunks=chunks)
+    ds = Dataset(layer=dggs_a)
+    ds = savedataset(ds; path=path, skeleton=true, driver=:zarr)
+    dggs_a = ds.layer # use disk
+
+    @threads for chunk in eachchunk(dggs_a)
+        dggs_a[chunk...] = to_dggs_array_nearest(geo_array, chunk..., resolution)
+    end
+
+    res = DGGSArray(dggs_a)
+    return res
+end
+
+"Fast iterative version only supporting mean"
+function to_dggs_array_mean(
     geo_array::AbstractDimArray,
     cells,
     dggs_bbox,

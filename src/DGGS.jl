@@ -14,6 +14,9 @@ using Infiltrator
 using Extents
 using OrderedCollections
 using DiskArrayTools
+using DiskArrays
+using FillArrays
+using Infiltrator
 
 include("types.jl")
 include("cells.jl")
