@@ -143,7 +143,7 @@ end
 Transform cell ids (i,j,n) to geographical coordinates (lat,lon)
 Reverse of `to_cell_id`
 """
-function to_geo(cell::Cell)
+function to_geo(cell::Cell; inv_trans=nothing)
     # sanity checks are in Cell constructor
 
     # edge cases
@@ -157,9 +157,13 @@ function to_geo(cell::Cell)
     x_isea, y_isea = RotatedISEAToISEA()(cell.n, x_scaled, y_scaled)
 
     # Reverse ISEA projection
-    inv_trans = take!(inv_transformations)
-    lat, lon = inv_trans(x_isea, y_isea)
-    put!(inv_transformations, inv_trans)
+    if isnothing(inv_trans)
+        inv_trans = take!(inv_transformations)
+        lat, lon = inv_trans(x_isea, y_isea)
+        put!(inv_transformations, inv_trans)
+    else
+        lat, lon = inv_trans(x_isea, y_isea)
+    end
 
     # Solve pole ambiguity
     # south pole already stable
@@ -174,12 +178,16 @@ function to_geo(cells::AbstractArray{Cell{T}}) where {T<:Integer}
     # avoid overhead for small data
     length(cells) < 1e5 && return map(to_geo, cells)
 
-    res = similar(cells, Tuple{Float64,Float64})
-    Threads.@threads for i in eachindex(cells)
-        geo_point = to_geo(cells[i])
-        res[i] = geo_point
+    chunks = Iterators.partition(cells, ceil(length(cells) / Threads.nthreads()) |> Int)
+    tasks = map(chunks) do chunk
+        Threads.@spawn begin
+            inv_trans = take!(inv_transformations)
+            chunk_res = map(x -> to_geo(x; inv_trans=inv_trans), chunk)
+            put!(inv_transformations, inv_trans)
+            chunk_res
+        end
     end
-
+    res = vcat(fetch.(tasks)...) |> x -> reshape(x, size(cells))
     return res
 end
 
