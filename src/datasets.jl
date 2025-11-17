@@ -34,7 +34,7 @@ end
 
 
 function to_dggs_dataset(geo_ds::Dataset, resolution::Integer, crs::String, agg_func::Function; metadata=Dict(), kwargs...)
-    cells = compute_cell_array(geo_ds.X, geo_ds.Y, resolution, crs)
+    cells = to_cell_array(geo_ds.X, geo_ds.Y, resolution, crs)
 
     # get pixels to aggregate for each cell
     cell_coords = Dict{eltype(cells),Vector{CartesianIndex{2}}}()
@@ -56,7 +56,7 @@ end
 
 "Fast iterative version only supporting mean"
 function to_dggs_dataset(geo_ds::Dataset, resolution::Integer, crs::String; x_name=:X, y_name=:Y, metadata=Dict(), kwargs...)
-    cells = compute_cell_array(geo_ds.axes[x_name], geo_ds.axes[y_name], resolution, crs)
+    cells = to_cell_array(geo_ds.axes[x_name], geo_ds.axes[y_name], resolution, crs)
     dggs_bbox = get_dggs_bbox(cells)
     geo_bbox = get_geo_bbox(geo_ds.cubes |> values |> first, crs)
 
@@ -69,7 +69,7 @@ function to_dggs_dataset(geo_ds::Dataset, resolution::Integer, crs::String; x_na
 end
 
 function to_geo_dataset(dggs_ds::DGGSDataset, lon_dim::DD.Dimension, lat_dim::DD.Dimension; kwargs...)
-    cells = compute_cell_array(lon_dim, lat_dim, dggs_ds.resolution)
+    cells = to_cell_array(lon_dim, lat_dim, dggs_ds.resolution)
 
     geo_arrays = Dict()
     Threads.@threads for k in keys(dggs_ds)

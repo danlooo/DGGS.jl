@@ -71,7 +71,6 @@ end
 (r::RotatedISEAToIndices)(t::Tuple) = r(t...)
 
 
-
 # use icosahedron vertices to calculate the extent
 function compute_rectangles()
     corner1 = LatLonToISEA()(58.2825256, -168.75)
@@ -85,65 +84,46 @@ end
 
 const x_rect_min, rect_width, y_rect_min, rect_height = compute_rectangles()
 
-#
-# coordinate transformations
-#
 
-"""
-Transform geographical coordinates (lat,lon) to cell ids (i,j,n)
-Reverse operation of `to_geo`
-"""
-function to_cell(lon::Real, lat::Real, resolution; trans=nothing)
-    # sanity checks
-    -180 <= lon <= 180 || error("lon must be within -180 and 180")
-    -90 <= lat <= 90 || error("lat must be within -90 and 90")
-
-    # edge cases
-    lat == -90 && return Cell(2 * 2^resolution - 1, 0.5 * 2^resolution, 1, resolution)
-    lat == 90 && return Cell(0, 0.5 * 2^resolution, 0, resolution)
-
-    # project to ISEA
-    if isnothing(trans)
-        trans = take!(transformations)
-        x_isea, y_isea = trans(lat, lon)
-        put!(transformations, trans)
-    else
-        x_isea, y_isea = trans(lat, lon)
-    end
-
+function to_cell(x, y, resolution, trans::Proj.Transformation)
+    x_isea, y_isea = trans(x, y)
     n_cell, x_offset, y_offset = ISEAToRotatedISEA()(x_isea, y_isea)
-
     i_cell, j_cell = RotatedISEAToIndices(resolution)(x_offset, y_offset)
-
-    return Cell(i_cell, j_cell, n_cell, resolution)
+    cell = Cell(i_cell, j_cell, n_cell, resolution)
+    return cell
 end
 
-"""
-Multi-threaded version of to_cell
-geo_points: Vector of (lon,lat) tuples
-"""
-function to_cell(geo_points::AbstractArray{Tuple{A,B}}, resolution) where {A<:Real,B<:Real}
-    # avoid overhead for small data
-    length(geo_points) < 1e5 && return map(x -> to_cell(x..., resolution), geo_points)
+function to_cell(x, y, resolution, crs=crs_geo)
+    trans = Proj.Transformation(crs, crs_isea; ctx=Proj.proj_context_create(), always_xy=true)
+    cell = to_cell(x, y, resolution, trans)
+    return cell
+end
 
-    chunks = Iterators.partition(geo_points, ceil(length(geo_points) / Threads.nthreads()) |> Int)
+function to_cell_array(x_dim, y_dim, resolution, crs=crs_geo; parallel=false)
+    parallel && to_cell_array_parallel(x_dim, y_dim, resolution, crs)
+
+    trans = Proj.Transformation(crs, crs_isea; ctx=Proj.proj_context_create(), always_xy=true)
+    xy_coords = Iterators.product(x_dim, y_dim)
+    cells = map(x -> to_cell(x[1], x[2], resolution, trans), xy_coords)
+    return cells
+end
+
+function to_cell_array_parallel(x_dim, y_dim, resolution, crs=crs_geo; chunk_size=2^22)
+    xy_coords = Iterators.product(x_dim, y_dim)
+    chunks = Iterators.partition(xy_coords, chunk_size)
     tasks = map(chunks) do chunk
+        # todo: only start nthreads at once, otherwise: out of memory
         Threads.@spawn begin
-            trans = take!(transformations)
-            chunk_res = map(x -> to_cell(x..., resolution; trans=trans), chunk)
-            put!(transformations, trans)
-            chunk_res
+            trans = Proj.Transformation(crs, crs_isea; ctx=Proj.proj_context_create())
+            map(x -> to_cell(x[1], x[2], resolution, trans), chunk)
         end
     end
-    res = vcat(fetch.(tasks)...) |> x -> reshape(x, size(geo_points))
+    res = vcat(fetch.(tasks)...) |> x -> reshape(x, size(xy_coords))
     return res
 end
 
-"""
-Transform cell ids (i,j,n) to geographical coordinates (lat,lon)
-Reverse of `to_cell_id`
-"""
-function to_geo(cell::Cell; inv_trans=nothing)
+
+function to_geo(cell::Cell, trans::Proj.Transformation)
     # sanity checks are in Cell constructor
 
     # edge cases
@@ -157,13 +137,7 @@ function to_geo(cell::Cell; inv_trans=nothing)
     x_isea, y_isea = RotatedISEAToISEA()(cell.n, x_scaled, y_scaled)
 
     # Reverse ISEA projection
-    if isnothing(inv_trans)
-        inv_trans = take!(inv_transformations)
-        lat, lon = inv_trans(x_isea, y_isea)
-        put!(inv_transformations, inv_trans)
-    else
-        lat, lon = inv_trans(x_isea, y_isea)
-    end
+    lon, lat = trans(x_isea, y_isea)
 
     # Solve pole ambiguity
     # south pole already stable
@@ -174,24 +148,23 @@ function to_geo(cell::Cell; inv_trans=nothing)
     end
 end
 
-function to_geo(cells::AbstractArray{Cell{T}}) where {T<:Integer}
-    # avoid overhead for small data
-    length(cells) < 1e5 && return map(to_geo, cells)
+to_geo(i, j, n, resolution) = Cell(i, j, n, resolution) |> to_geo
 
-    chunks = Iterators.partition(cells, ceil(length(cells) / Threads.nthreads()) |> Int)
-    tasks = map(chunks) do chunk
-        Threads.@spawn begin
-            inv_trans = take!(inv_transformations)
-            chunk_res = map(x -> to_geo(x; inv_trans=inv_trans), chunk)
-            put!(inv_transformations, inv_trans)
-            chunk_res
-        end
-    end
-    res = vcat(fetch.(tasks)...) |> x -> reshape(x, size(cells))
-    return res
+function to_geo(cell::Cell, crs=crs_geo)
+    trans = Proj.Transformation(crs_isea, crs; ctx=Proj.proj_context_create(), always_xy=true)
+    cell = to_geo(cell, trans)
+    return cell
 end
 
-to_geo(i, j, n, resolution) = Cell(i, j, n, resolution) |> to_geo
+
+function to_geo_array(cells::AbstractArray{Cell{T}}, crs=crs_geo; parallel=false) where {T<:Integer}
+    #parallel && to_geo_array_parallel(cells, crs)
+
+    trans = Proj.Transformation(crs_isea, crs; ctx=Proj.proj_context_create(), always_xy=true)
+    geo_coords = map(x -> to_geo(x, trans), cells)
+    return geo_coords
+end
+
 
 #
 # Cell features

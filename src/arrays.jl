@@ -1,42 +1,3 @@
-function compute_cell_array(lon_dim, lat_dim, resolution)
-    -180 <= minimum(lon_dim) <= maximum(lon_dim) <= 180 || error("Longitude must be within [-90,90]")
-    -90 <= minimum(lat_dim) <= maximum(lat_dim) <= 90 || error("Latitude must be within [-90,90]")
-
-    [(lon, lat) for lon in lon_dim, lat in lat_dim] |>
-    x -> to_cell(x, resolution) |> x -> DimArray(; data=x, dims=(lon_dim, lat_dim))
-end
-
-function compute_cell_array(x_dim, y_dim, resolution, crs)
-    # convert back to EPSG:4326, then do normal to_cell
-    # x,y : coordinates in given crs
-    # row,col: position in x and y dim vectors
-
-    # use default thread pool for lat/lon conversion
-    wgs84_crs_geogcs = "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AXIS[\"Latitude\",NORTH],AXIS[\"Longitude\",EAST],AUTHORITY[\"EPSG\",\"4326\"]]"
-    crs in [wgs84_crs_geogcs, "EPSG:4326"] && return compute_cell_array(x_dim, y_dim, resolution)
-
-    transformations = Channel{Proj.Transformation}(Inf)
-    for _ in 1:Threads.nthreads()
-        put!(transformations, Proj.Transformation(crs, crs_geo; ctx=Proj.proj_context_create()))
-    end
-
-    cells = Matrix(undef, length(x_dim), length(y_dim))
-
-    Threads.@threads for i in CartesianIndices((1:length(x_dim), 1:length(y_dim)))
-        row, col = i.I
-        x, y = x_dim[row], y_dim[col]
-        trans = take!(transformations)
-        lat, lon = trans(x, y)
-        cell = to_cell(lon, lat, resolution)
-        cells[row, col] = cell
-        put!(transformations, trans)
-    end
-
-    cell_array = DimArray(; data=cells, dims=(x_dim, y_dim))
-
-    return cell_array
-end
-
 function get_dggs_bbox(cells)
     cell = first(cells)
     resolution = cell.resolution
@@ -240,7 +201,7 @@ function to_dggs_array(
     properties = metadata(geo_array)
     delete!(properties, "projection")
 
-    cells = compute_cell_array(x_dim, y_dim, resolution, crs)
+    cells = to_cell_array(x_dim, y_dim, resolution, crs)
 
     # get pixels to aggregate for each cell
     cell_coords = Dict{eltype(cells),Vector{CartesianIndex{2}}}()
@@ -267,7 +228,7 @@ function to_dggs_array(geo_array::AbstractDimArray, resolution::Integer, crs::St
 
     properties = metadata(geo_array)
 
-    cells = compute_cell_array(x_dim, y_dim, resolution, crs)
+    cells = to_cell_array(x_dim, y_dim, resolution, crs)
     dggs_bbox = get_dggs_bbox(cells)
     geo_bbox = get_geo_bbox(geo_array, crs)
 
@@ -324,7 +285,7 @@ function to_geo_array(dggs_array::DGGSArray, cells::AbstractDimArray; backend=:a
 end
 
 function to_geo_array(dggs_array::DGGSArray, lon_dim::DD.Dimension, lat_dim::DD.Dimension; kwargs...)
-    cells = compute_cell_array(lon_dim, lat_dim, dggs_array.resolution)
+    cells = to_cell_array(lon_dim, lat_dim, dggs_array.resolution)
     return to_geo_array(dggs_array::DGGSArray, cells; kwargs...)
 end
 
