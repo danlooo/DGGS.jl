@@ -114,7 +114,7 @@ function to_cell_array_parallel(x_dim, y_dim, resolution, crs=crs_geo; chunk_siz
     tasks = map(chunks) do chunk
         # todo: only start nthreads at once, otherwise: out of memory
         Threads.@spawn begin
-            trans = Proj.Transformation(crs, crs_isea; ctx=Proj.proj_context_create())
+            trans = Proj.Transformation(crs, crs_isea; ctx=Proj.proj_context_create(), always_xy=true)
             map(x -> to_cell(x[1], x[2], resolution, trans), chunk)
         end
     end
