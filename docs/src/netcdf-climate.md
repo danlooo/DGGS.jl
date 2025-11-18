@@ -10,7 +10,7 @@ using DimensionalData
 using NetCDF
 using Downloads
 
-url = "https://www.unidata.ucar.edu/software/netcdf/examples/sresa1b_ncar_ccsm3-example.nc"
+url = "https://archive.unidata.ucar.edu/software/netcdf/examples/sresa1b_ncar_ccsm3-example.nc"
 path = Downloads.download(url, tempname() * ".nc")
 geo_ds = open_dataset(path)
 ```
