@@ -32,7 +32,6 @@ function Base.getproperty(ds::DGGSDataset, s::Symbol)
     error("Key $(s) not found.")
 end
 
-
 function to_dggs_dataset(geo_ds::Dataset, resolution::Integer, crs::String, agg_func::Function; metadata=Dict(), kwargs...)
     cells = to_cell_array(geo_ds.X, geo_ds.Y, resolution, crs)
 
@@ -80,6 +79,8 @@ function to_geo_dataset(dggs_ds::DGGSDataset, lon_dim::DD.Dimension, lat_dim::DD
     geo_ds = Dataset(; geo_arrays...)
     return geo_ds
 end
+
+init_global_dggs_dataset() = @error("Please load package Zarr")
 
 Base.show(io::IO, a::DGGSArray) = print(io, "DGGSArray $(name(a)) $(a.dggsrs)@$(a.resolution) ")
 Base.show(io::IO, a::DGGSDataset) = print(io, "DGGSDataset $(name(a)) $(a.dggsrs)@$(a.resolution) ")

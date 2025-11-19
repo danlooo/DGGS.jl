@@ -7,6 +7,7 @@ using DimensionalData
 using Extents
 using Makie
 using Zarr
+using NetCDF
 using Statistics
 
 resolution = 5
@@ -204,5 +205,9 @@ dggs_ds = DGGSDataset(dggs_array, dggs_array2)
         )
         dggs_p_rgb = to_dggs_pyramid(dggs_ds_rgb)
         @test plot(dggs_p_rgb, :Red, :Green, :Blue) isa Figure
+    end
+
+    @testset "Integration test" begin
+        geo_ds = open_dataset("data/sresa1b_ncar_ccsm3-example.nc")
     end
 end
