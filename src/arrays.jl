@@ -1,10 +1,10 @@
 function get_dggs_ranges(x_dim, y_dim, resolution, crs=DGGS.crs_geo)
     # get geo edges
     edge_points = vcat(
-        map(y -> (first(x_dim), y), y_dim),
-        map(y -> (last(x_dim), y), y_dim),
-        map(x -> (x, first(y_dim)), x_dim),
-        map(x -> (x, last(y_dim)), x_dim)
+        map(y -> (first(x_dim), y), y_dim.val),
+        map(y -> (last(x_dim), y), y_dim.val),
+        map(x -> (x, first(y_dim)), x_dim.val),
+        map(x -> (x, last(y_dim)), x_dim.val)
     )
 
     # cache trans for speed up
@@ -55,10 +55,10 @@ end
 function get_geo_bbox(x_dim, y_dim, crs)
     # get geo edges
     edge_points = vcat(
-        map(y -> (first(x_dim), y), y_dim),
-        map(y -> (last(x_dim), y), y_dim),
-        map(x -> (x, first(y_dim)), x_dim),
-        map(x -> (x, last(y_dim)), x_dim)
+        map(y -> (first(x_dim), y), y_dim.val),
+        map(y -> (last(x_dim), y), y_dim.val),
+        map(x -> (x, first(y_dim)), x_dim.val),
+        map(x -> (x, last(y_dim)), x_dim.val)
     )
 
     # cache trans for speed up

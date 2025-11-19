@@ -97,7 +97,7 @@ function DGGS.init_global_dggs_dataset(geo_ds::Dataset, resolution, crs, path; x
 
     ds = Dataset(; properties, arrays...)
     ds = savedataset(ds; path=path, skeleton=true, driver=:zarr, kwargs...)
-    res = open_dggs_dataset(path)
+    res = open_dataset(zopen(path, "w"); driver=:zarr) |> DGGSDataset
     return res
 end
 end
