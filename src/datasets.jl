@@ -53,18 +53,70 @@ function to_dggs_dataset(geo_ds::Dataset, resolution::Integer, crs::String, agg_
     return DGGSDataset(dggs_arrays...; metadata=metadata)
 end
 
-"Fast iterative version only supporting mean"
-function to_dggs_dataset(geo_ds::Dataset, resolution::Integer, crs::String; x_name=:X, y_name=:Y, metadata=Dict(), kwargs...)
-    cells = to_cell_array(geo_ds.axes[x_name], geo_ds.axes[y_name], resolution, crs)
-    dggs_bbox = get_dggs_bbox(cells)
-    geo_bbox = get_geo_bbox(geo_ds.cubes |> values |> first, crs)
+"Fast iterative version using nearest neioghbor pixel"
+function to_dggs_dataset(
+    geo_ds::Dataset,
+    resolution::Integer,
+    crs::String;
+    path=tempname() * ".dggs.zarr",
+    x_name=:X,
+    y_name=:Y,
+    metadata=Dict(),
+    n_parallel_chunks=Threads.nthreads(),
+    chunks=(dggs_i=4096, dggs_j=4096, dggs_n=1),
+    kwargs...
+)
+    geo_ds = cache(geo_ds)
+    dggs_ds = DGGS.init_global_dggs_dataset(geo_ds, resolution, crs, path; kwargs...)
 
-    dggs_arrays = []
-    Threads.@threads for (name, geo_array) in collect(geo_ds.cubes)
-        dggs_array = to_dggs_array(geo_array, cells, dggs_bbox, geo_bbox; name=name, kwargs...)
-        push!(dggs_arrays, dggs_array)
+    x_dim = geo_ds.axes[x_name] |> DD.format
+    y_dim = geo_ds.axes[y_name] |> DD.format
+    used_chunks = get_chunks(resolution, x_dim, y_dim, crs; chunks=chunks)
+    batches = Iterators.partition(used_chunks, n_parallel_chunks)
+
+    # limit memory usage by processing in batches
+    for batch in batches
+        # multi-threading without task migration making proj thread safe
+        Threads.@threads :static for chunk in batch
+            # pre-allocate chunk data
+            chunk_arrays = Dict()
+            for (array_name, geo_array) in pairs(geo_ds.cubes)
+                non_spatial_dims = filter(x -> !(name(x) in [x_name, y_name]), dims(geo_array))
+                chunk_spatial_dims = (
+                    dims(dggs_ds, :dggs_i)[chunk[1]],
+                    dims(dggs_ds, :dggs_j)[chunk[2]],
+                    dims(dggs_ds, :dggs_n)[chunk[3]]
+                )
+                chunk_dims = (chunk_spatial_dims..., non_spatial_dims...)
+                chunk_lengths = length.(chunk_dims)
+                chunk_data = Array{eltype(geo_array)}(undef, chunk_lengths...)
+                chunk_array = DimArray(chunk_data, chunk_dims)
+                chunk_arrays[array_name] = chunk_array
+            end
+
+            # cache for other dims, e.g. time steps and bands
+            trans = Proj.Transformation(DGGS.crs_isea, crs, ctx=Proj.proj_context_create(), always_xy=true)
+            for (i, j, n) in Iterators.product(chunk...)
+                cell = Cell(i - 1, j - 1, n - 1, resolution)
+                x, y = to_geo(cell, trans)
+
+                point_geo_ds = geo_ds[x=Near(x), Y=Near(y)]
+                for (array_name, geo_array) in pairs(point_geo_ds.cubes)
+                    chunk_data = length(geo_array) == 1 ? geo_array[1] : geo_array
+                    chunk_arrays[array_name][At(cell.i), At(cell.j), At(cell.n), :] = chunk_data
+                end
+            end
+
+            @sync for (array_name, dggs_array) in pairs(dggs_ds.data)
+                Threads.@spawn begin
+                    # write in chunks
+                    dggs_ds[array_name][dggs_i=chunk[1], dggs_j=chunk[2], dggs_n=chunk[3]] = chunk_arrays[array_name]
+                end
+            end
+        end
     end
-    return DGGSDataset(dggs_arrays...; metadata=metadata)
+
+    return dggs_ds
 end
 
 function to_geo_dataset(dggs_ds::DGGSDataset, lon_dim::DD.Dimension, lat_dim::DD.Dimension; kwargs...)

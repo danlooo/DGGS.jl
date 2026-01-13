@@ -1,4 +1,4 @@
-function get_dggs_ranges(x_dim, y_dim, resolution, crs=DGGS.crs_geo)
+function get_dggs_bbox(x_dim, y_dim, resolution, crs=DGGS.crs_geo)
     # get geo edges
     edge_points = vcat(
         map(y -> (first(x_dim), y), y_dim.val),
@@ -11,45 +11,20 @@ function get_dggs_ranges(x_dim, y_dim, resolution, crs=DGGS.crs_geo)
     trans = Proj.Transformation(crs, crs_isea; ctx=Proj.proj_context_create(), always_xy=true)
     cells = map(x -> to_cell(x[1], x[2], resolution, trans), edge_points)
 
-    # get dggs extent (analog to bbox) stratified by n
-    max_extent = Dict(
-        :i_min => 2 * 2^resolution - 1,
-        :i_max => 0,
-        :j_min => 2^resolution - 1,
-        :j_max => 0
-    )
-    extents = [deepcopy(max_extent) for _ in 1:5]
-    used_ns = [false for _ in 1:5]
-    for cell in cells
-        used_ns[cell.n+1] = true
-
-        if cell.i <= extents[cell.n+1][:i_min]
-            extents[cell.n+1][:i_min] = cell.i
-        end
-        if cell.i >= extents[cell.n+1][:i_max]
-            extents[cell.n+1][:i_max] = cell.i
-        end
-
-        if cell.j <= extents[cell.n+1][:j_min]
-            extents[cell.n+1][:j_min] = cell.j
-        end
-        if cell.j >= extents[cell.n+1][:i_max]
-            extents[cell.n+1][:j_max] = cell.j
-        end
-    end
-
-    res = []
+    extents = []
     for n in 0:4
-        used_ns[n+1] || continue
+        cur_cells = filter(c -> c.n == n, cells)
+        length(cur_cells) == 0 && continue
+        i_min, i_max = map(x -> x.i, cur_cells) |> extrema
+        j_min, j_max = map(x -> x.j, cur_cells) |> extrema
         extent = Dict(
-            :dggs_n => Between(n, n),
-            :dggs_i => Between(extents[n+1][:i_min], extents[n+1][:i_max]),
-            :dggs_j => Between(extents[n+1][:j_min], extents[n+1][:j_max])
+            :dggs_i => i_min:i_max,
+            :dggs_j => j_min:j_max,
+            :dggs_n => n:n
         )
-        push!(res, extent)
+        push!(extents, extent)
     end
-
-    return res
+    return extents
 end
 
 function get_geo_bbox(x_dim, y_dim, crs)
@@ -71,6 +46,43 @@ function get_geo_bbox(x_dim, y_dim, crs)
     return extent
 end
 
+function get_chunks(resolution, x_dim, y_dim, crs; chunks=(dggs_i=4096, dggs_j=4096, dggs_n=1))
+    # start with dummy global array
+    spatial_dims = (Dim{:dggs_i}(0:2*2^resolution-1), Dim{:dggs_j}(0:2^resolution-1), Dim{:dggs_n}(0:4))
+    data = Zeros(UInt8, length.(spatial_dims))
+    yax_array = YAXArray(spatial_dims, data, Dict())
+    yax_array = setchunks(yax_array, chunks)
+
+    # calc extents and chunks
+    dggs_bboxes = get_dggs_bbox(x_dim, y_dim, resolution, crs)
+
+    used_chunks = filter(yax_array.chunks) do c
+        c_i_min = c[1].start - 1
+        c_i_max = c[1].stop - 1
+        c_j_min = c[2].start - 1
+        c_j_max = c[2].stop - 1
+        c_n = c[3].start - 1
+
+        overlap = true
+        for r in dggs_bboxes
+            if c_n != r[:dggs_n].start
+                overlap = false
+                continue
+            end
+            if c_i_max < r[:dggs_i].start || c_i_min > r[:dggs_i].stop
+                overlap = false
+                continue
+            end
+            if c_j_max < r[:dggs_j].start || c_j_min > r[:dggs_j].stop
+                overlap = false
+                continue
+            end
+        end
+        overlap
+    end
+    return used_chunks
+end
+
 function to_dggs_array(
     geo_array::AbstractDimArray,
     resolution,
@@ -80,9 +92,29 @@ function to_dggs_array(
     name=get_name(geo_array),
     kwargs...
 )
+    geo_array = cache(geo_array)
+    geo_ds = Dataset(layer=geo_array)
+    dggs_array = DGGS.init_global_dggs_dataset(geo_ds, resolution, crs, path; kwargs...).layer
+
     x_dim = dims(geo_array, :X)
     y_dim = dims(geo_array, :Y)
-    dggs_ranges = get_dggs_ranges(x_dim, y_dim, resolution, crs)
+    chunks = get_chunks(resolution, x_dim, y_dim, crs)
+
+    # multi-threading without task migration making proj thread safe
+    Threads.@threads :static for chunk in chunks
+        # cache for other dims, e.g. time steps
+        trans = Proj.Transformation(DGGS.crs_isea, crs, ctx=Proj.proj_context_create(), always_xy=true)
+        geo_coords = map(Iterators.product(chunk...)) do (i, j, n)
+            cell = Cell(i - 1, j - 1, n - 1, resolution)
+            x, y = to_geo(cell, trans)
+        end
+
+        # TODO: loop over other dims
+
+        data = map(x -> geo_array[X=Near(x[1]), Y=Near(x[2])][1], geo_coords)
+        dggs_array[dggs_i=chunk[1], dggs_j=chunk[2], dggs_n=chunk[3]] = data
+    end
+    return dggs_array
 end
 
 function to_geo_array(dggs_array::DGGSArray, cells::AbstractDimArray; backend=:array, kwargs...)

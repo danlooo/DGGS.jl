@@ -16,16 +16,13 @@ using OrderedCollections
 using DiskArrays
 using DiskArrayTools
 using FillArrays
+using LRUCache
 
 include("types.jl")
 include("cells.jl")
 include("arrays.jl")
 include("datasets.jl")
 include("pyramids.jl")
-
-const transformations = Channel{Proj.Transformation}(Inf)
-const inv_transformations = Channel{Proj.Transformation}(Inf)
-const threads_ready = Ref(false)
 
 export Cell, DGGSArray, DGGSDatase, Cell, DGGSArray, DGGSDataset, DGGSPyramid
 export to_cell, to_geo, to_dggs_pyramid, to_dggs_dataset, to_dggs_array, to_geo_dataset, to_geo_array

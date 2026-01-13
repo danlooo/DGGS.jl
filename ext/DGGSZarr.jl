@@ -53,7 +53,17 @@ function DGGS.open_dggs_pyramid(group::ZGroup)
     return res
 end
 
-function DGGS.init_global_dggs_dataset(geo_ds::Dataset, resolution, crs, path; x_dim_name=:X, y_dim_name=:Y, kwargs...)
+
+"""
+Need to init globally:
+- allows parallel read and write 
+- ij chunks often don't overlap eith neoighboring chunks on different dggs_n quad
+- empty chunks are not stored on disk
+"""
+function DGGS.init_global_dggs_dataset(
+    geo_ds::Dataset, resolution, crs, path;
+    x_dim_name=:X, y_dim_name=:Y, chunks=(dggs_i=4096, dggs_j=4096, dggs_n=1), kwargs...
+)
     # extract spatial dimensions
     all_dims = []
     for (k, c) in geo_ds.cubes
@@ -74,24 +84,22 @@ function DGGS.init_global_dggs_dataset(geo_ds::Dataset, resolution, crs, path; x
 
     arrays = Dict()
     for (key, geo_array) in pairs(geo_ds.cubes)
-        if x_dim_name in name(geo_array.axes) && y_dim_name in name(geo_array.axes)
+        is_spatial = x_dim_name in name(geo_array.axes) && y_dim_name in name(geo_array.axes)
+        if is_spatial
             spatial_dims = (Dim{:dggs_i}(0:2*2^resolution-1), Dim{:dggs_j}(0:2^resolution-1), Dim{:dggs_n}(0:4))
             non_spatial_dims = filter(x -> !(name(x) in [x_dim_name, y_dim_name]), geo_array.axes)
             dims = (spatial_dims..., non_spatial_dims...)
-
-            chunk_size = Int(floor(2^resolution / 2))
-            data = Zeros(eltype(geo_array), length.(dims))
-            chunks = DiskArrays.GridChunks(data, (chunk_size, chunk_size, 1, fill(1, length(non_spatial_dims))...))
         else
             spatial_dims = ()
             non_spatial_dims = geo_array.axes
             dims = (spatial_dims..., non_spatial_dims...)
-            data = Zeros(eltype(geo_array), length.(dims))
-            chunks = DiskArrays.Unchunked()
         end
 
-        yax_array = YAXArray(dims, data, properties, chunks=chunks)
+        data = Zeros(eltype(geo_array), length.(dims))
+        yax_array = YAXArray(dims, data, properties)
         yax_array = rebuild(yax_array; name=key)
+        yax_array = setchunks(yax_array, chunks)
+
         arrays[key] = yax_array
     end
 
