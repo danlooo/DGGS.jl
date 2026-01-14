@@ -95,6 +95,7 @@ function to_dggs_array(
     geo_array = cache(geo_array)
     geo_ds = Dataset(layer=geo_array)
     dggs_array = DGGS.init_global_dggs_dataset(geo_ds, resolution, crs, path; kwargs...).layer
+    dggs_array = rebuild(dggs_array, name=name)
 
     x_dim = dims(geo_array, :X)
     y_dim = dims(geo_array, :Y)
