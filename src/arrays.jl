@@ -199,8 +199,7 @@ function DGGSArray(array::AbstractDimArray)
 
     resolution = properties["dggs_resolution"] |> Int
     dggsrs = properties["dggs_dggsrs"] |> String
-    bbox = properties["dggs_bbox"] |> x -> x isa Extent ? x : Extent(X=(x["X"][1], x["X"][2]), Y=(x["Y"][1], x["Y"][2]))
-
+    bbox = properties["dggs_bbox"] |> x -> x isa Extent ? x : Extent(X=(x["bounds"]["X"][1], x["bounds"]["X"][2]), Y=(x["bounds"]["Y"][1], x["bounds"]["Y"][2]))
     delete!(properties, "dggs_resolution")
     delete!(properties, "dggs_dggsrs")
     delete!(properties, "dggs_bbox")
