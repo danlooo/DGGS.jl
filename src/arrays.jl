@@ -83,6 +83,8 @@ function get_chunks(resolution, x_dim, y_dim, crs; chunks=(dggs_i=4096, dggs_j=4
     return used_chunks
 end
 
+DiskArrays.eachchunk(a::DGGSArray) = YAXArray(a).chunks
+
 function to_dggs_array(
     geo_array::AbstractDimArray,
     resolution,
