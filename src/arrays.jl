@@ -120,7 +120,7 @@ function to_dggs_array(
     return dggs_array
 end
 
-function to_geo_array(dggs_array::DGGSArray, cells::AbstractDimArray; backend=:array, kwargs...)
+function to_geo_array(dggs_array::DGGSArray, cells::AbstractDimArray; backend=:zarr, kwargs...)
     lon_dim = dims(cells, :X)
     lat_dim = dims(cells, :Y)
 
