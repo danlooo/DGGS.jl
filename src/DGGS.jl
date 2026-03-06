@@ -17,6 +17,7 @@ using DiskArrays
 using DiskArrayTools
 using FillArrays
 using LRUCache
+using ProgressMeter
 
 include("types.jl")
 include("cells.jl")

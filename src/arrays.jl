@@ -1,4 +1,9 @@
 function get_dggs_bbox(x_dim, y_dim, resolution, crs=DGGS.crs_geo)
+    # check for global coverages
+    if crs == DGGS.crs_geo && extrema(x_dim) == (-180, 180) && extrema(y_dim) == (-90, 90)
+        return [Dict(:dggs_i => 0:2*2^resolution-1, :dggs_j => 0:2^resolution-1, :dggs_n => n:n) for n in 0:4]
+    end
+
     # get geo edges
     edge_points = vcat(
         map(y -> (first(x_dim), y), y_dim.val),
@@ -46,6 +51,12 @@ function get_geo_bbox(x_dim, y_dim, crs)
     return extent
 end
 
+function intersects(ai::UnitRange, aj::UnitRange, bi::UnitRange, bj::UnitRange)
+    overlap_i = first(ai) <= last(bi) && first(bi) <= last(ai)
+    overlap_j = first(aj) <= last(bj) && first(bj) <= last(aj)
+    return overlap_i && overlap_j
+end
+
 function get_chunks(resolution, x_dim, y_dim, crs; chunks=(dggs_i=4096, dggs_j=4096, dggs_n=1))
     # start with dummy global array
     spatial_dims = (Dim{:dggs_i}(0:2*2^resolution-1), Dim{:dggs_j}(0:2^resolution-1), Dim{:dggs_n}(0:4))
@@ -63,22 +74,13 @@ function get_chunks(resolution, x_dim, y_dim, crs; chunks=(dggs_i=4096, dggs_j=4
         c_j_max = c[2].stop - 1
         c_n = c[3].start - 1
 
-        overlap = true
         for r in dggs_bboxes
             if c_n != r[:dggs_n].start
-                overlap = false
                 continue
             end
-            if c_i_max < r[:dggs_i].start || c_i_min > r[:dggs_i].stop
-                overlap = false
-                continue
-            end
-            if c_j_max < r[:dggs_j].start || c_j_min > r[:dggs_j].stop
-                overlap = false
-                continue
-            end
+            return intersects(c_i_min:c_i_max, c_j_min:c_j_max, r[:dggs_i], r[:dggs_j])
         end
-        overlap
+        return false
     end
     return used_chunks
 end
@@ -102,6 +104,8 @@ function to_dggs_array(
     x_dim = dims(geo_array, :X)
     y_dim = dims(geo_array, :Y)
     chunks = get_chunks(resolution, x_dim, y_dim, crs)
+
+    @infiltrate
 
     # multi-threading without task migration making proj thread safe
     Threads.@threads :static for chunk in chunks
@@ -199,7 +203,7 @@ function DGGSArray(array::AbstractDimArray)
 
     resolution = properties["dggs_resolution"] |> Int
     dggsrs = properties["dggs_dggsrs"] |> String
-    bbox = properties["dggs_bbox"] |> x -> x isa Extent ? x : Extent(X=(x["bounds"]["X"][1], x["bounds"]["X"][2]), Y=(x["bounds"]["Y"][1], x["bounds"]["Y"][2]))
+    bbox = properties["dggs_bbox"] |> x -> x isa Extent ? x : Extent(X=(x["X"][1], x["X"][2]), Y=(x["Y"][1], x["Y"][2]))
     delete!(properties, "dggs_resolution")
     delete!(properties, "dggs_dggsrs")
     delete!(properties, "dggs_bbox")

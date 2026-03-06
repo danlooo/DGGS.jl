@@ -69,15 +69,18 @@ function to_dggs_dataset(
     geo_ds = cache(geo_ds)
     dggs_ds = DGGS.init_global_dggs_dataset(geo_ds, resolution, crs, path; kwargs...)
 
+
     x_dim = geo_ds.axes[x_name] |> DD.format
     y_dim = geo_ds.axes[y_name] |> DD.format
     used_chunks = get_chunks(resolution, x_dim, y_dim, crs; chunks=chunks)
     batches = Iterators.partition(used_chunks, n_parallel_chunks)
+    progress = Progress(length(used_chunks); dt=1.0)
 
     # limit memory usage by processing in batches
     for batch in batches
         # multi-threading without task migration making proj thread safe
-        Threads.@threads :static for chunk in batch
+        # TODO: add Threads.@threads :static
+        for chunk in batch
             # pre-allocate chunk data
             chunk_arrays = Dict()
             for (array_name, geo_array) in pairs(geo_ds.cubes)
@@ -113,6 +116,7 @@ function to_dggs_dataset(
                     dggs_ds[array_name][dggs_i=chunk[1], dggs_j=chunk[2], dggs_n=chunk[3]] = chunk_arrays[array_name]
                 end
             end
+            next!(progress)
         end
     end
 
