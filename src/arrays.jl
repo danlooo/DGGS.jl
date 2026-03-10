@@ -16,7 +16,7 @@ function get_dggs_bbox(x_dim, y_dim, resolution, crs=DGGS.crs_geo)
     trans = Proj.Transformation(crs, crs_isea; ctx=Proj.proj_context_create(), always_xy=true)
     cells = map(x -> to_cell(x[1], x[2], resolution, trans), edge_points)
 
-    extents = []
+    extents = Dict{Symbol,UnitRange{Int64}}[]
     for n in 0:4
         cur_cells = filter(c -> c.n == n, cells)
         length(cur_cells) == 0 && continue
@@ -105,7 +105,6 @@ function to_dggs_array(
     y_dim = dims(geo_array, :Y)
     chunks = get_chunks(resolution, x_dim, y_dim, crs)
 
-    @infiltrate
 
     # multi-threading without task migration making proj thread safe
     Threads.@threads :static for chunk in chunks
