@@ -85,11 +85,11 @@ end
 const x_rect_min, rect_width, y_rect_min, rect_height = compute_rectangles()
 
 
-function to_cell(x, y, resolution, trans::Proj.Transformation)
+function to_cell(x, y, resolution, trans::Proj.Transformation, type=UInt32)
     x_isea, y_isea = trans(x, y)
     n_cell, x_offset, y_offset = ISEAToRotatedISEA()(x_isea, y_isea)
     i_cell, j_cell = RotatedISEAToIndices(resolution)(x_offset, y_offset)
-    cell = Cell(i_cell, j_cell, n_cell, resolution)
+    cell = Cell{type}(i_cell, j_cell, n_cell, resolution)
     return cell
 end
 
@@ -123,11 +123,15 @@ function to_cell_array_parallel(x_dim, y_dim, resolution, crs=crs_geo; chunk_siz
 end
 
 
-function to_geo(cell::Cell, trans::Proj.Transformation)
+"""
+type: precision of lat and lon, see https://xkcd.com/2170/
+"""
+function to_geo(cell::Cell, trans::Proj.Transformation; type=Float32)
+    # TODO: add sanity checks for other crs
     # sanity checks are in Cell constructor
 
     # edge cases
-    cell.i == 2 * 2^cell.resolution - 1 && return (0.0, -90.0)
+    # cell.i == 2 * 2^cell.resolution - 1 && return (0.0, -90.0)
 
     # Reverse Discretization
     x_scaled = cell.i / 2^cell.resolution
@@ -139,13 +143,15 @@ function to_geo(cell::Cell, trans::Proj.Transformation)
     # Reverse ISEA projection
     lon, lat = trans(x_isea, y_isea)
 
+    return (type(lon), type(lat))
+
     # Solve pole ambiguity
     # south pole already stable
-    if lat >= 90
-        return (0.0, 90.0)
-    else
-        return (lon, lat)
-    end
+    # if lat >= 90
+    #     return (0.0, 90.0)
+    # else
+    #     return (lon, lat)
+    # end
 end
 
 to_geo(i, j, n, resolution) = Cell(i, j, n, resolution) |> to_geo
@@ -165,6 +171,19 @@ function to_geo_array(cells::AbstractArray{Cell{T}}, crs=crs_geo; parallel=false
     return geo_coords
 end
 
+
+chunk_lru = LRU{Tuple{Tuple{UnitRange,UnitRange,UnitRange},Integer,String},Any}(maxsize=5)
+
+function to_geo_chunk(chunk, resolution, crs)
+    get!(chunk_lru, (chunk, resolution, crs)) do
+        trans = Proj.Transformation(DGGS.crs_isea, crs, ctx=Proj.proj_context_create(), always_xy=true)
+        res = map(Iterators.product(chunk...)) do (i, j, n)
+            cell = Cell(i - 1, j - 1, n - 1, resolution)
+            x, y = to_geo(cell, trans)
+            (X(Near(x)), Y(Near(y)))
+        end
+    end
+end
 
 #
 # Cell features
@@ -220,7 +239,7 @@ function Base.Int(cell::Cell{T}) where {T<:Integer}
     return res
 end
 
-function Cell(cell_int::Integer, resolution::Int)
+function Cell(cell_int::Integer, resolution::Integer)
     # needs resolution not stored in the integer index to ensure sequential id
     # resolution = Int((length(cell_bits) - 2) / 2) # does not work for i = 0 or j=0
     n = cell_int >> (2 * resolution + 1)

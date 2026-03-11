@@ -1,242 +1,129 @@
-function get_dggs_bbox(cells)
-    cell = first(cells)
-    resolution = cell.resolution
-
-    # start with smallest possible bbox
-    i_min = cell.i
-    i_max = cell.i
-
-    j_min, j_max = cell.j, cell.j
-    n_min, n_max = cell.n, cell.n
-
-    # extend bbox if needed
-    for cell in cells
-        if cell.i < i_min
-            i_min = cell.i
-        elseif cell.i > i_max
-            i_max = cell.i
-        end
-
-        if cell.j < j_min
-            j_min = cell.j
-        elseif cell.j > j_max
-            j_max = cell.j
-        end
-
-        if cell.n < n_min
-            n_min = cell.n
-        elseif cell.n > n_max
-            n_max = cell.n
-        end
+function get_dggs_bbox(x_dim, y_dim, resolution, crs=DGGS.crs_geo)
+    # check for global coverages
+    if crs == DGGS.crs_geo && extrema(x_dim) == (-180, 180) && extrema(y_dim) == (-90, 90)
+        return [Dict(:dggs_i => 0:2*2^resolution-1, :dggs_j => 0:2^resolution-1, :dggs_n => n:n) for n in 0:4]
     end
 
-    return (
-        Dim{:dggs_i}(i_min:i_max),
-        Dim{:dggs_j}(j_min:j_max),
-        Dim{:dggs_n}(n_min:n_max)
+    # get geo edges
+    edge_points = vcat(
+        map(y -> (first(x_dim), y), y_dim.val),
+        map(y -> (last(x_dim), y), y_dim.val),
+        map(x -> (x, first(y_dim)), x_dim.val),
+        map(x -> (x, last(y_dim)), x_dim.val)
     )
-end
 
-"Infere max possible geo extent"
-function get_geo_bbox(x::Union{DGGSArray,DGGSDataset})
-    i_min, i_max = dims(x, :dggs_i).val.data |> x -> (first(x), last(x))
-    j_min, j_max = dims(x, :dggs_j).val.data |> x -> (first(x), last(x))
-    n_min, n_max = dims(x, :dggs_n).val.data |> x -> (first(x), last(x))
+    # cache trans for speed up
+    trans = Proj.Transformation(crs, crs_isea; ctx=Proj.proj_context_create(), always_xy=true)
+    cells = map(x -> to_cell(x[1], x[2], resolution, trans), edge_points)
 
-    dggs_corners = [
-        Cell(i, j, n, x.resolution) for
-        i in (i_min, i_max), j in (j_min, j_max), n in (n_min, n_max)
-    ]
-    geo_corners = to_geo.(dggs_corners)
-
-    lon_min, lon_max = map(x -> x[1], geo_corners) |> x -> (minimum(x), maximum(x))
-    lat_min, lat_max = map(x -> x[2], geo_corners) |> x -> (minimum(x), maximum(x))
-    bbox = Extent(X=(lon_min, lon_max), Y=(lat_min, lat_max))
-    return bbox
-end
-
-"Calculate actual geo extent"
-function get_geo_bbox(geo_array::AbstractDimArray, crs::String)
-    # use default thread pool for lat/lon conversion
-    wgs84_crs_geogcs = "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AXIS[\"Latitude\",NORTH],AXIS[\"Longitude\",EAST],AUTHORITY[\"EPSG\",\"4326\"]]"
-
-    x_min, x_max = dims(geo_array, :X) |> extrema
-    y_min, y_max = dims(geo_array, :Y) |> extrema
-
-    if crs in [wgs84_crs_geogcs, "EPSG:4326"]
-        ext = Extent(X=(x_min, x_max), Y=(y_min, y_max))
-        return ext
-    else
-        trans = Proj.Transformation(crs, crs_geo)
-        lat_min, lon_min = trans(x_min, y_min)
-        lat_max, lon_max = trans(x_max, y_max)
-
-        ext = Extent(X=(lon_min, lon_max), Y=(lat_min, lat_max))
-        return ext
+    extents = Dict{Symbol,UnitRange{Int64}}[]
+    for n in 0:4
+        cur_cells = filter(c -> c.n == n, cells)
+        length(cur_cells) == 0 && continue
+        i_min, i_max = map(x -> x.i, cur_cells) |> extrema
+        j_min, j_max = map(x -> x.j, cur_cells) |> extrema
+        extent = Dict(
+            :dggs_i => i_min:i_max,
+            :dggs_j => j_min:j_max,
+            :dggs_n => n:n
+        )
+        push!(extents, extent)
     end
+    return extents
 end
+
+function get_geo_bbox(x_dim, y_dim, crs)
+    # get geo edges
+    edge_points = vcat(
+        map(y -> (first(x_dim), y), y_dim.val),
+        map(y -> (last(x_dim), y), y_dim.val),
+        map(x -> (x, first(y_dim)), x_dim.val),
+        map(x -> (x, last(y_dim)), x_dim.val)
+    )
+
+    # cache trans for speed up
+    trans = Proj.Transformation(crs, crs_geo; ctx=Proj.proj_context_create(), always_xy=true)
+    geo_points = map(x -> trans(x[1], x[2]), edge_points)
+    extent = Extent(
+        X=map(x -> x[1], geo_points) |> extrema,
+        Y=map(x -> x[2], geo_points) |> extrema
+    )
+    return extent
+end
+
+function intersects(ai::UnitRange, aj::UnitRange, bi::UnitRange, bj::UnitRange)
+    overlap_i = first(ai) <= last(bi) && first(bi) <= last(ai)
+    overlap_j = first(aj) <= last(bj) && first(bj) <= last(aj)
+    return overlap_i && overlap_j
+end
+
+function get_chunks(resolution, x_dim, y_dim, crs; chunks=(dggs_i=4096, dggs_j=4096, dggs_n=1))
+    # start with dummy global array
+    spatial_dims = (Dim{:dggs_i}(0:2*2^resolution-1), Dim{:dggs_j}(0:2^resolution-1), Dim{:dggs_n}(0:4))
+    data = Zeros(UInt8, length.(spatial_dims))
+    yax_array = YAXArray(spatial_dims, data, Dict())
+    yax_array = setchunks(yax_array, chunks)
+
+    # calc extents and chunks
+    dggs_bboxes = get_dggs_bbox(x_dim, y_dim, resolution, crs)
+
+    used_chunks = filter(yax_array.chunks) do c
+        c_i_min = c[1].start - 1
+        c_i_max = c[1].stop - 1
+        c_j_min = c[2].start - 1
+        c_j_max = c[2].stop - 1
+        c_n = c[3].start - 1
+
+        for r in dggs_bboxes
+            if c_n != r[:dggs_n].start
+                continue
+            end
+            return intersects(c_i_min:c_i_max, c_j_min:c_j_max, r[:dggs_i], r[:dggs_j])
+        end
+        return false
+    end
+    return used_chunks
+end
+
+DiskArrays.eachchunk(a::DGGSArray) = YAXArray(a).chunks
 
 function to_dggs_array(
     geo_array::AbstractDimArray,
-    cells,
-    cell_coords,
-    dggs_bbox,
-    geo_bbox::Extent,
-    agg_func::Function
+    resolution,
+    crs,
     ;
-    outtype=Float64,
-    backend=:array,
     path=tempname() * ".dggs.zarr",
     name=get_name(geo_array),
     kwargs...
 )
-    resolution = first(cells).resolution
+    geo_array = cache(geo_array)
+    geo_ds = Dataset(layer=geo_array)
+    dggs_array = DGGS.init_global_dggs_dataset(geo_ds, resolution, crs, path; kwargs...).layer
+    dggs_array = rebuild(dggs_array, name=name)
 
-    # re-grid
-    res = mapCube(
-        # mapCube can't find axes of other AbstractDimArrays e.g. Raster
-        YAXArray(dims(geo_array), geo_array.data, metadata(geo_array));
-        indims=InDims(dims(geo_array, :X), dims(geo_array, :Y)),
-        outdims=OutDims(
-            dggs_bbox...,
-            outtype=outtype,
-            backend=backend,
-            path=path
-        ), kwargs...) do xout, xin
-        for ci in CartesianIndices(xout)
-            i, j, n = ci.I
-            try
-                cell = Cell(dggs_bbox[1][i], dggs_bbox[2][j], dggs_bbox[3][n], resolution)
-                cells = cell_coords[cell]
-                res = agg_func(view(xin, cells))
-                xout[i, j, n] = res
-            catch
-                # fill gap by averaging available neighbors
-                xmin = clamp(i, 2, size(xout, 1) - 1) - 1
-                ymin = clamp(j, 2, size(xout, 2) - 1) - 1
-                res = filter(!ismissing, xout[xmin:xmin+2, ymin:ymin+2, n]) |> agg_func
-                xout[i, j, n] = res
-            end
+    x_dim = dims(geo_array, :X)
+    y_dim = dims(geo_array, :Y)
+    chunks = get_chunks(resolution, x_dim, y_dim, crs)
+
+
+    # multi-threading without task migration making proj thread safe
+    Threads.@threads :static for chunk in chunks
+        # cache for other dims, e.g. time steps
+        trans = Proj.Transformation(DGGS.crs_isea, crs, ctx=Proj.proj_context_create(), always_xy=true)
+        geo_coords = map(Iterators.product(chunk...)) do (i, j, n)
+            cell = Cell(i - 1, j - 1, n - 1, resolution)
+            x, y = to_geo(cell, trans)
         end
+
+        # TODO: loop over other dims
+
+        data = map(x -> geo_array[X=Near(x[1]), Y=Near(x[2])][1], geo_coords)
+        dggs_array[dggs_i=chunk[1], dggs_j=chunk[2], dggs_n=chunk[3]] = data
     end
-
-    return DGGSArray(
-        res.data, dims(res), refdims(res), name, metadata(geo_array),
-        resolution, "ISEA4D.Penta", geo_bbox
-    )
-end
-
-"Fast iterative version only supporting mean"
-function to_dggs_array(
-    geo_array::AbstractDimArray,
-    cells,
-    dggs_bbox,
-    geo_bbox::Extent
-    ;
-    outtype=Union{eltype(geo_array),Missing},
-    outtype_counts=UInt16,
-    outtype_sums=Float64,
-    backend=:array,
-    path=tempname() * ".dggs.zarr",
-    name=get_name(geo_array),
-    kwargs...
-)
-    resolution = first(cells).resolution
-
-    # re-grid
-    # mean = sum first, then divide by count
-    # no slow dict building and lookup needed 
-
-    counts = zeros(outtype_counts, length.(dggs_bbox)...)
-
-    sums = mapCube(
-        # mapCube can't find axes of other AbstractDimArrays e.g. Raster
-        YAXArray(dims(geo_array), geo_array.data, metadata(geo_array));
-        indims=InDims(dims(geo_array, :X), dims(geo_array, :Y)),
-        outdims=OutDims(
-            dggs_bbox...,
-            outtype=outtype_sums,
-            backend=backend,
-            path=path
-        ), kwargs...) do xout, xin
-        for ci in CartesianIndices(xin)
-            ismissing(xin[ci]) && continue
-            isnan(xin[ci]) && continue
-
-            cell = cells[ci]
-            i_pos, j_pos, n_pos = cell.i + 1 - dggs_bbox[1][1], cell.j + 1 - dggs_bbox[2][1], cell.n + 1 - dggs_bbox[3][1]
-            if ismissing(xout[i_pos, j_pos, n_pos])
-                xout[i_pos, j_pos, n_pos] = xin[ci]
-            else
-                xout[i_pos, j_pos, n_pos] += xin[ci]
-            end
-            counts[i_pos, j_pos, n_pos] += 1
-        end
-    end
-
-    means = sums.data ./ counts
-    data = if outtype <: Integer || outtype <: Union{Missing,Integer}
-        Array{outtype}(round.(means))
-    else
-        Array{outtype}(means)
-    end
-
-    return DGGSArray(
-        data, dims(sums), refdims(sums), name, metadata(geo_array),
-        resolution, "ISEA4D.Penta", geo_bbox
-    )
-end
-
-function to_dggs_array(
-    geo_array::AbstractDimArray, resolution::Integer, crs::String, agg_func::Function;
-    x_name=:X, y_name=:Y, kwargs...
-)
-    x_dim = filter(x -> name(x) == x_name, dims(geo_array))
-    y_dim = filter(x -> name(x) == y_name, dims(geo_array))
-    isempty(x_dim) && error("X dimension (e.g. longitude) not found")
-    isempty(y_dim) && error("Y dimension (e.g. latitude) not found")
-    x_dim = only(x_dim)
-    y_dim = only(y_dim)
-
-    properties = metadata(geo_array)
-    delete!(properties, "projection")
-
-    cells = to_cell_array(x_dim, y_dim, resolution, crs)
-
-    # get pixels to aggregate for each cell
-    cell_coords = Dict{eltype(cells),Vector{CartesianIndex{2}}}()
-    for cell_idx in CartesianIndices(cells)
-        cell = cells[cell_idx]
-        current_cells = get!(() -> CartesianIndex{2}[], cell_coords, cell)
-        push!(current_cells, cell_idx)
-    end
-
-    dggs_bbox = get_dggs_bbox(keys(cell_coords))
-    geo_bbox = get_geo_bbox(geo_array, crs)
-
-    dggs_array = to_dggs_array(geo_array, cells, cell_coords, dggs_bbox, geo_bbox, agg_func; kwargs...)
     return dggs_array
 end
 
-function to_dggs_array(geo_array::AbstractDimArray, resolution::Integer, crs::String; x_name=:X, y_name=:Y, kwargs...)
-    x_dim = filter(x -> name(x) == x_name, dims(geo_array))
-    y_dim = filter(x -> name(x) == y_name, dims(geo_array))
-    isempty(x_dim) && error("X dimension (e.g. longitude) not found")
-    isempty(y_dim) && error("Y dimension (e.g. latitude) not found")
-    x_dim = only(x_dim)
-    y_dim = only(y_dim)
-
-    properties = metadata(geo_array)
-
-    cells = to_cell_array(x_dim, y_dim, resolution, crs)
-    dggs_bbox = get_dggs_bbox(cells)
-    geo_bbox = get_geo_bbox(geo_array, crs)
-
-    dggs_array = to_dggs_array(geo_array, cells, dggs_bbox, geo_bbox; kwargs...)
-    return dggs_array
-end
-
-function to_geo_array(dggs_array::DGGSArray, cells::AbstractDimArray; backend=:array, kwargs...)
+function to_geo_array(dggs_array::DGGSArray, cells::AbstractDimArray; backend=:zarr, kwargs...)
     lon_dim = dims(cells, :X)
     lat_dim = dims(cells, :Y)
 
@@ -316,7 +203,6 @@ function DGGSArray(array::AbstractDimArray)
     resolution = properties["dggs_resolution"] |> Int
     dggsrs = properties["dggs_dggsrs"] |> String
     bbox = properties["dggs_bbox"] |> x -> x isa Extent ? x : Extent(X=(x["X"][1], x["X"][2]), Y=(x["Y"][1], x["Y"][2]))
-
     delete!(properties, "dggs_resolution")
     delete!(properties, "dggs_dggsrs")
     delete!(properties, "dggs_bbox")

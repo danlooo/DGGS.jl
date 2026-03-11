@@ -7,6 +7,8 @@ using Infiltrator
 using Extents
 using DimensionalData
 import DimensionalData as DD
+using DiskArrays
+using FillArrays
 
 # Currently, YAXArrays does not support saving the experimental nested DimTree type
 
@@ -48,6 +50,62 @@ function DGGS.open_dggs_pyramid(group::ZGroup)
         setproperty!(dimtree, Symbol(k), dggs_ds)
     end
     res = DGGSPyramid(dimtree, dggsrs, bbox)
+    return res
+end
+
+
+"""
+Need to init globally:
+- allows parallel read and write 
+- ij chunks often don't overlap eith neoighboring chunks on different dggs_n quad
+- empty chunks are not stored on disk
+"""
+function DGGS.init_global_dggs_dataset(
+    geo_ds::Dataset, resolution, crs, path;
+    x_dim_name=:X, y_dim_name=:Y, chunks=(dggs_i=4096, dggs_j=4096, dggs_n=1), kwargs...
+)
+    # extract spatial dimensions
+    all_dims = []
+    for (k, c) in geo_ds.cubes
+        append!(all_dims, dims(c))
+    end
+    x_dim = filter(x -> name(x) == x_dim_name, all_dims)[1]
+    y_dim = filter(x -> name(x) == y_dim_name, all_dims)[1]
+    bbox = DGGS.get_geo_bbox(x_dim, y_dim, crs)
+
+    properties = Dict(
+        "dggs_resolution" => resolution,
+        "dggs_dggsrs" => "ISEA4D.Penta",
+        "dggs_bbox" => bbox
+    )
+    x_dim_name in keys(geo_ds.axes) || error("x_dim_name :$(x_dim_name) not found in geo_ds")
+    y_dim_name in keys(geo_ds.axes) || error("y_dim_name :$(y_dim_name) not found in geo_ds")
+    x_dim_name != y_dim_name || error("X and Y names must be different")
+
+    arrays = Dict()
+    for (key, geo_array) in pairs(geo_ds.cubes)
+        is_spatial = x_dim_name in name(geo_array.axes) && y_dim_name in name(geo_array.axes)
+        if is_spatial
+            spatial_dims = (Dim{:dggs_i}(0:2*2^resolution-1), Dim{:dggs_j}(0:2^resolution-1), Dim{:dggs_n}(0:4))
+            non_spatial_dims = filter(x -> !(name(x) in [x_dim_name, y_dim_name]), geo_array.axes)
+            dims = (spatial_dims..., non_spatial_dims...)
+        else
+            spatial_dims = ()
+            non_spatial_dims = geo_array.axes
+            dims = (spatial_dims..., non_spatial_dims...)
+        end
+
+        data = Zeros(eltype(geo_array), length.(dims))
+        yax_array = YAXArray(dims, data, properties)
+        yax_array = rebuild(yax_array; name=key)
+        yax_array = setchunks(yax_array, chunks)
+
+        arrays[key] = yax_array
+    end
+
+    ds = Dataset(; properties, arrays...)
+    ds = savedataset(ds; path=path, skeleton=true, driver=:zarr, kwargs...)
+    res = open_dataset(zopen(path, "w"); driver=:zarr) |> DGGSDataset
     return res
 end
 end

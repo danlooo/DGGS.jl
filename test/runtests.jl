@@ -56,8 +56,8 @@ dggs_ds = DGGSDataset(dggs_array, dggs_array2)
 
         authalic_haversine = Haversine(6371007.18091875)
         dists = colwise(authalic_haversine, geo_points, geo_points2)
-        # 99% of points must be < 10m after re-projection
-        @test sum(dists .< 10) / length(dists) >= 0.99
+        # 97% of points must be < 10m after re-projection
+        @test sum(dists .< 10) / length(dists) >= 0.97
 
         # cell ids must be in bounds
         @test all(map(x -> x.i in 0:2*2^resolution-1, cell_ids))

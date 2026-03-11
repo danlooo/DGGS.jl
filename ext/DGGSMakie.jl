@@ -150,14 +150,13 @@ function Makie.plot(
     # use colormap if only one layer is supplied
     if dggs isa DGGSArray || (dggs isa DGGSPyramid && args isa Tuple{Symbol})
         filtered_data = filter(x -> !ismissing(x) && !isnan(x), data[])
-        cb_limits = (minimum(filtered_data), maximum(filtered_data))
-
+        length(filtered_data) > 0 || error("All values are missing or NaN, cannot plot.")
         label = if dggs isa DGGSPyramid && length(args) == 1
             String(args[1])
         else
             DD.label(dggs)
         end
-
+        cb_limits = (minimum(filtered_data), maximum(filtered_data))
         cb = Colorbar(fig[1, 2], width=10, colormap=:viridis, limits=cb_limits; label=label)
         heatmap!(ax, data, colorrange=cb_limits)
     else
