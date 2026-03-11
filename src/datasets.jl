@@ -79,8 +79,7 @@ function to_dggs_dataset(
     # limit memory usage by processing in batches
     for batch in batches
         # multi-threading without task migration making proj thread safe
-        # TODO: add Threads.@threads :static
-        for chunk in batch
+        Threads.@threads :static for chunk in batch
             # pre-allocate chunk data
             chunk_arrays = Dict()
             for (array_name, geo_array) in pairs(geo_ds.cubes)
@@ -110,11 +109,11 @@ function to_dggs_dataset(
                 end
             end
 
-            @sync for (array_name, dggs_array) in pairs(dggs_ds.data)
-                Threads.@spawn begin
-                    # write in chunks
-                    dggs_ds[array_name][dggs_i=chunk[1], dggs_j=chunk[2], dggs_n=chunk[3]] = chunk_arrays[array_name]
-                end
+            for (array_name, dggs_array) in pairs(dggs_ds.data)
+                # write in chunks
+                dggs_ds[array_name][
+                    dggs_i=chunk[1], dggs_j=chunk[2], dggs_n=chunk[3]
+                ] = chunk_arrays[array_name]
             end
             next!(progress)
         end
