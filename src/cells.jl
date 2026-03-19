@@ -172,13 +172,13 @@ end
 
 function Base.show(io::IO, ::MIME"text/plain", cell::Cell)
     print(io, typeof(cell), "(")
-    printstyled(io, cell.i; color=dimcolors(1))
+    printstyled(io, Int(cell.i); color=dimcolors(1))
     print(io, ",")
-    printstyled(io, cell.j; color=dimcolors(2))
+    printstyled(io, Int(cell.j); color=dimcolors(2))
     print(io, ",")
-    printstyled(io, cell.n; color=dimcolors(3))
+    printstyled(io, Int(cell.n); color=dimcolors(3))
     print(io, ",")
-    printstyled(io, cell.resolution; color=:white)
+    printstyled(io, Int(cell.resolution); color=:white)
     print(io, ")")
 end
 

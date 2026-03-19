@@ -1,8 +1,8 @@
 struct Cell{T<:Integer}
     i::T
     j::T
-    n::T
-    resolution::Int8
+    n::UInt8
+    resolution::UInt8
 
     function Cell{T}(i, j, n, resolution) where {T<:Integer}
         0 <= n <= 4 || error("n=$n must be within 0 and 4")
@@ -13,7 +13,7 @@ struct Cell{T<:Integer}
     end
 
     function Cell(i, j, n, resolution)
-        T = typeof(i)
+        T = UInt32
         new{T}(T(i), T(j), T(n), resolution)
     end
 end
