@@ -134,8 +134,8 @@ function to_dggs_array(
     geo_bbox::Extent
     ;
     outtype=Union{eltype(geo_array),Missing},
-    outtype_counts=UInt16,
-    outtype_sums=Float64,
+    outtype_counts=UInt8,
+    outtype_sums=UInt16,
     backend=:array,
     path=tempname() * ".dggs.zarr",
     name=get_name(geo_array),
