@@ -62,7 +62,7 @@ Need to init globally:
 """
 function DGGS.init_global_dggs_dataset(
     geo_ds::Dataset, resolution, path;
-    bbox=Extent(X=(-180, 180), Y=(-90, 90)),
+    bbox=(X=(-180, 180), Y=(-90, 90)),
     x_dim_name=:X, y_dim_name=:Y, chunks=(dggs_i=4096, dggs_j=4096, dggs_n=1), kwargs...
 )
     # extract spatial dimensions
