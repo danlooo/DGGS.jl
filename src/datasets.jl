@@ -114,3 +114,5 @@ open_dggs_dataset(file_path::String; kwargs...) = file_path |> x -> open_dataset
 function save_dggs_dataset(file_path::String, dggs_ds::DGGSDataset; kwargs...)
     dggs_ds |> Dataset |> x -> savedataset(x; path=file_path, kwargs...)
 end
+
+init_global_dggs_dataset() = @error("Please load package Zarr")

@@ -15,6 +15,7 @@ lat_range = Y(90:-1:-90)
 geo_data = [exp(cosd(lon)) + 3(lat / 90) for lon in lon_range, lat in lat_range]
 properties = Dict("standard_name" => "air_temperature", "units" => "K", "description" => "random test data")
 geo_array = YAXArray((lon_range, lat_range), geo_data, properties)
+geo_ds = Dataset(Gray=geo_array)
 dggs_array = to_dggs_array(geo_array, resolution, "EPSG:4326")
 
 properties2 = Dict("standard_name" => "precipitation")
@@ -204,5 +205,12 @@ dggs_ds = DGGSDataset(dggs_array, dggs_array2)
         )
         dggs_p_rgb = to_dggs_pyramid(dggs_ds_rgb)
         @test plot(dggs_p_rgb, :Red, :Green, :Blue) isa Figure
+    end
+
+    @testset "Init global dataset" begin
+        temp_dir = tempname() * ".dggs.zarr"
+        global_dggs_ds = DGGS.init_global_dggs_dataset(geo_ds, resolution, temp_dir)
+        @test size(global_dggs_ds) == (2 * 2^resolution, 2^resolution, 5)
+        rm(temp_dir, recursive=true)
     end
 end
