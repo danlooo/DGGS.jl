@@ -93,7 +93,7 @@ function DGGS.init_global_dggs_dataset(
             dims = (spatial_dims..., non_spatial_dims...)
         end
 
-        data = Zeros(eltype(geo_array), length.(dims))
+        data = Zeros(Union{Missing,eltype(geo_array)}, length.(dims))
         yax_array = YAXArray(dims, data, properties)
         yax_array = rebuild(yax_array; name=key)
         yax_array = setchunks(yax_array, chunks)
