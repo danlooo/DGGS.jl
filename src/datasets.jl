@@ -99,7 +99,13 @@ end
 # IO:: Serialization of DGGS Datasets
 #
 
-DGGSDataset(ds::Dataset) = DGGSDataset([DGGSArray(v) for (k, v) in ds.cubes]...; metadata=ds.properties)
+function DGGSDataset(ds::Dataset)
+    properties = ds.properties
+    for k in ["dggs_resolution", "dggs_bbox", "dggs_dggsrs"]
+        delete!(properties, k)
+    end
+    DGGSDataset([DGGSArray(v) for (k, v) in ds.cubes]...; metadata=properties)
+end
 
 function YAXArrays.Dataset(dggs_ds::DGGSDataset)
     arrays = [k => getproperty(dggs_ds, k) |> YAXArray for k in keys(dggs_ds)]

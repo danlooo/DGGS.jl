@@ -317,9 +317,9 @@ function DGGSArray(array::AbstractDimArray)
     dggsrs = properties["dggs_dggsrs"] |> String
     bbox = properties["dggs_bbox"] |> x -> x isa Extent ? x : Extent(X=(x["X"][1], x["X"][2]), Y=(x["Y"][1], x["Y"][2]))
 
-    delete!(properties, "dggs_resolution")
-    delete!(properties, "dggs_dggsrs")
-    delete!(properties, "dggs_bbox")
+    for k in ["dggs_resolution", "dggs_bbox", "dggs_dggsrs", "_FillValue", "fill_value", "missing_value"]
+        delete!(properties, k)
+    end
 
     arr_name = DD.name(array)
     if arr_name == DD.NoName()
