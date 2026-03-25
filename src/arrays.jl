@@ -384,3 +384,43 @@ function save_dggs_array(file_path::String, dggs_array::DGGSArray; kwargs...)
     ds = Dataset(; Dict(DD.name(dggs_array) => YAXArray(dggs_array))...)
     savedataset(ds; path=file_path, kwargs...)
 end
+
+#
+# Operations
+#
+
+"Determines if hyperrectangle a with dims i, j and n shares area with rectangle b"
+function intersects(ai::UnitRange, bi::UnitRange, aj::UnitRange, bj::UnitRange, an::Integer, bn::Integer)
+    if an != bn
+        return false
+    end
+    overlap_i = first(ai) <= first(bi) <= last(ai) <= last(bi)
+    overlap_j = first(aj) <= first(bj) <= last(aj) <= last(bj)
+    overlap = overlap_i && overlap_j
+    return overlap
+end
+
+"""
+Crops the DGGSArray `a` to the dimensions of another DGGSArray `b`.
+Resulting dimensions will be the intersection of those of `a` and `b`.
+Returns a view into `a`.
+"""
+function crop(a::DGGSArray, b::DGGSArray)
+    sel = Dict()
+
+    spatial_dims = [:dggs_i, :dggs_j, :dggs_n]
+    for dim in spatial_dims
+        a_range = dims(a, dim) |> extrema |> x -> UnitRange(x[1], x[2])
+        b_range = dims(b, dim) |> extrema |> x -> UnitRange(x[1], x[2])
+        shared_range = intersect(a_range, b_range)
+        sel[dim] = Between(shared_range.start, shared_range.stop)
+    end
+
+    # other dims, especially those that arn't UnitRange
+    for dim in setdiff(name.(dims(a)), spatial_dims)
+        shared = intersect(dims(a, dim), dims(b, dim))
+        sel[dim] = At(shared)
+    end
+
+    return view(a; sel...)
+end
