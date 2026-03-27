@@ -366,7 +366,7 @@ function non_spatial_dims(dggs_array::DGGSArray)
     filter(x -> !(name(x) in spatial_dim_names), dggs_array.dims)
 end
 
-Base.getindex(a::DGGSArray, c::Cell) = a[dggs_i=At(c.i), dggs_j=At(c.j), dggs_n=At(c.n)]
+Base.getindex(a::DGGSArray, c::Cell) = YAXArray(a)[dggs_i=At(c.i), dggs_j=At(c.j), dggs_n=At(c.n)]
 
 #
 # IO:: Serialization of DGGS Arrays
@@ -421,6 +421,6 @@ function crop(a::DGGSArray, b::DGGSArray)
         shared = intersect(dims(a, dim), dims(b, dim))
         sel[dim] = At(shared)
     end
-
+    @show sel
     return view(a; sel...)
 end
