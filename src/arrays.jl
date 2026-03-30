@@ -139,6 +139,8 @@ function to_dggs_array(
     backend=:array,
     path=tempname() * ".dggs.zarr",
     name=get_name(geo_array),
+    x_name=:X,
+    y_name=:Y,
     kwargs...
 )
     resolution = first(cells).resolution
@@ -152,7 +154,7 @@ function to_dggs_array(
     sums = mapCube(
         # mapCube can't find axes of other AbstractDimArrays e.g. Raster
         YAXArray(dims(geo_array), geo_array.data, metadata(geo_array));
-        indims=InDims(dims(geo_array, :X), dims(geo_array, :Y)),
+        indims=InDims(dims(geo_array, x_name), dims(geo_array, y_name)),
         outdims=OutDims(
             dggs_bbox...,
             outtype=outtype_sums,
@@ -214,7 +216,10 @@ function to_dggs_array(
     dggs_bbox = get_dggs_bbox(keys(cell_coords))
     geo_bbox = get_geo_bbox(geo_array, crs)
 
-    dggs_array = to_dggs_array(geo_array, cells, cell_coords, dggs_bbox, geo_bbox, agg_func; kwargs...)
+    dggs_array = to_dggs_array(
+        geo_array, cells, cell_coords, dggs_bbox, geo_bbox, agg_func;
+        x_name=x_name, y_name=y_name, kwargs...
+    )
     return dggs_array
 end
 
@@ -232,7 +237,7 @@ function to_dggs_array(geo_array::AbstractDimArray, resolution::Integer, crs::St
     dggs_bbox = get_dggs_bbox(cells)
     geo_bbox = get_geo_bbox(geo_array, crs)
 
-    dggs_array = to_dggs_array(geo_array, cells, dggs_bbox, geo_bbox; kwargs...)
+    dggs_array = to_dggs_array(geo_array, cells, dggs_bbox, geo_bbox; x_name=x_name, y_name=y_name, kwargs...)
     return dggs_array
 end
 
