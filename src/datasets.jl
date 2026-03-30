@@ -112,6 +112,8 @@ function YAXArrays.Dataset(dggs_ds::DGGSDataset)
     properties = Dict{String,Any}(metadata(dggs_ds))
     properties["dggs_dggsrs"] = dggs_ds.dggsrs
     properties["dggs_resolution"] = dggs_ds.resolution
+    properties["dggs_bbox"] = NamedTuple(dggs_ds.bbox)
+
     Dataset(; properties=properties, arrays...)
 end
 

@@ -336,7 +336,7 @@ function YAXArrays.YAXArray(dggs_array::DGGSArray)
     properties = Dict{String,Any}(metadata(dggs_array))
     properties["dggs_resolution"] = dggs_array.resolution
     properties["dggs_dggsrs"] = dggs_array.dggsrs
-    properties["dggs_bbox"] = dggs_array.bbox
+    properties["dggs_bbox"] = NamedTuple(dggs_array.bbox)
 
     return YAXArray(dims(dggs_array), dggs_array.data, properties)
 end
