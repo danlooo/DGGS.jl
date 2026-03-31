@@ -139,6 +139,8 @@ function to_dggs_array(
     backend=:array,
     path=tempname() * ".dggs.zarr",
     name=get_name(geo_array),
+    x_name=:X,
+    y_name=:Y,
     kwargs...
 )
     resolution = first(cells).resolution
@@ -152,7 +154,7 @@ function to_dggs_array(
     sums = mapCube(
         # mapCube can't find axes of other AbstractDimArrays e.g. Raster
         YAXArray(dims(geo_array), geo_array.data, metadata(geo_array));
-        indims=InDims(dims(geo_array, :X), dims(geo_array, :Y)),
+        indims=InDims(dims(geo_array, x_name), dims(geo_array, y_name)),
         outdims=OutDims(
             dggs_bbox...,
             outtype=outtype_sums,
@@ -214,7 +216,10 @@ function to_dggs_array(
     dggs_bbox = get_dggs_bbox(keys(cell_coords))
     geo_bbox = get_geo_bbox(geo_array, crs)
 
-    dggs_array = to_dggs_array(geo_array, cells, cell_coords, dggs_bbox, geo_bbox, agg_func; kwargs...)
+    dggs_array = to_dggs_array(
+        geo_array, cells, cell_coords, dggs_bbox, geo_bbox, agg_func;
+        x_name=x_name, y_name=y_name, kwargs...
+    )
     return dggs_array
 end
 
@@ -232,7 +237,7 @@ function to_dggs_array(geo_array::AbstractDimArray, resolution::Integer, crs::St
     dggs_bbox = get_dggs_bbox(cells)
     geo_bbox = get_geo_bbox(geo_array, crs)
 
-    dggs_array = to_dggs_array(geo_array, cells, dggs_bbox, geo_bbox; kwargs...)
+    dggs_array = to_dggs_array(geo_array, cells, dggs_bbox, geo_bbox; x_name=x_name, y_name=y_name, kwargs...)
     return dggs_array
 end
 
@@ -336,7 +341,7 @@ function YAXArrays.YAXArray(dggs_array::DGGSArray)
     properties = Dict{String,Any}(metadata(dggs_array))
     properties["dggs_resolution"] = dggs_array.resolution
     properties["dggs_dggsrs"] = dggs_array.dggsrs
-    properties["dggs_bbox"] = dggs_array.bbox
+    properties["dggs_bbox"] = NamedTuple(dggs_array.bbox)
 
     return YAXArray(dims(dggs_array), dggs_array.data, properties)
 end
@@ -366,8 +371,7 @@ function non_spatial_dims(dggs_array::DGGSArray)
     filter(x -> !(name(x) in spatial_dim_names), dggs_array.dims)
 end
 
-# get a single cell e.g. of a timeseries
-Base.getindex(a::DGGSArray, c::Cell) = a[dggs_i=At(c.i), dggs_j=At(c.j), dggs_n=At(c.n)]
+Base.getindex(a::DGGSArray, c::Cell) = YAXArray(a)[dggs_i=At(c.i), dggs_j=At(c.j), dggs_n=At(c.n)]
 
 # DGGSArrays are usually big. Like YAXArrays, avoid DiskArray to load everything in memory
 Base.getindex(a::DGGSArray; i...) = view(a; i...)
@@ -425,6 +429,6 @@ function crop(a::DGGSArray, b::DGGSArray)
         shared = intersect(dims(a, dim), dims(b, dim))
         sel[dim] = At(shared)
     end
-
+    @show sel
     return view(a; sel...)
 end

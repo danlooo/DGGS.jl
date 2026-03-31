@@ -33,8 +33,8 @@ function Base.getproperty(ds::DGGSDataset, s::Symbol)
 end
 
 
-function to_dggs_dataset(geo_ds::Dataset, resolution::Integer, crs::String, agg_func::Function; metadata=Dict(), kwargs...)
-    cells = to_cell_array(geo_ds.X, geo_ds.Y, resolution, crs)
+function to_dggs_dataset(geo_ds::Dataset, resolution::Integer, crs::String, agg_func::Function; metadata=Dict(), x_name=:X, y_name=:Y, kwargs...)
+    cells = to_cell_array(dims(geo_ds, x_name), dims(geo_ds, y_name), resolution, crs)
 
     # get pixels to aggregate for each cell
     cell_coords = Dict{eltype(cells),Vector{CartesianIndex{2}}}()
@@ -48,7 +48,7 @@ function to_dggs_dataset(geo_ds::Dataset, resolution::Integer, crs::String, agg_
 
     dggs_arrays = []
     Threads.@threads for (name, geo_array) in collect(geo_ds.cubes)
-        dggs_array = to_dggs_array(geo_array, cells, cell_coords, dggs_bbox, agg_func; name=name, kwargs...)
+        dggs_array = to_dggs_array(geo_array, cells, cell_coords, dggs_bbox, agg_func; name=name, x_name=x_name, y_name=y_name, kwargs...)
         push!(dggs_arrays, dggs_array)
     end
     return DGGSDataset(dggs_arrays...; metadata=metadata)
@@ -62,7 +62,7 @@ function to_dggs_dataset(geo_ds::Dataset, resolution::Integer, crs::String; x_na
 
     dggs_arrays = []
     Threads.@threads for (name, geo_array) in collect(geo_ds.cubes)
-        dggs_array = to_dggs_array(geo_array, cells, dggs_bbox, geo_bbox; name=name, kwargs...)
+        dggs_array = to_dggs_array(geo_array, cells, dggs_bbox, geo_bbox; name=name, x_name=x_name, y_name=y_name, kwargs...)
         push!(dggs_arrays, dggs_array)
     end
     return DGGSDataset(dggs_arrays...; metadata=metadata)
@@ -112,6 +112,8 @@ function YAXArrays.Dataset(dggs_ds::DGGSDataset)
     properties = Dict{String,Any}(metadata(dggs_ds))
     properties["dggs_dggsrs"] = dggs_ds.dggsrs
     properties["dggs_resolution"] = dggs_ds.resolution
+    properties["dggs_bbox"] = NamedTuple(dggs_ds.bbox)
+
     Dataset(; properties=properties, arrays...)
 end
 

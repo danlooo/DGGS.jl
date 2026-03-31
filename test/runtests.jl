@@ -47,6 +47,7 @@ dggs_ds = DGGSDataset(dggs_array, dggs_array2)
 
         @test DGGSArray(dim_array, resolution, "ISEA4D.Penta", geo_bbox) isa DGGSArray
         @test DGGSArray(yax_array, resolution, "ISEA4D.Penta", geo_bbox) isa DGGSArray
+        @test DGGSArray(yax_array, resolution, "ISEA4D.Penta", geo_bbox)[Cell(1, 2, 3, resolution)] isa YAXArray
     end
 
     @testset "Coordinate transformations" begin
