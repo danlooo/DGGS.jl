@@ -429,6 +429,5 @@ function crop(a::DGGSArray, b::DGGSArray)
         shared = intersect(dims(a, dim), dims(b, dim))
         sel[dim] = At(shared)
     end
-    @show sel
     return view(a; sel...)
 end
