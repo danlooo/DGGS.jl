@@ -366,7 +366,11 @@ function non_spatial_dims(dggs_array::DGGSArray)
     filter(x -> !(name(x) in spatial_dim_names), dggs_array.dims)
 end
 
+# get a single cell e.g. of a timeseries
 Base.getindex(a::DGGSArray, c::Cell) = a[dggs_i=At(c.i), dggs_j=At(c.j), dggs_n=At(c.n)]
+
+# DGGSArrays are usually big. Like YAXArrays, avoid DiskArray to load everything in memory
+Base.getindex(a::DGGSArray; i...) = view(a; i...)
 
 #
 # IO:: Serialization of DGGS Arrays
