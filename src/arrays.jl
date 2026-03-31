@@ -56,12 +56,12 @@ function get_geo_bbox(x::Union{DGGSArray,DGGSDataset})
 end
 
 "Calculate actual geo extent"
-function get_geo_bbox(geo_array::AbstractDimArray, crs::String)
+function get_geo_bbox(geo_array::AbstractDimArray, crs::String; x_name=:X, y_name=:Y)
     # use default thread pool for lat/lon conversion
     wgs84_crs_geogcs = "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AXIS[\"Latitude\",NORTH],AXIS[\"Longitude\",EAST],AUTHORITY[\"EPSG\",\"4326\"]]"
 
-    x_min, x_max = dims(geo_array, :X) |> extrema
-    y_min, y_max = dims(geo_array, :Y) |> extrema
+    x_min, x_max = dims(geo_array, x_name) |> extrema
+    y_min, y_max = dims(geo_array, y_name) |> extrema
 
     if crs in [wgs84_crs_geogcs, "EPSG:4326"]
         ext = Extent(X=(x_min, x_max), Y=(y_min, y_max))
@@ -88,6 +88,8 @@ function to_dggs_array(
     backend=:array,
     path=tempname() * ".dggs.zarr",
     name=get_name(geo_array),
+    x_name=:X,
+    y_name=:Y,
     kwargs...
 )
     resolution = first(cells).resolution
@@ -96,7 +98,7 @@ function to_dggs_array(
     res = mapCube(
         # mapCube can't find axes of other AbstractDimArrays e.g. Raster
         YAXArray(dims(geo_array), geo_array.data, metadata(geo_array));
-        indims=InDims(dims(geo_array, :X), dims(geo_array, :Y)),
+        indims=InDims(dims(geo_array, x_name), dims(geo_array, y_name)),
         outdims=OutDims(
             dggs_bbox...,
             outtype=outtype,
