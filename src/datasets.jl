@@ -47,9 +47,10 @@ function to_dggs_dataset(geo_ds::Dataset, resolution::Integer, crs::String, agg_
     dggs_bbox = get_dggs_bbox(keys(cell_coords))
 
     dggs_arrays = []
+    dggs_arrays_lock = ReentrantLock()
     Threads.@threads for (name, geo_array) in collect(geo_ds.cubes)
         dggs_array = to_dggs_array(geo_array, cells, cell_coords, dggs_bbox, agg_func; name=name, x_name=x_name, y_name=y_name, kwargs...)
-        push!(dggs_arrays, dggs_array)
+        @lock dggs_arrays_lock push!(dggs_arrays, dggs_array)
     end
     return DGGSDataset(dggs_arrays...; metadata=metadata)
 end
@@ -61,9 +62,10 @@ function to_dggs_dataset(geo_ds::Dataset, resolution::Integer, crs::String; x_na
     geo_bbox = get_geo_bbox(geo_ds.cubes |> values |> first, crs)
 
     dggs_arrays = []
+    dggs_arrays_lock = ReentrantLock()
     Threads.@threads for (name, geo_array) in collect(geo_ds.cubes)
         dggs_array = to_dggs_array(geo_array, cells, dggs_bbox, geo_bbox; name=name, x_name=x_name, y_name=y_name, kwargs...)
-        push!(dggs_arrays, dggs_array)
+        @lock dggs_arrays_lock push!(dggs_arrays, dggs_array)
     end
     return DGGSDataset(dggs_arrays...; metadata=metadata)
 end
@@ -72,10 +74,11 @@ function to_geo_dataset(dggs_ds::DGGSDataset, lon_dim::DD.Dimension, lat_dim::DD
     cells = to_cell_array(lon_dim, lat_dim, dggs_ds.resolution)
 
     geo_arrays = Dict()
+    geo_arrays_lock = ReentrantLock()
     Threads.@threads for k in keys(dggs_ds)
         dggs_array = getproperty(dggs_ds, k)
         geo_array = to_geo_array(dggs_array, cells; kwargs...)
-        geo_arrays[k] = geo_array
+        @lock geo_arrays_lock geo_arrays[k] = geo_array
     end
     geo_ds = Dataset(; geo_arrays...)
     return geo_ds
