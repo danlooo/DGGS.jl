@@ -59,7 +59,7 @@ end
 function to_dggs_dataset(geo_ds::Dataset, resolution::Integer, crs::String; x_name=:X, y_name=:Y, metadata=Dict(), kwargs...)
     cells = to_cell_array(geo_ds.axes[x_name], geo_ds.axes[y_name], resolution, crs)
     dggs_bbox = get_dggs_bbox(cells)
-    geo_bbox = get_geo_bbox(geo_ds.cubes |> values |> first, crs)
+    geo_bbox = get_geo_bbox(geo_ds.cubes |> values |> first, crs; x_name=x_name, y_name=y_name)
 
     dggs_arrays = []
     dggs_arrays_lock = ReentrantLock()
