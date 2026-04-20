@@ -214,4 +214,23 @@ dggs_ds = DGGSDataset(dggs_array, dggs_array2)
         @test size(global_dggs_ds) == (2 * 2^resolution, 2^resolution, 5)
         rm(temp_dir, recursive=true)
     end
+
+    @testset "get_dggs_bbox" begin
+        cells = [
+            Cell(0, 0, 0, 5),
+            Cell(0, 0, 1, 5),
+            Cell(0, 0, 2, 5),
+            Cell(0, 0, 0, 5),
+            Cell(0, 1, 1, 5),
+            Cell(0, 2, 2, 5)
+        ]
+        bbox = DGGS.get_dggs_bbox(cells)
+
+        @test length(bbox) == 3
+        @test haskey(bbox, 0)
+        @test haskey(bbox, 1)
+        @test haskey(bbox, 2)
+        @test length.(bbox[0]) == (1, 1)
+        @test length.(bbox[2]) == (1, 3)
+    end
 end

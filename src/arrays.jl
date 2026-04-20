@@ -2,39 +2,37 @@ function get_dggs_bbox(cells)
     cell = first(cells)
     resolution = cell.resolution
 
-    # start with smallest possible bbox
-    i_min = cell.i
-    i_max = cell.i
-
-    j_min, j_max = cell.j, cell.j
-    n_min, n_max = cell.n, cell.n
-
-    # extend bbox if needed
-    for cell in cells
-        if cell.i < i_min
-            i_min = cell.i
-        elseif cell.i > i_max
-            i_max = cell.i
-        end
-
-        if cell.j < j_min
-            j_min = cell.j
-        elseif cell.j > j_max
-            j_max = cell.j
-        end
-
-        if cell.n < n_min
-            n_min = cell.n
-        elseif cell.n > n_max
-            n_max = cell.n
-        end
+    # Initialize unit ranges for each resolution level
+    unit_ranges = Dict{Int,Tuple{UnitRange{Int},UnitRange{Int}}}()
+    for n in 0:4
+        unit_ranges[n] = (0:0, 0:0)
     end
 
-    return (
-        Dim{:dggs_i}(i_min:i_max),
-        Dim{:dggs_j}(j_min:j_max),
-        Dim{:dggs_n}(n_min:n_max)
-    )
+    n_used = fill(false, 5)
+
+    # Extend bbox if needed
+    for cell in cells
+        n_used[cell.n+1] = true
+        i_range, j_range = unit_ranges[cell.n]
+
+        if cell.i < first(i_range)
+            i_range = cell.i:first(i_range)
+        elseif cell.i > last(i_range)
+            i_range = first(i_range):cell.i
+        end
+
+        if cell.j < first(j_range)
+            j_range = cell.j:first(j_range)
+        elseif cell.j > last(j_range)
+            j_range = first(j_range):cell.j
+        end
+
+        unit_ranges[cell.n] = (i_range, j_range)
+    end
+
+    unit_ranges = Dict(k => v for (k, v) in unit_ranges if n_used[k+1])
+
+    return unit_ranges
 end
 
 "Infere max possible geo extent"
@@ -94,38 +92,45 @@ function to_dggs_array(
 )
     resolution = first(cells).resolution
 
-    # re-grid
-    res = mapCube(
-        # mapCube can't find axes of other AbstractDimArrays e.g. Raster
-        YAXArray(dims(geo_array), geo_array.data, metadata(geo_array));
-        indims=InDims(dims(geo_array, x_name), dims(geo_array, y_name)),
-        outdims=OutDims(
-            dggs_bbox...,
-            outtype=outtype,
-            backend=backend,
-            path=path
-        ), kwargs...) do xout, xin
-        for ci in CartesianIndices(xout)
-            i, j, n = ci.I
-            try
-                cell = Cell(dggs_bbox[1][i], dggs_bbox[2][j], dggs_bbox[3][n], resolution)
-                cells = cell_coords[cell]
-                res = agg_func(view(xin, cells))
-                xout[i, j, n] = res
-            catch
-                # fill gap by averaging available neighbors
-                xmin = clamp(i, 2, size(xout, 1) - 1) - 1
-                ymin = clamp(j, 2, size(xout, 2) - 1) - 1
-                res = filter(!ismissing, xout[xmin:xmin+2, ymin:ymin+2, n]) |> agg_func
-                xout[i, j, n] = res
+    # Initialize storage for each n
+    dggs_arrays = Dict{Int,AbstractDimArray}()
+
+    for n in keys(dggs_bbox)
+        i_range, j_range = dggs_bbox[n]
+
+        res = mapCube(
+            YAXArray(dims(geo_array), geo_array.data, metadata(geo_array));
+            indims=InDims(dims(geo_array, x_name), dims(geo_array, y_name)),
+            outdims=OutDims(
+                Dim{:dggs_i}(i_range),
+                Dim{:dggs_j}(j_range),
+                Dim{:dggs_n}(n:n),
+                outtype=outtype,
+                backend=backend,
+                path=path
+            ), kwargs...
+        ) do xout, xin
+            for ci in CartesianIndices(xout)
+                i, j, _ = ci.I
+                try
+                    cell = Cell(i + first(i_range) - 1, j + first(j_range) - 1, n, resolution)
+                    cells = cell_coords[cell]
+                    res = agg_func(view(xin, cells))
+                    xout[i, j, 1] = res
+                catch
+                    # fill gap by averaging available neighbors
+                    xmin = clamp(i, 2, size(xout, 1) - 1) - 1
+                    ymin = clamp(j, 2, size(xout, 2) - 1) - 1
+                    res = filter(!ismissing, xout[xmin:xmin+2, ymin:ymin+2, 1]) |> agg_func
+                    xout[i, j, 1] = res
+                end
             end
         end
+
+        dggs_arrays[n] = res
     end
 
-    return DGGSArray(
-        res.data, dims(res), refdims(res), name, metadata(geo_array),
-        resolution, "ISEA4D.Penta", geo_bbox
-    )
+    return dggs_arrays
 end
 
 "Fast iterative version only supporting mean"
@@ -147,48 +152,40 @@ function to_dggs_array(
 )
     resolution = first(cells).resolution
 
-    # re-grid
-    # mean = sum first, then divide by count
-    # no slow dict building and lookup needed 
+    # Initialize storage for each n
+    dggs_arrays = Dict{Int,Tuple{AbstractArray,AbstractArray}}()
 
-    counts = zeros(outtype_counts, length.(dggs_bbox)...)
+    for n in keys(dggs_bbox)
+        i_range, j_range = dggs_bbox[n]
 
-    sums = mapCube(
-        # mapCube can't find axes of other AbstractDimArrays e.g. Raster
-        YAXArray(dims(geo_array), geo_array.data, metadata(geo_array));
-        indims=InDims(dims(geo_array, x_name), dims(geo_array, y_name)),
-        outdims=OutDims(
-            dggs_bbox...,
-            outtype=outtype_sums,
-            backend=backend,
-            path=path
-        ), kwargs...) do xout, xin
-        for ci in CartesianIndices(xin)
-            ismissing(xin[ci]) && continue
-            isnan(xin[ci]) && continue
+        counts = zeros(outtype_counts, length(i_range), length(j_range))
+        sums = zeros(outtype_sums, length(i_range), length(j_range))
+
+        for ci in CartesianIndices(geo_array)
+            ismissing(geo_array[ci]) && continue
+            isnan(geo_array[ci]) && continue
 
             cell = cells[ci]
-            i_pos, j_pos, n_pos = cell.i + 1 - dggs_bbox[1][1], cell.j + 1 - dggs_bbox[2][1], cell.n + 1 - dggs_bbox[3][1]
-            if ismissing(xout[i_pos, j_pos, n_pos])
-                xout[i_pos, j_pos, n_pos] = xin[ci]
-            else
-                xout[i_pos, j_pos, n_pos] += xin[ci]
+            if cell.n == n
+                i_pos = cell.i + 1 - first(i_range)
+                j_pos = cell.j + 1 - first(j_range)
+
+                sums[i_pos, j_pos] += geo_array[ci]
+                counts[i_pos, j_pos] += 1
             end
-            counts[i_pos, j_pos, n_pos] += 1
         end
+
+        means = sums ./ counts
+        data = if outtype <: Integer || outtype <: Union{Missing,Integer}
+            Array{outtype}(round.(means))
+        else
+            Array{outtype}(means)
+        end
+
+        dggs_arrays[n] = (data, counts)
     end
 
-    means = sums.data ./ counts
-    data = if outtype <: Integer || outtype <: Union{Missing,Integer}
-        Array{outtype}(round.(means))
-    else
-        Array{outtype}(means)
-    end
-
-    return DGGSArray(
-        data, dims(sums), refdims(sums), name, metadata(geo_array),
-        resolution, "ISEA4D.Penta", geo_bbox
-    )
+    return dggs_arrays
 end
 
 function to_dggs_array(
@@ -261,7 +258,7 @@ function to_geo_array(dggs_array::DGGSArray, cells::AbstractDimArray; backend=:a
         end
         map(cells) do c
             try
-                dggs_array[c]
+                dggs_array[c][1]
             catch
                 missing
             end
