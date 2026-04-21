@@ -64,6 +64,8 @@ function Base.iterate(A::ChunkedArray, state=1)
     return (getindex(A, I...), state + 1)
 end
 
-# function Base.skipmissing(a::ChunkedArray)
-
-# end
+function Base.show(io::IO, ::MIME"text/plain", a::ChunkedArray)
+    print(io, join(a.dims, "x"))
+    print(io, " ")
+    print(io, typeof(a))
+end
