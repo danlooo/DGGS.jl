@@ -12,7 +12,7 @@ struct ChunkedArray{T,N} <: AbstractArray{T,N}
     chunk_size::NTuple{N,Int}
 end
 
-function ChunkedArray{T}(dims::NTuple{N,Int}, default::T, chunk_size::NTuple{N,Int}=dims) where {T,N}
+function ChunkedArray{T}(default::T, dims::NTuple{N,Int}, chunk_size::NTuple{N,Int}=dims) where {T,N}
     chunk_dims = ntuple(i -> div(dims[i] + chunk_size[i] - 1, chunk_size[i]), N)
     data = Array{Union{Missing,Array{T,N}},N}(undef, chunk_dims...)
     fill!(data, missing)
