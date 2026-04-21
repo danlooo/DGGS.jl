@@ -17,6 +17,7 @@ using DiskArrayTools
 
 include("types.jl")
 include("cells.jl")
+include("chunked-array.jl")
 include("arrays.jl")
 include("datasets.jl")
 include("pyramids.jl")
