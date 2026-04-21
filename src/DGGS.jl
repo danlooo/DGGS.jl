@@ -26,7 +26,7 @@ const transformations = Channel{Proj.Transformation}(Inf)
 const inv_transformations = Channel{Proj.Transformation}(Inf)
 const threads_ready = Ref(false)
 
-export Cell, DGGSArray, DGGSDatase, Cell, DGGSArray, DGGSDataset, DGGSPyramid
+export Cell, ChunkedArray, DGGSArray, DGGSDataset, DGGSPyramid
 export to_cell, to_geo, to_dggs_pyramid, to_dggs_dataset, to_dggs_array, to_geo_dataset, to_geo_array
 export open_dggs_array, open_dggs_dataset, open_dggs_pyramid
 export save_dggs_array, save_dggs_dataset, save_dggs_pyramid
