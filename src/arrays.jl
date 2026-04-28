@@ -265,7 +265,7 @@ function to_geo_array(dggs_array::DGGSArray, cells::AbstractDimArray; backend=:a
         end
         map(cells) do c
             try
-                dggs_array[c]
+                dggs_array[c][1]
             catch
                 missing
             end
