@@ -13,7 +13,7 @@ struct Cell{T<:Integer}
     end
 
     function Cell(i, j, n, resolution)
-        T = UInt32
+        T = Int
         new{T}(T(i), T(j), T(n), resolution)
     end
 end

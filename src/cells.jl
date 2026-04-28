@@ -216,7 +216,7 @@ Next resolution bits: j ∈ [0, 2^resolution-1]
 Next resolution+1 bits: i ∈ [0, 2*2^resolution-1]
 """
 function Base.Int(cell::Cell{T}) where {T<:Integer}
-    res = cell.i + cell.j << (cell.resolution + 1) + cell.n << (2 * cell.resolution + 1)
+    res = Int(cell.i) + Int(cell.j) << (cell.resolution + 1) + Int(cell.n) << (2 * cell.resolution + 1)
     return res
 end
 
