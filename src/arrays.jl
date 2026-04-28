@@ -326,7 +326,12 @@ function DGGSArray(array::AbstractDimArray)
 
     resolution = properties["dggs_resolution"] |> Int
     dggsrs = properties["dggs_dggsrs"] |> String
-    bbox = properties["dggs_bbox"] |> x -> x isa Extent ? x : Extent(X=(x["X"][1], x["X"][2]), Y=(x["Y"][1], x["Y"][2]))
+    bbox = properties["dggs_bbox"]
+    if bbox isa Dict{String,Any}
+        bbox = Extent(X=(bbox["X"]), Y=(bbox["Y"]))
+    else
+        bbox = Extent(bbox)
+    end
 
     for k in ["dggs_resolution", "dggs_bbox", "dggs_dggsrs", "_FillValue", "fill_value", "missing_value"]
         delete!(properties, k)
