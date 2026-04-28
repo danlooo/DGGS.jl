@@ -135,9 +135,9 @@ function to_dggs_array(
     dggs_bbox,
     geo_bbox::Extent
     ;
-    outtype=Union{eltype(geo_array),Missing},
-    outtype_counts=UInt8,
-    outtype_sums=UInt16,
+    outtype=eltype(geo_array),
+    outtype_counts=UInt16,
+    outtype_sums=eltype(geo_array),
     backend=:array,
     path=tempname() * ".dggs.zarr",
     name=get_name(geo_array),
@@ -152,6 +152,10 @@ function to_dggs_array(
     # no slow dict building and lookup needed 
 
     counts = zeros(outtype_counts, length.(dggs_bbox)...)
+
+    if any(size(geo_array) .> typemax(outtype_counts))
+        error("Input array too large for outtype_counts, consider using a larger integer type for counts")
+    end
 
     sums = mapCube(
         # mapCube can't find axes of other AbstractDimArrays e.g. Raster
