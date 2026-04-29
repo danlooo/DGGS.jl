@@ -186,7 +186,7 @@ function to_dggs_array(
     data = if outtype <: Integer || outtype <: Union{Missing,Integer}
         Array{outtype}(round.(means))
     else
-        Array{outtype}(means)
+        Array(means)
     end
 
     return DGGSArray(
@@ -310,6 +310,20 @@ end
 # DGGSArray features
 #
 
+function parse_bbox(bbox)
+    if bbox isa Dict{String,Any}
+        if haskey(bbox, "bounds")
+            bbox = bbox["bounds"]
+        end
+        bbox = Extent(X=(bbox["X"]), Y=(bbox["Y"]))
+    elseif bbox isa Extent
+        # do nothing
+    else
+        bbox = Extent(bbox)
+    end
+    return bbox
+end
+
 function DGGSArray(array::AbstractDimArray, resolution::Integer, dggsrs::String="ISEA4D.Penta", bbox::Extent=Extent(X=(-180, 180), Y=(-90, 90)); name=DD.name(array), metadata=metadata(array))
     return DGGSArray(
         array.data, dims(array), refdims(array), name, metadata,
@@ -326,12 +340,7 @@ function DGGSArray(array::AbstractDimArray)
 
     resolution = properties["dggs_resolution"] |> Int
     dggsrs = properties["dggs_dggsrs"] |> String
-    bbox = properties["dggs_bbox"]
-    if bbox isa Dict{String,Any}
-        bbox = Extent(X=(bbox["X"]), Y=(bbox["Y"]))
-    else
-        bbox = Extent(bbox)
-    end
+    bbox = properties["dggs_bbox"] |> parse_bbox
 
     for k in ["dggs_resolution", "dggs_bbox", "dggs_dggsrs", "_FillValue", "fill_value", "missing_value"]
         delete!(properties, k)
