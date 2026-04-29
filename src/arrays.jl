@@ -189,9 +189,9 @@ function to_dggs_array(
 
     means = sums.data ./ counts
     data = if outtype <: Integer || outtype <: Union{Missing,Integer}
-        Array{outtype}(round.(means))
+        round.(means)
     else
-        Array(means)
+        means
     end
 
     return DGGSArray(
