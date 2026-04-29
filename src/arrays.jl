@@ -157,6 +157,11 @@ function to_dggs_array(
         error("Input array too large for outtype_counts, consider using a larger integer type for counts")
     end
 
+    if outtype isa Union || outtype_sums isa Union
+        outtype = outtype.b
+        outtype_sums = outtype_sums.b
+    end
+
     sums = mapCube(
         # mapCube can't find axes of other AbstractDimArrays e.g. Raster
         YAXArray(dims(geo_array), geo_array.data, metadata(geo_array));
