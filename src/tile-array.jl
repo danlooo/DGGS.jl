@@ -19,6 +19,14 @@ function TileArray{T}(default::T, dims::NTuple{N,Int}, chunk_size::NTuple{N,Int}
     TileArray(data, default, dims, chunk_size)
 end
 
+# infer eltype from default if not given
+function TileArray(default::T, dims::NTuple{N,Int}, chunk_size::NTuple{N,Int}=dims) where {T,N}
+    chunk_dims = ntuple(i -> div(dims[i] + chunk_size[i] - 1, chunk_size[i]), N)
+    data = Array{Union{Missing,Array{T,N}},N}(undef, chunk_dims...)
+    fill!(data, missing)
+    TileArray(data, default, dims, chunk_size)
+end
+
 function Base.size(A::TileArray)
     A.dims
 end

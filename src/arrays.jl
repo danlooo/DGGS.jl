@@ -339,6 +339,15 @@ function DGGSArray(array::AbstractDimArray)
     )
 end
 
+function DGGSArray(resolution; chunk_length=2^12)
+    spatial_dims = (Dim{:dggs_i}(0:2*2^resolution-1), Dim{:dggs_j}(0:2^resolution-1), Dim{:dggs_n}(0:4))
+    data = TileArray{Union{Missing,Float64}}(missing, length.(spatial_dims), (chunk_length, chunk_length, 1))
+    dggsrs = "ISEA4D.Penta"
+    bbox = Extent(X=(-180, 180), Y=(-90, 90))
+    a = DGGSArray(data, spatial_dims, (), DimensionalData.NoName(), DimensionalData.Dimensions.Lookups.NoMetadata(), resolution, dggsrs, bbox)
+    return a
+end
+
 function YAXArrays.YAXArray(dggs_array::DGGSArray)
     properties = Dict{String,Any}(metadata(dggs_array))
     properties["dggs_resolution"] = dggs_array.resolution
@@ -377,6 +386,7 @@ Base.getindex(a::DGGSArray, c::Cell) = YAXArray(a)[dggs_i=At(c.i), dggs_j=At(c.j
 
 # DGGSArrays are usually big. Like YAXArrays, avoid DiskArray to load everything in memory
 Base.getindex(a::DGGSArray; i...) = view(a; i...)
+
 
 #
 # IO:: Serialization of DGGS Arrays
