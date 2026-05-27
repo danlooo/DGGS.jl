@@ -50,6 +50,29 @@ dggs_ds = DGGSDataset(dggs_array, dggs_array2)
         @test DGGSArray(yax_array, resolution, "ISEA4D.Penta", geo_bbox)[Cell(1, 2, 3, resolution)] isa YAXArray
     end
 
+    @testset "TileArray" begin
+        a = TileArray(0, (100, 100), (10, 10))
+        @test all(a .== 0)
+        a[1, 1] = 1
+        @test a[1, 1] == 1
+        @test all(a[2:100, :] .== 0)
+        a[1, 1] = 0
+        @test all(a .== 0)
+
+        a = TileArray{Union{Missing,Int}}(0, (100, 100), (10, 10))
+        a[1, 1] = 1
+        a[100, 100] = missing
+        @test a[1, 1] == 1
+        @test ismissing(a[100, 100])
+
+        resolution = 25
+        a = DGGSArray(resolution)
+        @test a.data isa TileArray
+        @test size(a) == (2 * 2^resolution, 2^resolution, 5)
+        a[2^resolution, 1, :] = 1:5
+        @test a.data[2^resolution, 1, :] == 1:5
+    end
+
     @testset "Coordinate transformations" begin
         resolution = 20
         geo_points = [(lon, lat) for lat in -90:5:90 for lon in -180:5:180]
