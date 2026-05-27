@@ -135,9 +135,9 @@ function to_dggs_array(
     dggs_bbox,
     geo_bbox::Extent
     ;
-    outtype=Union{eltype(geo_array),Missing},
-    outtype_counts=UInt8,
-    outtype_sums=UInt16,
+    outtype=eltype(geo_array),
+    outtype_counts=UInt16,
+    outtype_sums=eltype(geo_array),
     backend=:array,
     path=tempname() * ".dggs.zarr",
     name=get_name(geo_array),
@@ -152,6 +152,15 @@ function to_dggs_array(
     # no slow dict building and lookup needed 
 
     counts = zeros(outtype_counts, length.(dggs_bbox)...)
+
+    if any(size(geo_array) .> typemax(outtype_counts))
+        error("Input array too large for outtype_counts, consider using a larger integer type for counts")
+    end
+
+    if outtype isa Union || outtype_sums isa Union
+        outtype = outtype.b
+        outtype_sums = outtype_sums.b
+    end
 
     sums = mapCube(
         # mapCube can't find axes of other AbstractDimArrays e.g. Raster
@@ -180,9 +189,9 @@ function to_dggs_array(
 
     means = sums.data ./ counts
     data = if outtype <: Integer || outtype <: Union{Missing,Integer}
-        Array{outtype}(round.(means))
+        round.(means)
     else
-        Array{outtype}(means)
+        means
     end
 
     return DGGSArray(
@@ -261,7 +270,7 @@ function to_geo_array(dggs_array::DGGSArray, cells::AbstractDimArray; backend=:a
         end
         map(cells) do c
             try
-                dggs_array[c]
+                dggs_array[c][1]
             catch
                 missing
             end
@@ -306,6 +315,20 @@ end
 # DGGSArray features
 #
 
+function parse_bbox(bbox)
+    if bbox isa Dict{String,Any}
+        if haskey(bbox, "bounds")
+            bbox = bbox["bounds"]
+        end
+        bbox = Extent(X=(bbox["X"]), Y=(bbox["Y"]))
+    elseif bbox isa Extent
+        # do nothing
+    else
+        bbox = Extent(bbox)
+    end
+    return bbox
+end
+
 function DGGSArray(array::AbstractDimArray, resolution::Integer, dggsrs::String="ISEA4D.Penta", bbox::Extent=Extent(X=(-180, 180), Y=(-90, 90)); name=DD.name(array), metadata=metadata(array))
     return DGGSArray(
         array.data, dims(array), refdims(array), name, metadata,
@@ -322,7 +345,7 @@ function DGGSArray(array::AbstractDimArray)
 
     resolution = properties["dggs_resolution"] |> Int
     dggsrs = properties["dggs_dggsrs"] |> String
-    bbox = properties["dggs_bbox"] |> x -> x isa Extent ? x : Extent(X=(x["X"][1], x["X"][2]), Y=(x["Y"][1], x["Y"][2]))
+    bbox = properties["dggs_bbox"] |> parse_bbox
 
     for k in ["dggs_resolution", "dggs_bbox", "dggs_dggsrs", "_FillValue", "fill_value", "missing_value"]
         delete!(properties, k)

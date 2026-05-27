@@ -40,7 +40,7 @@ function DGGS.open_dggs_pyramid(group::ZGroup)
     ismissing(dggsrs) && error("DGGSRS not found in the pyramid metadata")
     ismissing(bbox) && error("Bounding box not found in the pyramid metadata")
 
-    bbox = Extent(X=(bbox["X"][1], bbox["X"][2]), Y=(bbox["Y"][1], bbox["Y"][2]))
+    bbox = DGGS.parse_bbox(bbox)
 
     dimtree = DimTree()
     groups = sort(group.groups, by=k -> group.groups[k].attrs["dggs_resolution"])
