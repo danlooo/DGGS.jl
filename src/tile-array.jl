@@ -35,8 +35,8 @@ function Base.length(A::TileArray)
     prod(A.dims)
 end
 
-function Base.eltype(A::TileArray)
-    typeof(A.default)
+function Base.eltype(::TileArray{T,N}) where {T,N}
+    return T
 end
 
 Base.IndexStyle(::Type{<:TileArray}) = IndexCartesian()

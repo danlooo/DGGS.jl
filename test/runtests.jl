@@ -71,6 +71,9 @@ dggs_ds = DGGSDataset(dggs_array, dggs_array2)
         @test size(a) == (2 * 2^resolution, 2^resolution, 5)
         a[2^resolution, 1, :] = 1:5
         @test a.data[2^resolution, 1, :] == 1:5
+
+        @test YAXArray(TileArray{Union{Missing,Float64}}(0.0, (100, 100), (10, 10))) isa YAXArray
+        @test YAXArray(TileArray(0, (100, 100), (10, 10))) isa YAXArray
     end
 
     @testset "Coordinate transformations" begin
