@@ -68,7 +68,7 @@ function Base.iterate(A::TileArray, state=1)
     if state > length(A)
         return nothing
     end
-    I = ntuple(i -> div(state - 1, prod(A.dims[i+1:end])) % A.dims[i] + 1, length(A.dims))
+    I = ntuple(i -> div(state - 1, prod(A.dims[(i+1):end])) % A.dims[i] + 1, length(A.dims))
     return (getindex(A, I...), state + 1)
 end
 

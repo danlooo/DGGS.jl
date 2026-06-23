@@ -76,129 +76,52 @@ function get_geo_bbox(geo_array::AbstractDimArray, crs::String; x_name=:X, y_nam
     end
 end
 
+function cells_to_coord_dict(cells::DimArray{Cell{Int64},2})
+    cell_coords = Dict{Cell{Int64},Vector{CartesianIndex{2}}}()
+    for cell_idx in CartesianIndices(cells)
+        cell = cells[cell_idx]
+        current_cells = get!(() -> CartesianIndex{2}[], cell_coords, cell)
+        push!(current_cells, cell_idx)
+    end
+    return cell_coords
+end
+
+
 function to_dggs_array(
     geo_array::AbstractDimArray,
     cells,
     cell_coords,
-    dggs_bbox,
     geo_bbox::Extent,
     agg_func::Function
     ;
-    outtype=Float64,
-    backend=:array,
-    path=tempname() * ".dggs.zarr",
     name=get_name(geo_array),
-    x_name=:X,
-    y_name=:Y,
+    chunk_length=2^12,
     kwargs...
 )
     resolution = first(cells).resolution
+    dggsrs = "ISEA4D.Penta"
 
-    # re-grid
-    res = mapCube(
-        # mapCube can't find axes of other AbstractDimArrays e.g. Raster
-        YAXArray(dims(geo_array), geo_array.data, metadata(geo_array));
-        indims=InDims(dims(geo_array, x_name), dims(geo_array, y_name)),
-        outdims=OutDims(
-            dggs_bbox...,
-            outtype=outtype,
-            backend=backend,
-            path=path
-        ), kwargs...) do xout, xin
-        for ci in CartesianIndices(xout)
-            i, j, n = ci.I
-            try
-                cell = Cell(dggs_bbox[1][i], dggs_bbox[2][j], dggs_bbox[3][n], resolution)
-                cells = cell_coords[cell]
-                res = agg_func(view(xin, cells))
-                xout[i, j, n] = res
-            catch
-                # fill gap by averaging available neighbors
-                xmin = clamp(i, 2, size(xout, 1) - 1) - 1
-                ymin = clamp(j, 2, size(xout, 2) - 1) - 1
-                res = filter(!ismissing, xout[xmin:xmin+2, ymin:ymin+2, n]) |> agg_func
-                xout[i, j, n] = res
-            end
+    # Create spatial dims
+    spatial_dims = (Dim{:dggs_i}(0:(2*2^resolution-1)), Dim{:dggs_j}(0:(2^resolution-1)), Dim{:dggs_n}(0:4))
+
+    # Create a TileArray directly instead of DGGSArray to avoid YAXArray wrapper overhead in setindex
+    data = TileArray{Union{Missing,Float64}}(missing, length.(spatial_dims), (chunk_length, chunk_length, 1))
+
+    # dims start at 0; +1 for 1-based Julia array indexing
+    for (k, v) in cell_coords
+        try
+            res = geo_array[v] |> skipmissing |> agg_func
+            data[k.i+1, k.j+1, k.n+1] = res
+        catch
         end
     end
 
     return DGGSArray(
-        res.data, dims(res), refdims(res), name, metadata(geo_array),
-        resolution, "ISEA4D.Penta", geo_bbox
+        data, spatial_dims, (), name, metadata(geo_array),
+        resolution, dggsrs, geo_bbox
     )
 end
 
-"Fast iterative version only supporting mean"
-function to_dggs_array(
-    geo_array::AbstractDimArray,
-    cells,
-    dggs_bbox,
-    geo_bbox::Extent
-    ;
-    outtype=eltype(geo_array),
-    outtype_counts=UInt16,
-    outtype_sums=eltype(geo_array),
-    backend=:array,
-    path=tempname() * ".dggs.zarr",
-    name=get_name(geo_array),
-    x_name=:X,
-    y_name=:Y,
-    kwargs...
-)
-    resolution = first(cells).resolution
-
-    # re-grid
-    # mean = sum first, then divide by count
-    # no slow dict building and lookup needed 
-
-    counts = zeros(outtype_counts, length.(dggs_bbox)...)
-
-    if any(size(geo_array) .> typemax(outtype_counts))
-        error("Input array too large for outtype_counts, consider using a larger integer type for counts")
-    end
-
-    if outtype isa Union || outtype_sums isa Union
-        outtype = outtype.b
-        outtype_sums = outtype_sums.b
-    end
-
-    sums = mapCube(
-        # mapCube can't find axes of other AbstractDimArrays e.g. Raster
-        YAXArray(dims(geo_array), geo_array.data, metadata(geo_array));
-        indims=InDims(dims(geo_array, x_name), dims(geo_array, y_name)),
-        outdims=OutDims(
-            dggs_bbox...,
-            outtype=outtype_sums,
-            backend=backend,
-            path=path
-        ), kwargs...) do xout, xin
-        for ci in CartesianIndices(xin)
-            ismissing(xin[ci]) && continue
-            isnan(xin[ci]) && continue
-
-            cell = cells[ci]
-            i_pos, j_pos, n_pos = cell.i + 1 - dggs_bbox[1][1], cell.j + 1 - dggs_bbox[2][1], cell.n + 1 - dggs_bbox[3][1]
-            if ismissing(xout[i_pos, j_pos, n_pos])
-                xout[i_pos, j_pos, n_pos] = xin[ci]
-            else
-                xout[i_pos, j_pos, n_pos] += xin[ci]
-            end
-            counts[i_pos, j_pos, n_pos] += 1
-        end
-    end
-
-    means = sums.data ./ counts
-    data = if outtype <: Integer || outtype <: Union{Missing,Integer}
-        round.(means)
-    else
-        means
-    end
-
-    return DGGSArray(
-        data, dims(sums), refdims(sums), name, metadata(geo_array),
-        resolution, "ISEA4D.Penta", geo_bbox
-    )
-end
 
 function to_dggs_array(
     geo_array::AbstractDimArray, resolution::Integer, crs::String, agg_func::Function;
@@ -215,21 +138,18 @@ function to_dggs_array(
     delete!(properties, "projection")
 
     cells = to_cell_array(x_dim, y_dim, resolution, crs)
-
-    # get pixels to aggregate for each cell
-    cell_coords = Dict{eltype(cells),Vector{CartesianIndex{2}}}()
-    for cell_idx in CartesianIndices(cells)
-        cell = cells[cell_idx]
-        current_cells = get!(() -> CartesianIndex{2}[], cell_coords, cell)
-        push!(current_cells, cell_idx)
-    end
-
-    dggs_bbox = get_dggs_bbox(keys(cell_coords))
+    cell_coords = cells_to_coord_dict(cells)
     geo_bbox = get_geo_bbox(geo_array, crs)
 
     dggs_array = to_dggs_array(
-        geo_array, cells, cell_coords, dggs_bbox, geo_bbox, agg_func;
-        x_name=x_name, y_name=y_name, kwargs...
+        geo_array::AbstractDimArray,
+        cells,
+        cell_coords,
+        geo_bbox::Extent,
+        agg_func::Function
+        ;
+        name=get_name(geo_array),
+        kwargs...
     )
     return dggs_array
 end
@@ -257,7 +177,7 @@ function to_geo_array(dggs_array::DGGSArray, cells::AbstractDimArray; backend=:a
     lat_dim = dims(cells, :Y)
 
     # dggs_array may only contain parts of the world, having only parts of the dimension
-    get_extent(i_dim) = dggs_array.dims[i_dim].val.data |> x -> (first(x), last(x))
+    get_extent(i_dim) = dggs_array.dims[i_dim].val |> x -> (first(x), last(x))
     i_min, i_max = get_extent(1)
     j_min, j_max = get_extent(2)
     n_min, n_max = get_extent(3)
@@ -363,7 +283,7 @@ function DGGSArray(array::AbstractDimArray)
 end
 
 function DGGSArray(resolution; chunk_length=2^12)
-    spatial_dims = (Dim{:dggs_i}(0:2*2^resolution-1), Dim{:dggs_j}(0:2^resolution-1), Dim{:dggs_n}(0:4))
+    spatial_dims = (Dim{:dggs_i}(0:(2*2^resolution-1)), Dim{:dggs_j}(0:(2^resolution-1)), Dim{:dggs_n}(0:4))
     data = TileArray{Union{Missing,Float64}}(missing, length.(spatial_dims), (chunk_length, chunk_length, 1))
     dggsrs = "ISEA4D.Penta"
     bbox = Extent(X=(-180, 180), Y=(-90, 90))
@@ -409,6 +329,8 @@ Base.getindex(a::DGGSArray, c::Cell) = YAXArray(a)[dggs_i=At(c.i), dggs_j=At(c.j
 
 # DGGSArrays are usually big. Like YAXArrays, avoid DiskArray to load everything in memory
 Base.getindex(a::DGGSArray; i...) = view(a; i...)
+
+Base.setindex!(a::DGGSArray, val, c::Cell) = YAXArray(a)[dggs_i=At(c.i), dggs_j=At(c.j), dggs_n=At(c.n)] = val
 
 
 #
