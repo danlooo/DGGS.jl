@@ -95,6 +95,7 @@ function to_dggs_array(
     agg_func::Function
     ;
     name=get_name(geo_array),
+    out_eltype=Union{Missing,eltype(geo_array)},
     chunk_length=2^12,
     kwargs...
 )
@@ -105,7 +106,7 @@ function to_dggs_array(
     spatial_dims = (Dim{:dggs_i}(0:(2*2^resolution-1)), Dim{:dggs_j}(0:(2^resolution-1)), Dim{:dggs_n}(0:4))
 
     # Create a TileArray directly instead of DGGSArray to avoid YAXArray wrapper overhead in setindex
-    data = TileArray{Union{Missing,Float64}}(missing, length.(spatial_dims), (chunk_length, chunk_length, 1))
+    data = TileArray{out_eltype}(missing, length.(spatial_dims), (chunk_length, chunk_length, 1))
 
     # dims start at 0; +1 for 1-based Julia array indexing
     for (k, v) in cell_coords
