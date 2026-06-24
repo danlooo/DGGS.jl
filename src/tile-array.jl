@@ -121,7 +121,6 @@ Supported forms:
   passed as the fourth positional argument following Base's convention.
 """
 function Base.mapreduce(f, op, A::TileArray{T,N}; dims=:, init=nothing) where {T,N}
-    @info 3
     # When default is missing, missing tiles are "empty" and should be skipped
     A.default === missing && return _mapreduce_tile_skipmissing(A, f, op, dims, init)
     _mapreduce_tile(A, f, op, dims, init)
