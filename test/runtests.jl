@@ -37,8 +37,8 @@ dggs_ds = DGGSDataset(dggs_array, dggs_array2)
 
     @testset "DGGSArray" begin
         resolution = 3
-        i_dim = Dim{:dggs_i}(0:2*2^resolution-1)
-        j_dim = Dim{:dggs_j}(0:2^resolution-1)
+        i_dim = Dim{:dggs_i}(0:(2*2^resolution-1))
+        j_dim = Dim{:dggs_j}(0:(2^resolution-1))
         n_dim = Dim{:dggs_n}(0:4)
         time_dim = Ti(1:10)
         dim_array = rand(i_dim, j_dim, n_dim, time_dim)
@@ -76,6 +76,35 @@ dggs_ds = DGGSDataset(dggs_array, dggs_array2)
         @test YAXArray(TileArray(0, (100, 100), (10, 10))) isa YAXArray
     end
 
+    @testset "TileArray mapreduce" begin
+        # Test mapreduce with non-missing default
+        a = TileArray(0, (10, 10), (5, 5))
+        @test mapreduce(identity, +, a) == 0
+        @test mapreduce(x -> x + 1, +, a) == 100
+        a[1, 1] = 42
+        @test mapreduce(identity, +, a) == 42
+        @test maximum(a) == 42
+        @test minimum(a) == 0
+
+        # Test mapreduce with missing default
+        b = TileArray{Union{Missing,Int}}(missing, (10, 10, 10), (5, 5, 5))
+        b[1, 1, 1] = 2
+        b[2, 1, 1] = 3
+        @test maximum(b) == 3
+        @test minimum(skipmissing(b)) == 2
+        @test sum(skipmissing(b)) == 5
+        @test maximum(skipmissing(b)) == 3
+        @test b |> skipmissing |> maximum == 3
+
+        # Test mapreduce with dims
+        c = TileArray(1, (4, 6), (4, 6))
+        c[1, 1] = 10
+        c[2, 3] = 5
+        dense = [c[i, j] for i in 1:4, j in 1:6]
+        @test mapreduce(identity, +, c; dims=1) == sum(dense; dims=1)
+        @test mapreduce(identity, +, c; dims=2) == sum(dense; dims=2)
+    end
+
     @testset "Coordinate transformations" begin
         resolution = 20
         geo_points = [(lon, lat) for lat in -90:5:90 for lon in -180:5:180]
@@ -88,19 +117,19 @@ dggs_ds = DGGSDataset(dggs_array, dggs_array2)
         @test sum(dists .< 10) / length(dists) >= 0.99
 
         # cell ids must be in bounds
-        @test all(map(x -> x.i in 0:2*2^resolution-1, cell_ids))
-        @test all(map(x -> x.j in 0:2^resolution-1, cell_ids))
+        @test all(map(x -> x.i in 0:(2*2^resolution-1), cell_ids))
+        @test all(map(x -> x.j in 0:(2^resolution-1), cell_ids))
         @test all(map(x -> x.n in 0:4, cell_ids))
     end
 
     @testset "Integer index" begin
         resolution = 5
-        cells = [Cell(i, j, n, resolution) for n in 0:4 for j in 0:2^resolution-1 for i in 0:2*2^resolution-1]
+        cells = [Cell(i, j, n, resolution) for n in 0:4 for j in 0:(2^resolution-1) for i in 0:(2*2^resolution-1)]
         cells_int = Int64.(cells)
         cells2 = Cell.(cells_int, resolution)
 
         @test length(cells) == length(cells_int |> unique)
-        @test cells_int == 0:length(cells)-1
+        @test cells_int == 0:(length(cells)-1)
         @test cells == cells2
     end
 
@@ -160,8 +189,8 @@ dggs_ds = DGGSDataset(dggs_array, dggs_array2)
 
     @testset "DGGSDataset" begin
         resolution = 3
-        i_dim = Dim{:dggs_i}(0:2*2^resolution-1)
-        j_dim = Dim{:dggs_j}(0:2^resolution-1)
+        i_dim = Dim{:dggs_i}(0:(2*2^resolution-1))
+        j_dim = Dim{:dggs_j}(0:(2^resolution-1))
         n_dim = Dim{:dggs_n}(0:4)
         time_dim = Ti(1:10)
         dim_array = rand(i_dim, j_dim, n_dim, time_dim)
