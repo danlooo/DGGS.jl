@@ -35,21 +35,20 @@ end
 
 function to_dggs_dataset(geo_ds::Dataset, resolution::Integer, crs::String, agg_func::Function; metadata=Dict(), x_name=:X, y_name=:Y, kwargs...)
     cells = to_cell_array(geo_ds[x_name], geo_ds[y_name], resolution, crs)
+    cell_coords = cells_to_coord_dict(cells)
 
-    # get pixels to aggregate for each cell
-    cell_coords = Dict{eltype(cells),Vector{CartesianIndex{2}}}()
-    for cell_idx in CartesianIndices(cells)
-        cell = cells[cell_idx]
-        current_cells = get!(() -> CartesianIndex{2}[], cell_coords, cell)
-        push!(current_cells, cell_idx)
-    end
-
-    dggs_bbox = get_dggs_bbox(keys(cell_coords))
+    # Compute geo_bbox once for the entire dataset instead of per-cube
+    # All cubes in a dataset share the same spatial extent
+    first_cube = first(geo_ds.cubes)[2]
+    geo_bbox = get_geo_bbox(first_cube, crs; x_name=x_name, y_name=y_name)
 
     dggs_arrays = []
     dggs_arrays_lock = ReentrantLock()
     Threads.@threads for (name, geo_array) in collect(geo_ds.cubes)
-        dggs_array = to_dggs_array(geo_array, cells, cell_coords, dggs_bbox, agg_func; name=name, x_name=x_name, y_name=y_name, kwargs...)
+        dggs_array = to_dggs_array(
+            geo_array, cells, cell_coords, geo_bbox, agg_func;
+            name=name, x_name=x_name, y_name=y_name, kwargs...
+        )
         @lock dggs_arrays_lock push!(dggs_arrays, dggs_array)
     end
     return DGGSDataset(dggs_arrays...; metadata=metadata)
