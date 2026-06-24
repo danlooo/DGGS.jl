@@ -34,7 +34,7 @@ end
 
 
 function to_dggs_dataset(geo_ds::Dataset, resolution::Integer, crs::String, agg_func::Function; metadata=Dict(), x_name=:X, y_name=:Y, kwargs...)
-    cells = to_cell_array(dims(geo_ds, x_name), dims(geo_ds, y_name), resolution, crs)
+    cells = to_cell_array(geo_ds[x_name], geo_ds[y_name], resolution, crs)
 
     # get pixels to aggregate for each cell
     cell_coords = Dict{eltype(cells),Vector{CartesianIndex{2}}}()
