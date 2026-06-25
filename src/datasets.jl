@@ -34,8 +34,9 @@ end
 
 
 function to_dggs_dataset(geo_ds::Dataset, resolution::Integer, crs::String, agg_func::Function; metadata=Dict(), x_name=:X, y_name=:Y, kwargs...)
-    cells = to_cell_array(geo_ds[x_name], geo_ds[y_name], resolution, crs)
-    cell_coords = cells_to_coord_dict(cells)
+    # Fused algorithm: directly build cell coordinate dictionary from dimensions
+    # without creating an intermediate cell array
+    cell_coords = cells_to_coord_dict(geo_ds[x_name], geo_ds[y_name], resolution, crs)
 
     # Compute geo_bbox once for the entire dataset instead of per-cube
     # All cubes in a dataset share the same spatial extent
@@ -46,7 +47,7 @@ function to_dggs_dataset(geo_ds::Dataset, resolution::Integer, crs::String, agg_
     dggs_arrays_lock = ReentrantLock()
     Threads.@threads for (name, geo_array) in collect(geo_ds.cubes)
         dggs_array = to_dggs_array(
-            geo_array, cells, cell_coords, geo_bbox, agg_func;
+            geo_array, resolution, cell_coords, geo_bbox, agg_func;
             name=name, x_name=x_name, y_name=y_name, kwargs...
         )
         @lock dggs_arrays_lock push!(dggs_arrays, dggs_array)

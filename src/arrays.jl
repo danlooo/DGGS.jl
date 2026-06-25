@@ -37,6 +37,43 @@ function get_dggs_bbox(cells)
     )
 end
 
+# Version that works with any iterable of cells (e.g., dictionary keys)
+function get_dggs_bbox_cells(cells)
+    cell = first(cells)
+    resolution = cell.resolution
+
+    i_min = cell.i
+    i_max = cell.i
+    j_min, j_max = cell.j, cell.j
+    n_min, n_max = cell.n, cell.n
+
+    for cell in cells
+        if cell.i < i_min
+            i_min = cell.i
+        elseif cell.i > i_max
+            i_max = cell.i
+        end
+
+        if cell.j < j_min
+            j_min = cell.j
+        elseif cell.j > j_max
+            j_max = cell.j
+        end
+
+        if cell.n < n_min
+            n_min = cell.n
+        elseif cell.n > n_max
+            n_max = cell.n
+        end
+    end
+
+    return (
+        Dim{:dggs_i}(i_min:i_max),
+        Dim{:dggs_j}(j_min:j_max),
+        Dim{:dggs_n}(n_min:n_max)
+    )
+end
+
 "Infere max possible geo extent"
 function get_geo_bbox(x::Union{DGGSArray,DGGSDataset})
     i_min, i_max = dims(x, :dggs_i).val.data |> x -> (first(x), last(x))
@@ -86,10 +123,31 @@ function cells_to_coord_dict(cells::DimArray{Cell{Int64},2})
     return cell_coords
 end
 
+# Fused version: directly builds the cell coordinate dictionary from dimensions
+# without creating an intermediate cell array
+function cells_to_coord_dict(x_dim, y_dim, resolution, crs)
+    trans = Proj.Transformation(crs, crs_isea; ctx=Proj.proj_context_create(), always_xy=true)
+    cell_coords = Dict{Cell{Int64},Vector{CartesianIndex{2}}}()
+
+    # Pre-size dictionary based on expected number of unique cells
+    # At high resolution, many pixels will map to the same cell
+    expected_cells = min(length(x_dim) * length(y_dim), 2 * 2^resolution * 2^resolution * 5)
+    sizehint!(cell_coords, expected_cells)
+
+    for (j_idx, y) in enumerate(y_dim)
+        for (i_idx, x) in enumerate(x_dim)
+            cell = to_cell(x, y, resolution, trans)
+            current_cells = get!(() -> CartesianIndex{2}[], cell_coords, cell)
+            push!(current_cells, CartesianIndex(i_idx, j_idx))
+        end
+    end
+    return cell_coords
+end
+
 
 function to_dggs_array(
     geo_array::AbstractDimArray,
-    cells,
+    resolution::Integer,
     cell_coords,
     geo_bbox::Extent,
     agg_func::Function
@@ -99,7 +157,6 @@ function to_dggs_array(
     chunk_length=2^12,
     kwargs...
 )
-    resolution = first(cells).resolution
     dggsrs = "ISEA4D.Penta"
 
     # Create spatial dims
@@ -156,13 +213,12 @@ function to_dggs_array(
     properties = metadata(geo_array)
     delete!(properties, "projection")
 
-    cells = to_cell_array(x_dim, y_dim, resolution, crs)
-    cell_coords = cells_to_coord_dict(cells)
+    cell_coords = cells_to_coord_dict(x_dim, y_dim, resolution, crs)
     geo_bbox = get_geo_bbox(geo_array, crs)
 
     dggs_array = to_dggs_array(
         geo_array::AbstractDimArray,
-        cells,
+        resolution,
         cell_coords,
         geo_bbox::Extent,
         agg_func::Function
@@ -183,11 +239,14 @@ function to_dggs_array(geo_array::AbstractDimArray, resolution::Integer, crs::St
 
     properties = metadata(geo_array)
 
-    cells = to_cell_array(x_dim, y_dim, resolution, crs)
-    dggs_bbox = get_dggs_bbox(cells)
+    cell_coords = cells_to_coord_dict(x_dim, y_dim, resolution, crs)
+
+    # Compute dggs_bbox from cell_coords keys
+    cells = keys(cell_coords)
+    dggs_bbox = get_dggs_bbox_cells(cells)
     geo_bbox = get_geo_bbox(geo_array, crs)
 
-    dggs_array = to_dggs_array(geo_array, cells, dggs_bbox, geo_bbox; x_name=x_name, y_name=y_name, kwargs...)
+    dggs_array = to_dggs_array(geo_array, resolution, dggs_bbox, geo_bbox; x_name=x_name, y_name=y_name, kwargs...)
     return dggs_array
 end
 
