@@ -108,10 +108,28 @@ function to_dggs_array(
     # Create a TileArray directly instead of DGGSArray to avoid YAXArray wrapper overhead in setindex
     data = TileArray{out_eltype}(missing, length.(spatial_dims), (chunk_length, chunk_length, 1))
 
+    # Pre-sized reusable buffer to avoid per-cell allocation when collecting non-missing values.
+    # Most cells at high resolution map to ~1-4 pixels, so size 32 avoids reallocation in most cases.
+    buf = Vector{eltype(geo_array)}(undef, 32)
+    buf_len = 0
+
     # dims start at 0; +1 for 1-based Julia array indexing
     for (k, v) in cell_coords
         try
-            res = geo_array[v] |> skipmissing |> agg_func
+            # Collect non-missing values into pre-sized buffer (avoids geo_array[v] allocation)
+            buf_len = 0
+            for idx in v
+                val = geo_array[idx]
+                if val !== missing
+                    buf_len += 1
+                    if buf_len > length(buf)
+                        resize!(buf, length(buf) * 2)
+                    end
+                    @inbounds buf[buf_len] = val
+                end
+            end
+            buf_len == 0 && continue
+            res = agg_func(@view buf[1:buf_len])
             data[k.i+1, k.j+1, k.n+1] = res
         catch
         end
