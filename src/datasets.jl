@@ -107,8 +107,24 @@ end
 
 open_dggs_dataset(file_path::String; kwargs...) = file_path |> x -> open_dataset(x; kwargs...) |> cache |> DGGSDataset
 
-function save_dggs_dataset(file_path::String, dggs_ds::DGGSDataset; kwargs...)
-    dggs_ds |> Dataset |> x -> savedataset(x; path=file_path, kwargs...)
+function save_dggs_dataset(file_path::String, ds::DGGSDataset; chunks=(4096, 4096, 1), kwargs...)
+    if any(map(x -> x.data isa TileArray, ds.data))
+        # save skeleton only
+        yax_ds = setchunks(Dataset(ds), chunks)
+        disk_ds = savedataset(yax_ds; path=file_path, skeleton=true, kwargs...)
+
+        for key in keys(ds)
+            tile_array = ds[key].data.data
+            disk_array = setchunks(disk_ds[key], chunks)
+
+            for (r, i) in zip(ranges(tile_array), findall(!ismissing, tile_array.data))
+                disk_array[r...] .= tile_array.data[i]
+            end
+        end
+    else
+        yax_ds = Dataset(ds)
+        savedataset(yax_ds; path=file_path, kwargs...)
+    end
 end
 
 init_global_dggs_dataset() = @error("Please load package Zarr")

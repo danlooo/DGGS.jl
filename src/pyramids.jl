@@ -1,3 +1,36 @@
+"""
+    coarsen(A::AbstractArray, factors::Tuple)
+
+Coarsen an array by aggregating blocks of elements. Each dimension is reduced
+by the corresponding factor using mean aggregation.
+
+# Arguments
+- `A::AbstractArray`: Input array to coarsen
+- `factors::Tuple`: Tuple of coarsening factors, one per dimension.
+  Use `1` to keep a dimension unchanged.
+
+# Example
+```julia
+a = rand(64, 32, 10)
+coarse_a = coarsen(a, (2, 2, 1))  # Result: 32×16×10
+```
+"""
+function coarsen(A::AbstractArray, factors::Tuple)
+    # Build the reshaped dimensions: interleave (new_dim, factor) pairs
+    reshaped_dims = Int[]
+    for (s, f) in zip(size(A), factors)
+        push!(reshaped_dims, s ÷ f)
+        push!(reshaped_dims, f)
+    end
+
+    reshaped = reshape(A, Tuple(reshaped_dims))
+
+    # Average over the factor dimensions (every even dimension: 2, 4, 6, ...)
+    reduce_dims = Tuple(2:2:length(reshaped_dims))
+    result = mean(reshaped, dims=reduce_dims)
+    return dropdims(result, dims=reduce_dims)
+end
+
 function DGGSPyramid(data::AbstractDict{T,A}, dggsrs, bbox) where {T,A<:DGGSDataset}
     dimtree = DimTree()
     # add all res levels as branches
@@ -72,8 +105,8 @@ function aggregate_by_factor(
     fac = ceil(Int, size(xin, 1) / size(xout, 1))
     for j in axes(xout, 2)
         for i in axes(xout, 1)
-            xview = ((i-1)*fac+1):min(size(xin, 1), (i * fac))
-            yview = ((j-1)*fac+1):min(size(xin, 2), (j * fac))
+            xview = ((i-1)*fac+1):min(size(xin, 1), (i*fac))
+            yview = ((j-1)*fac+1):min(size(xin, 2), (j*fac))
             xout[i, j] = pyramid_agg_func(view(xin, xview, yview))
         end
     end
@@ -93,6 +126,8 @@ function coarsen(
         dim_max = floor(dim_max / 2) |> Int
         Dim{dim}(dim_min:dim_max)
     end
+
+    @infiltrate
 
     coarser_arr = mapCube(
         dggs_array;
@@ -127,7 +162,7 @@ end
 function to_dggs_pyramid(dggs_ds::DGGSDataset; kwargs...)
     pyramid = DGGSDataset[]
     push!(pyramid, dggs_ds)
-    for resolution in dggs_ds.resolution-1:-1:1
+    for resolution in (dggs_ds.resolution-1):-1:1
         current_dggs_ds = pyramid[end]
         coarser_ds = coarsen(current_dggs_ds; kwargs...)
         push!(pyramid, coarser_ds)

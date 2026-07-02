@@ -79,6 +79,38 @@ function Base.show(io::IO, ::MIME"text/plain", a::TileArray)
 end
 
 """
+    ranges(A::TileArray)
+
+Return a vector of tuples of UnitRanges representing the index ranges of all
+non-missing tiles in `A`. Each tuple corresponds to one present chunk and
+contains the global index range along each dimension.
+
+# Example
+```julia
+a = DGGSArray(19)
+a.data[1:4096, 1:4096, 1] .= 1
+a.data[1:4096, 1:4096, 2] .= 2
+ds = DGGSDataset(a)
+tile_array = ds.a.data
+ranges(tile_array)  # returns e.g. [(1:4096, 1:4096, 1:1), (1:4096, 1:4096, 2:2)]
+```
+"""
+function ranges(A::TileArray{T,N}) where {T,N}
+    result = Tuple{Vararg{UnitRange{Int},N}}[]
+    for ck in CartesianIndices(size(A.data))
+        if A.data[ck] !== missing
+            ranges_tuple = ntuple(N) do d
+                start_idx = (ck[d] - 1) * A.chunk_size[d] + 1
+                end_idx = min(ck[d] * A.chunk_size[d], A.dims[d])
+                start_idx:end_idx
+            end
+            push!(result, ranges_tuple)
+        end
+    end
+    return result
+end
+
+"""
     _tile_reduce_contribution(op, base_result, n::Int)
 
 Given `base_result = f(x)` and the fact that value `x` appears `n` times,
