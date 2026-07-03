@@ -33,7 +33,7 @@ function Base.getproperty(ds::DGGSDataset, s::Symbol)
 end
 
 
-function to_dggs_dataset(geo_ds::Dataset, resolution::Integer, crs::String, agg_func::Function; metadata=Dict(), x_name=:X, y_name=:Y, kwargs...)
+function to_dggs_dataset(geo_ds::Dataset, resolution::Integer, crs::String; agg_func::Function=mean, metadata=Dict(), x_name=:X, y_name=:Y, kwargs...)
     # Fused algorithm: directly build cell coordinate dictionary from dimensions
     # without creating an intermediate cell array
     cell_coords = cells_to_coord_dict(geo_ds[x_name], geo_ds[y_name], resolution, crs)
@@ -47,8 +47,8 @@ function to_dggs_dataset(geo_ds::Dataset, resolution::Integer, crs::String, agg_
     dggs_arrays_lock = ReentrantLock()
     Threads.@threads for (name, geo_array) in collect(geo_ds.cubes)
         dggs_array = to_dggs_array(
-            geo_array, resolution, cell_coords, geo_bbox, agg_func;
-            name=name, x_name=x_name, y_name=y_name, kwargs...
+            geo_array, resolution, cell_coords, geo_bbox;
+            agg_func=agg_func, name=name, x_name=x_name, y_name=y_name, kwargs...
         )
         @lock dggs_arrays_lock push!(dggs_arrays, dggs_array)
     end
@@ -107,18 +107,32 @@ end
 
 open_dggs_dataset(file_path::String; kwargs...) = file_path |> x -> open_dataset(x; kwargs...) |> cache |> DGGSDataset
 
-function save_dggs_dataset(file_path::String, ds::DGGSDataset; chunks=(4096, 4096, 1), kwargs...)
+function save_dggs_dataset(file_path::String, ds::DGGSDataset; chunks=nothing, kwargs...)
     if any(map(x -> x.data isa TileArray, ds.data))
         # save skeleton only
-        yax_ds = setchunks(Dataset(ds), chunks)
+        yax_ds = Dataset(ds)
+        if ! isnothing(chunks)
+            setchunks(yax_ds, chunks)
+        end
         disk_ds = savedataset(yax_ds; path=file_path, skeleton=true, kwargs...)
 
         for key in keys(ds)
             tile_array = ds[key].data.data
-            disk_array = setchunks(disk_ds[key], chunks)
+            disk_array = disk_ds[key]
+            if ! isnothing(chunks)
+                disk_array = setchunks(disk_array, chunks)
+            end
 
             for (r, i) in zip(ranges(tile_array), findall(!ismissing, tile_array.data))
-                disk_array[r...] .= tile_array.data[i]
+                chunk_data = tile_array.data[i]
+                # Compute local indices within the chunk for the valid range
+                # (handles boundary chunks that may be smaller than chunk_size)
+                local_ranges = ntuple(length(r)) do d
+                    start_local = r[d].start - (i[d] - 1) * tile_array.chunk_size[d]
+                    end_local = r[d].stop - (i[d] - 1) * tile_array.chunk_size[d]
+                    start_local:end_local
+                end
+                disk_array[r...] .= chunk_data[local_ranges...]
             end
         end
     else
