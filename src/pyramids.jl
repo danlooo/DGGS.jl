@@ -113,38 +113,116 @@ function aggregate_by_factor(
 end
 
 
+"""
+    coarsen(dggs_array::DGGSArray{<:Any,<:Any,<:Any,<:Any,<:TileArray}; pyramid_agg_func)
+
+Coarsen a DGGSArray backed by a TileArray by aggregating 2x2 blocks.
+Missing tiles are skipped entirely, making this efficient for sparse arrays.
+"""
 function coarsen(
-    dggs_array::DGGSArray;
+    dggs_array::DGGSArray{<:Any,<:Any,<:Any,<:Any,<:TileArray};
     pyramid_agg_func::Function=x -> filter(y -> !ismissing(y) && !isnan(y), x) |> mean
 )
+    tile_array = dggs_array.data
     coarser_level = dggs_array.resolution - 1
 
-    # analog to GeoTIFF overviews 
-    coarser_dims = map((:dggs_i, :dggs_j)) do dim
-        dim_min, dim_max = dims(dggs_array, dim) |> extrema
-        dim_min = floor(dim_min / 2) |> Int
-        dim_max = floor(dim_max / 2) |> Int
-        Dim{dim}(dim_min:dim_max)
+    # Get dimension extents (0-based DGGS coordinates)
+    i_min, i_max = extrema(dims(dggs_array, :dggs_i))
+    j_min, j_max = extrema(dims(dggs_array, :dggs_j))
+    n_min, n_max = extrema(dims(dggs_array, :dggs_n))
+
+    # Compute coarser dimensions (0-based)
+    coarser_i_min = floor(Int, i_min / 2)
+    coarser_i_max = floor(Int, i_max / 2)
+    coarser_j_min = floor(Int, j_min / 2)
+    coarser_j_max = floor(Int, j_max / 2)
+
+    # Output TileArray dimensions (1-based extent)
+    out_dims = (
+        coarser_i_max - coarser_i_min + 1,
+        coarser_j_max - coarser_j_min + 1,
+        n_max - n_min + 1
+    )
+
+    # Create output TileArray with same chunk size
+    out_eltype = eltype(tile_array)
+    out_tile_array = TileArray{out_eltype}(missing, out_dims, tile_array.chunk_size)
+
+    cs = tile_array.chunk_size
+
+    # Get present tile ranges (1-based internal indices)
+    present_ranges = ranges(tile_array)
+
+    # Process each present tile
+    for tile_range in present_ranges
+        i_range, j_range, n_range = tile_range
+
+        # Get chunk data using 1-based chunk indices
+        ci = div(first(i_range) - 1, cs[1]) + 1
+        cj = div(first(j_range) - 1, cs[2]) + 1
+        cn = div(first(n_range) - 1, cs[3]) + 1
+        chunk_data = tile_array.data[ci, cj, cn]
+        chunk_data === missing && continue
+
+        # Global 0-based coordinate of chunk start
+        global_i_start_0 = first(i_range) - 1 + i_min
+        global_j_start_0 = first(j_range) - 1 + j_min
+
+        # Iterate over 2x2 blocks aligned to the global grid
+        for li in 1:length(i_range)
+            gi_0 = global_i_start_0 + li - 1
+            gi_0 % 2 != 0 && continue  # Skip non-aligned positions
+
+            for lj in 1:length(j_range)
+                gj_0 = global_j_start_0 + lj - 1
+                gj_0 % 2 != 0 && continue
+
+                # Collect values from 2x2 block
+                values = out_eltype[]
+                for di in 0:1, dj in 0:1
+                    ni, nj = li + di, lj + dj
+                    if ni <= length(i_range) && nj <= length(j_range)
+                        for ln in 1:length(n_range)
+                            val = chunk_data[ni, nj, ln]
+                            val !== missing && push!(values, val)
+                        end
+                    end
+                end
+
+                if !isempty(values)
+                    agg_val = pyramid_agg_func(values)
+
+                    # Write to output (convert to 1-based)
+                    out_i_1 = div(gi_0, 2) - coarser_i_min + 1
+                    out_j_1 = div(gj_0, 2) - coarser_j_min + 1
+                    for ln in 1:length(n_range)
+                        out_tile_array[out_i_1, out_j_1, ln] = agg_val
+                    end
+                end
+            end
+        end
     end
 
-    coarser_arr = mapCube(
-        dggs_array;
-        indims=InDims(:dggs_i, :dggs_j),
-        outdims=OutDims(coarser_dims...)
-    ) do xout, xin
-        xout = aggregate_by_factor(xin, xout, pyramid_agg_func)
-    end
+    # Build coarser DGGSArray directly (bypass YAXArray to preserve TileArray)
+    coarser_dims = (
+        Dim{:dggs_i}(coarser_i_min:coarser_i_max),
+        Dim{:dggs_j}(coarser_j_min:coarser_j_max),
+        Dim{:dggs_n}(n_min:n_max)
+    )
 
     properties = Dict{String,Any}(metadata(dggs_array))
     properties["dggs_dggsrs"] = dggs_array.dggsrs
     properties["dggs_resolution"] = coarser_level
     properties["dggs_bbox"] = dggs_array.bbox
 
-    coarser_dggs_arr = YAXArray(dims(coarser_arr), coarser_arr.data, properties) |> DGGSArray
-    coarser_dggs_arr = rebuild(coarser_dggs_arr; name=name(dggs_array))
+    coarser_dggs_arr = DGGSArray(
+        out_tile_array, coarser_dims, (), name(dggs_array), properties,
+        coarser_level, dggs_array.dggsrs, dggs_array.bbox
+    )
 
     return coarser_dggs_arr
 end
+
 
 function coarsen(dggs_ds::DGGSDataset; kwargs...)
     coarser_arrays = []

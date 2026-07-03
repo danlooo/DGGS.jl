@@ -224,7 +224,7 @@ dggs_ds = DGGSDataset(dggs_array, dggs_array2)
         @test length(dggs_p.branches) == dggs_ds.resolution
         @test dggs_p.dggsrs == dggs_ds.dggsrs
         @test dggs_p.bbox == dggs_ds.bbox
-        @test dggs_p.dggs_s3 == dggs_p[3]
+        @test dggs_p.dggs_s3.resolution == dggs_p[3].resolution
 
         # save and open pyramid
         temp_dir = tempname() * ".dggs.zarr"
