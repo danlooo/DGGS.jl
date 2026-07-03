@@ -127,8 +127,6 @@ function coarsen(
         Dim{dim}(dim_min:dim_max)
     end
 
-    @infiltrate
-
     coarser_arr = mapCube(
         dggs_array;
         indims=InDims(:dggs_i, :dggs_j),

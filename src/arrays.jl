@@ -149,9 +149,9 @@ function to_dggs_array(
     geo_array::AbstractDimArray,
     resolution::Integer,
     cell_coords,
-    geo_bbox::Extent,
-    agg_func::Function
+    geo_bbox::Extent
     ;
+    agg_func::Function=mean,
     name=get_name(geo_array),
     out_eltype=Union{Missing,eltype(geo_array)},
     chunk_length=2^12,
@@ -187,7 +187,7 @@ function to_dggs_array(
             end
             buf_len == 0 && continue
             res = agg_func(@view buf[1:buf_len])
-            data[k.i+1, k.j+1, k.n+1] = res
+            data[Int(k.i)+1, Int(k.j)+1, Int(k.n)+1] = res
         catch
         end
     end
@@ -246,7 +246,7 @@ function to_dggs_array(geo_array::AbstractDimArray, resolution::Integer, crs::St
     dggs_bbox = get_dggs_bbox_cells(cells)
     geo_bbox = get_geo_bbox(geo_array, crs)
 
-    dggs_array = to_dggs_array(geo_array, resolution, dggs_bbox, geo_bbox; x_name=x_name, y_name=y_name, kwargs...)
+    dggs_array = to_dggs_array(geo_array, resolution, cell_coords, geo_bbox; x_name=x_name, y_name=y_name, kwargs...)
     return dggs_array
 end
 

@@ -154,7 +154,7 @@ dggs_ds = DGGSDataset(dggs_array, dggs_array2)
         @test dggs_array3 isa DGGSArray
 
         # other agg_func
-        dggs_array4 = to_dggs_array(geo_array3, 10, projection, median)
+        dggs_array4 = to_dggs_array(geo_array3, 10, projection; agg_func=median)
         @test dggs_array4 isa DGGSArray
     end
 
