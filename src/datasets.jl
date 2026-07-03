@@ -107,7 +107,7 @@ end
 
 open_dggs_dataset(file_path::String; kwargs...) = file_path |> x -> open_dataset(x; kwargs...) |> cache |> DGGSDataset
 
-function save_dggs_dataset(file_path::String, ds::DGGSDataset; chunks=nothing, kwargs...)
+function save_dggs_dataset(file_path::String, ds::DGGSDataset; chunks=(dggs_i=4096, dggs_j=4096, dggs_n=1), kwargs...)
     if any(map(x -> x.data isa TileArray, ds.data))
         # save skeleton only
         yax_ds = Dataset(ds)
