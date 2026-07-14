@@ -39,6 +39,7 @@ Infiltrator = "1.8.8"
 OrderedCollections = "1.8.1"
 StaticArrays = "1.9.13"
 YAXArrays = "0.7.3"
+Zarr = "0.10.1"
 julia = "1.6.7"
 
 [extras]
