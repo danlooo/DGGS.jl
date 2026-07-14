@@ -150,6 +150,11 @@ function Makie.plot(
     # use colormap if only one layer is supplied
     if dggs isa DGGSArray || (dggs isa DGGSPyramid && args isa Tuple{Symbol})
         filtered_data = filter(x -> !ismissing(x) && !isnan(x), data[])
+
+        if filtered_data isa Vector{Missing}
+            return fig
+        end
+
         cb_limits = (minimum(filtered_data), maximum(filtered_data))
 
         label = if dggs isa DGGSPyramid && length(args) == 1
