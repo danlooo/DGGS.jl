@@ -226,6 +226,12 @@ dggs_ds = DGGSDataset(dggs_array, dggs_array2)
         @test dggs_p.bbox == dggs_ds.bbox
         @test dggs_p.dggs_s3.resolution == dggs_p[3].resolution
 
+        # test that all values are present in the pyramid
+        data = collect(dggs_p[3].precipitation)
+        for n in 1:5
+            @test length(data[:, :, n]) == length(filter(!ismissing, data[:, :, n]))
+        end
+
         # save and open pyramid
         temp_dir = tempname() * ".dggs.zarr"
         @info temp_dir

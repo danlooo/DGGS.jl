@@ -195,8 +195,8 @@ function coarsen(
                     # Write to output (convert to 1-based)
                     out_i_1 = div(gi_0, 2) - coarser_i_min + 1
                     out_j_1 = div(gj_0, 2) - coarser_j_min + 1
-                    for ln in 1:length(n_range)
-                        out_tile_array[out_i_1, out_j_1, ln] = agg_val
+                    for n_idx in n_range
+                        out_tile_array[out_i_1, out_j_1, n_idx] = agg_val
                     end
                 end
             end
