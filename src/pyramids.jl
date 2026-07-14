@@ -100,28 +100,28 @@ end
 function aggregate_by_factor(
     xin::AbstractArray,
     xout::AbstractArray,
-    pyramid_agg_func::Function=x -> filter(y -> !ismissing(y) && !isnan(y), x) |> mean
+    agg_func::Function=x -> filter(y -> !ismissing(y) && !isnan(y), x) |> mean
 )
     fac = ceil(Int, size(xin, 1) / size(xout, 1))
     for j in axes(xout, 2)
         for i in axes(xout, 1)
             xview = ((i-1)*fac+1):min(size(xin, 1), (i*fac))
             yview = ((j-1)*fac+1):min(size(xin, 2), (j*fac))
-            xout[i, j] = pyramid_agg_func(view(xin, xview, yview))
+            xout[i, j] = agg_func(view(xin, xview, yview))
         end
     end
 end
 
 
 """
-    coarsen(dggs_array::DGGSArray{<:Any,<:Any,<:Any,<:Any,<:TileArray}; pyramid_agg_func)
+    coarsen(dggs_array::DGGSArray{<:Any,<:Any,<:Any,<:Any,<:TileArray}; agg_func)
 
 Coarsen a DGGSArray backed by a TileArray by aggregating 2x2 blocks.
 Missing tiles are skipped entirely, making this efficient for sparse arrays.
 """
 function coarsen(
     dggs_array::DGGSArray{<:Any,<:Any,<:Any,<:Any,<:TileArray};
-    pyramid_agg_func::Function=x -> filter(y -> !ismissing(y) && !isnan(y), x) |> mean
+    agg_func::Function=x -> filter(y -> !ismissing(y) && !isnan(y), x) |> mean
 )
     tile_array = dggs_array.data
     coarser_level = dggs_array.resolution - 1
@@ -190,7 +190,7 @@ function coarsen(
                 end
 
                 if !isempty(values)
-                    agg_val = pyramid_agg_func(values)
+                    agg_val = agg_func(values)
 
                     # Write to output (convert to 1-based)
                     out_i_1 = div(gi_0, 2) - coarser_i_min + 1
@@ -267,11 +267,11 @@ function to_dggs_pyramid(
     geo_ds::YAXArrays.Dataset,
     resolution::Integer,
     crs::String;
-    pyramid_agg_func::Function=x -> filter(y -> !ismissing(y) && !isnan(y), x) |> mean,
+    agg_func::Function=x -> filter(y -> !ismissing(y) && !isnan(y), x) |> mean,
     kwargs...
 )
     dggs_ds = to_dggs_dataset(geo_ds, resolution, crs; kwargs...)
-    dggs_pyramid = to_dggs_pyramid(dggs_ds; pyramid_agg_func=pyramid_agg_func)
+    dggs_pyramid = to_dggs_pyramid(dggs_ds; agg_func=agg_func)
     return dggs_pyramid
 end
 
@@ -279,11 +279,11 @@ function to_dggs_pyramid(
     geo_array::YAXArrays.YAXArray,
     resolution::Integer,
     crs::String;
-    pyramid_agg_func::Function=x -> filter(y -> !ismissing(y) && !isnan(y), x) |> mean,
+    agg_func::Function=x -> filter(y -> !ismissing(y) && !isnan(y), x) |> mean,
     kwargs...
 )
     dggs_array = to_dggs_array(geo_array, resolution, crs; kwargs...)
-    dggs_pyramid = to_dggs_pyramid(dggs_array; pyramid_agg_func=pyramid_agg_func)
+    dggs_pyramid = to_dggs_pyramid(dggs_array; agg_func=agg_func)
     return dggs_pyramid
 end
 
