@@ -255,11 +255,11 @@ function to_dggs_pyramid(dggs_array::DGGSArray; kwargs...)
 end
 
 function to_dggs_pyramid(
-    geo_ds::YAXArrays.Dataset, resolution::Integer, crs::String, agg_func::Function;
-    kwargs...
+    geo_ds::YAXArrays.Dataset, resolution::Integer, crs::String;
+    agg_func::Function, kwargs...
 )
-    dggs_ds = to_dggs_dataset(geo_ds, resolution, crs, agg_func; kwargs...)
-    dggs_pyramid = to_dggs_pyramid(dggs_ds)
+    dggs_ds = to_dggs_dataset(geo_ds, resolution, crs; agg_func=agg_func, kwargs...)
+    dggs_pyramid = to_dggs_pyramid(dggs_ds; agg_func=agg_func)
     return dggs_pyramid
 end
 
@@ -270,7 +270,7 @@ function to_dggs_pyramid(
     agg_func::Function=x -> filter(y -> !ismissing(y) && !isnan(y), x) |> mean,
     kwargs...
 )
-    dggs_ds = to_dggs_dataset(geo_ds, resolution, crs; kwargs...)
+    dggs_ds = to_dggs_dataset(geo_ds, resolution, crs; agg_func=agg_func, kwargs...)
     dggs_pyramid = to_dggs_pyramid(dggs_ds; agg_func=agg_func)
     return dggs_pyramid
 end
@@ -282,7 +282,7 @@ function to_dggs_pyramid(
     agg_func::Function=x -> filter(y -> !ismissing(y) && !isnan(y), x) |> mean,
     kwargs...
 )
-    dggs_array = to_dggs_array(geo_array, resolution, crs; kwargs...)
+    dggs_array = to_dggs_array(geo_array, resolution, crs; agg_func=agg_func, kwargs...)
     dggs_pyramid = to_dggs_pyramid(dggs_array; agg_func=agg_func)
     return dggs_pyramid
 end
