@@ -226,26 +226,28 @@ dggs_ds = DGGSDataset(dggs_array, dggs_array2)
         @test dggs_p.bbox == dggs_ds.bbox
         @test dggs_p.dggs_s3.resolution == dggs_p[3].resolution
 
-        # test that all values are present in the pyramid
-        data = collect(dggs_p[3].precipitation)
-        for n in 1:5
-            @test length(data[:, :, n]) == length(filter(!ismissing, data[:, :, n]))
+        @testset "all values are present" begin
+            data = collect(dggs_p[3].precipitation)
+            for n in 1:5
+                @test length(data[:, :, n]) == length(filter(!ismissing, data[:, :, n]))
+            end
         end
 
-        # save and open pyramid
-        temp_dir = tempname() * ".dggs.zarr"
-        @info temp_dir
-        save_dggs_pyramid(temp_dir, dggs_p)
-        dggs_p2 = open_dggs_pyramid(temp_dir)
-        @test dggs_p.bbox == dggs_p2.bbox
-        @test dggs_p.dggsrs == dggs_p2.dggsrs
-        @test length(dggs_p.data) == length(dggs_p2.data)
-        @test all(keys(dggs_p.data) .== keys(dggs_p2.data))
+        @testset "save and open pyramid" begin
+            temp_dir = tempname() * ".dggs.zarr"
+            @info temp_dir
+            save_dggs_pyramid(temp_dir, dggs_p)
+            dggs_p2 = open_dggs_pyramid(temp_dir)
+            @test dggs_p.bbox == dggs_p2.bbox
+            @test dggs_p.dggsrs == dggs_p2.dggsrs
+            @test length(dggs_p.data) == length(dggs_p2.data)
+            @test all(keys(dggs_p.data) .== keys(dggs_p2.data))
 
-        # both layers must be present after save and open
-        @test name(dggs_p.dggs_s3.air_temperature) == name(dggs_p2.dggs_s3.air_temperature)
-        @test name(dggs_p.dggs_s3.precipitation) == name(dggs_p2.dggs_s3.precipitation)
-        rm(temp_dir, recursive=true)
+            # both layers must be present after save and open
+            @test name(dggs_p.dggs_s3.air_temperature) == name(dggs_p2.dggs_s3.air_temperature)
+            @test name(dggs_p.dggs_s3.precipitation) == name(dggs_p2.dggs_s3.precipitation)
+            rm(temp_dir, recursive=true)
+        end
 
         # pyramid from just one array
         dggs_p2 = to_dggs_pyramid(dggs_array)
