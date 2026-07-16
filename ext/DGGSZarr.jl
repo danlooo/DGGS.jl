@@ -12,7 +12,7 @@ using FillArrays
 
 # Currently, YAXArrays does not support saving the experimental nested DimTree type
 
-function DGGS.save_dggs_pyramid(path::String, dggs_p::DGGSPyramid, args...; storetype=DirectoryStore)
+function DGGS.save_dggs_pyramid(path::String, dggs_p::DGGSPyramid, args...; storetype=DirectoryStore, kwargs...)
     pyramid_attrs = Dict(
         "dggs_bbox" => dggs_p.bbox,
         "dggs_dggsrs" => dggs_p.dggsrs,
@@ -22,7 +22,7 @@ function DGGS.save_dggs_pyramid(path::String, dggs_p::DGGSPyramid, args...; stor
     for key in keys(dggs_p.branches)
         dggs_ds = getproperty(dggs_p, key) |> x -> x isa DGGSArray ? DGGSDataset(x) : x
         ds = Dataset(dggs_ds)
-        savedataset(ds; path="$(path)/$(key)", driver=:zarr)
+        savedataset(ds; path="$(path)/$(key)", driver=:zarr, fill_value=nothing, kwargs...)
     end
     return path
 end
@@ -84,7 +84,7 @@ function DGGS.init_global_dggs_dataset(
     for (key, geo_array) in pairs(geo_ds.cubes)
         is_spatial = x_dim_name in name(geo_array.axes) && y_dim_name in name(geo_array.axes)
         if is_spatial
-            spatial_dims = (Dim{:dggs_i}(0:2*2^resolution-1), Dim{:dggs_j}(0:2^resolution-1), Dim{:dggs_n}(0:4))
+            spatial_dims = (Dim{:dggs_i}(0:(2*2^resolution-1)), Dim{:dggs_j}(0:(2^resolution-1)), Dim{:dggs_n}(0:4))
             non_spatial_dims = filter(x -> !(name(x) in [x_dim_name, y_dim_name]), geo_array.axes)
             dims = (spatial_dims..., non_spatial_dims...)
         else
