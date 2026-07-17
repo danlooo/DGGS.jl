@@ -423,10 +423,12 @@ function open_dggs_array(file_path::String)
     return DGGSArray(arr)
 end
 
-function save_dggs_array(file_path::String, dggs_array::DGGSArray; kwargs...)
-    ds = Dataset(; Dict(DD.name(dggs_array) => YAXArray(dggs_array))...)
-    savedataset(ds; path=file_path, kwargs...)
-end
+"""
+    save_dggs_array(file_path, dggs_array; kwargs...)
+
+Save a DGGSArray to disk. This is a stub function that is extended by the DGGSZarr extension.
+"""
+function save_dggs_array end
 
 #
 # Operations

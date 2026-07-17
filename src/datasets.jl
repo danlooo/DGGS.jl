@@ -107,38 +107,11 @@ end
 
 open_dggs_dataset(file_path::String; kwargs...) = file_path |> x -> open_dataset(x; kwargs...) |> cache |> DGGSDataset
 
-function save_dggs_dataset(file_path::String, ds::DGGSDataset; chunks=(dggs_i=4096, dggs_j=4096, dggs_n=1), kwargs...)
-    if any(map(x -> x.data isa TileArray, ds.data))
-        # save skeleton only
-        yax_ds = Dataset(ds)
-        if ! isnothing(chunks)
-            setchunks(yax_ds, chunks)
-        end
-        disk_ds = savedataset(yax_ds; path=file_path, skeleton=true, kwargs...)
+"""
+    save_dggs_dataset(file_path, dggs_ds; kwargs...)
 
-        for key in keys(ds)
-            tile_array = ds[key].data.data
-            disk_array = disk_ds[key]
-            if ! isnothing(chunks)
-                disk_array = setchunks(disk_array, chunks)
-            end
-
-            for (r, i) in zip(ranges(tile_array), findall(!ismissing, tile_array.data))
-                chunk_data = tile_array.data[i]
-                # Compute local indices within the chunk for the valid range
-                # (handles boundary chunks that may be smaller than chunk_size)
-                local_ranges = ntuple(length(r)) do d
-                    start_local = r[d].start - (i[d] - 1) * tile_array.chunk_size[d]
-                    end_local = r[d].stop - (i[d] - 1) * tile_array.chunk_size[d]
-                    start_local:end_local
-                end
-                disk_array[r...] .= chunk_data[local_ranges...]
-            end
-        end
-    else
-        yax_ds = Dataset(ds)
-        savedataset(yax_ds; path=file_path, kwargs...)
-    end
-end
+Save a DGGSDataset to disk. This is a stub function that is extended by the DGGSZarr extension.
+"""
+function save_dggs_dataset end
 
 init_global_dggs_dataset() = @error("Please load package Zarr")
