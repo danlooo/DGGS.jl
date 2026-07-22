@@ -159,41 +159,85 @@ function to_dggs_array(
 )
     dggsrs = "ISEA4D.Penta"
 
+    # Identify non-spatial dimensions (e.g. time, band)
+    spatial_dim_names = (:dggs_i, :dggs_j, :dggs_n, :X, :Y)
+    non_spatial = filter(d -> !(DD.name(d) in spatial_dim_names), dims(geo_array))
+    non_spatial_sizes = map(length, non_spatial)
+
     # Create spatial dims
     spatial_dims = (Dim{:dggs_i}(0:(2*2^resolution-1)), Dim{:dggs_j}(0:(2^resolution-1)), Dim{:dggs_n}(0:4))
+    all_dims = if isempty(non_spatial)
+        spatial_dims
+    else
+        (spatial_dims..., non_spatial...)
+    end
 
-    # Create a TileArray directly instead of DGGSArray to avoid YAXArray wrapper overhead in setindex
-    data = TileArray{out_eltype}(missing, length.(spatial_dims), (chunk_length, chunk_length, 1))
+    # Build data array with all dimensions
+    all_sizes = length.(all_dims)
+    spatial_chunk = (chunk_length, chunk_length, 1)
+    all_chunks = if isempty(non_spatial)
+        spatial_chunk
+    else
+        (spatial_chunk..., ntuple(i -> non_spatial_sizes[i], length(non_spatial))...)
+    end
+    data = TileArray{out_eltype}(missing, all_sizes, all_chunks)
 
-    # Pre-sized reusable buffer to avoid per-cell allocation when collecting non-missing values.
-    # Most cells at high resolution map to ~1-4 pixels, so size 32 avoids reallocation in most cases.
+    # Pre-sized reusable buffer
     buf = Vector{eltype(geo_array)}(undef, 32)
-    buf_len = 0
 
-    # dims start at 0; +1 for 1-based Julia array indexing
-    for (k, v) in cell_coords
-        try
-            # Collect non-missing values into pre-sized buffer (avoids geo_array[v] allocation)
-            buf_len = 0
-            for idx in v
-                val = geo_array[idx]
-                if val !== missing
-                    buf_len += 1
-                    if buf_len > length(buf)
-                        resize!(buf, length(buf) * 2)
+    # Helper: aggregate spatial pixels for one slice into data
+    function _fill_spatial!(data, cell_coords, geo_slice, buf)
+        for (k, v) in cell_coords
+            try
+                buf_len = 0
+                for idx in v
+                    val = geo_slice[idx]
+                    if val !== missing
+                        buf_len += 1
+                        if buf_len > length(buf)
+                            resize!(buf, length(buf) * 2)
+                        end
+                        @inbounds buf[buf_len] = val
                     end
-                    @inbounds buf[buf_len] = val
+                end
+                buf_len == 0 && continue
+                res = agg_func(@view buf[1:buf_len])
+                data[Int(k.i)+1, Int(k.j)+1, Int(k.n)+1] = res
+            catch
+            end
+        end
+    end
+
+    if isempty(non_spatial)
+        # Pure spatial case — original fast path
+        _fill_spatial!(data, cell_coords, geo_array, buf)
+    else
+        # Iterate over all non-spatial dimension index combinations
+        for extra_ci in CartesianIndices(non_spatial_sizes)
+            extra_idxs = Tuple(extra_ci)
+            # Build indexer: spatial dims get Colon(), non-spatial get specific index
+            spatial_names_set = Set(spatial_dim_names)
+            idxs = map(dims(geo_array)) do d
+                if DD.name(d) in spatial_names_set
+                    Colon()
+                else
+                    # find which position this dim has in non_spatial
+                    pos = findfirst(nd -> DD.name(nd) == DD.name(d), non_spatial)
+                    extra_idxs[pos]
                 end
             end
-            buf_len == 0 && continue
-            res = agg_func(@view buf[1:buf_len])
-            data[Int(k.i)+1, Int(k.j)+1, Int(k.n)+1] = res
-        catch
+            geo_slice = view(geo_array, idxs...)
+
+            # Build data indexer: spatial dims get Colon(), non-spatial get specific index
+            data_idxs = (Colon(), Colon(), Colon(), extra_idxs...)
+            data_view = view(data, data_idxs...)
+
+            _fill_spatial!(data_view, cell_coords, geo_slice, buf)
         end
     end
 
     return DGGSArray(
-        data, spatial_dims, (), name, metadata(geo_array),
+        data, all_dims, (), name, metadata(geo_array),
         resolution, dggsrs, geo_bbox
     )
 end
