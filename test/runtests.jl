@@ -217,6 +217,9 @@ dggs_ds = DGGSDataset(dggs_array, dggs_array2)
     end
 
     @testset "DGGSPyramid" begin
+        A = [1 1 2 2; 1 1 2 2; 3 3 4 4; 3 3 4 4]
+        @test DGGS.coarsen(A, (2, 2)) == [1 2; 3 4]
+
         dggs_p = to_dggs_pyramid(dggs_ds)
         @test dggs_p isa DGGSPyramid
         @test dggs_p.dggs_s3 isa DGGSDataset

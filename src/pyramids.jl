@@ -1,13 +1,14 @@
 """
-    coarsen(A::AbstractArray, factors::Tuple)
+    coarsen(A::AbstractArray, factors::Tuple; agg_func=x -> mean(skipmissing(x)))
 
 Coarsen an array by aggregating blocks of elements. Each dimension is reduced
-by the corresponding factor using mean aggregation.
+by the corresponding factor.
 
 # Arguments
 - `A::AbstractArray`: Input array to coarsen
 - `factors::Tuple`: Tuple of coarsening factors, one per dimension.
   Use `1` to keep a dimension unchanged.
+- `agg_func`: Aggregation function applied to each block. Default: `mean(skipmissing(x))`.
 
 # Example
 ```julia
@@ -15,20 +16,67 @@ a = rand(64, 32, 10)
 coarse_a = coarsen(a, (2, 2, 1))  # Result: 32×16×10
 ```
 """
-function coarsen(A::AbstractArray, factors::Tuple)
+function coarsen(A::AbstractArray, new_size::Tuple; agg_func=x -> mean(skipmissing(x)))
     # Build the reshaped dimensions: interleave (new_dim, factor) pairs
     reshaped_dims = Int[]
-    for (s, f) in zip(size(A), factors)
+    for (s, f) in zip(size(A), new_size)
         push!(reshaped_dims, s ÷ f)
         push!(reshaped_dims, f)
     end
 
     reshaped = reshape(A, Tuple(reshaped_dims))
 
-    # Average over the factor dimensions (every even dimension: 2, 4, 6, ...)
-    reduce_dims = Tuple(2:2:length(reshaped_dims))
-    result = mean(reshaped, dims=reduce_dims)
-    return dropdims(result, dims=reduce_dims)
+    # Average over the within-block factor dimensions (every odd dimension: 1, 3, 5, ...)
+    # Reshape order is (n_blocks, block_size) per spatial dim. In column-major Julia,
+    # n_blocks (even positions) indexes which block, block_size (odd positions) indexes
+    # within the block. We reduce over the within-block dimensions.
+    reduce_dims = Tuple(1:2:length(reshaped_dims))
+
+    # Compute output shape (keep even dims, drop odd dims)
+    out_shape = Tuple(reshaped_dims[i] for i in 2:2:length(reshaped_dims))
+
+    # Determine output eltype by finding first non-missing result
+    out_eltype = Missing
+    for idx in CartesianIndices(out_shape)
+        # Build slice indices: for each reduce_dim, take full range; for output dims, use idx
+        slice_indices = []
+        out_idx = 1
+        for d in 1:length(reshaped_dims)
+            if d in reduce_dims
+                push!(slice_indices, :)
+            else
+                push!(slice_indices, idx[out_idx])
+                out_idx += 1
+            end
+        end
+        block = reshaped[slice_indices...]
+        val = agg_func(block)
+        if !ismissing(val)
+            out_eltype = typeof(val)
+            break
+        end
+    end
+
+    # Allocate output with correct type
+    result = Array{Union{Missing,out_eltype}}(missing, out_shape)
+
+    # Fill output
+    for idx in CartesianIndices(out_shape)
+        slice_indices = []
+        out_idx = 1
+        for d in 1:length(reshaped_dims)
+            if d in reduce_dims
+                push!(slice_indices, :)
+            else
+                push!(slice_indices, idx[out_idx])
+                out_idx += 1
+            end
+        end
+        block = reshaped[slice_indices...]
+        result[idx] = agg_func(block)
+    end
+
+    return result
 end
 
 function DGGSPyramid(data::AbstractDict{T,A}, dggsrs, bbox) where {T,A<:DGGSDataset}
