@@ -73,16 +73,15 @@ function get_texture(
     red_layer::Symbol,
     green_layer::Symbol,
     blue_layer::Symbol;
-    scale_factor::Real=1,
-    offset::Real=0
+    transformation::Function
 )
     ds_rgb = DGGSDataset(getproperty(ds, red_layer), getproperty(ds, green_layer), getproperty(ds, blue_layer))
     geo_ds = to_geo_dataset(ds_rgb, lon_dim, lat_dim)
 
     texture = map(CartesianIndices((lon_dim, lat_dim))) do i
-        r = getproperty(geo_ds, red_layer)[i] * scale_factor + offset
-        g = getproperty(geo_ds, green_layer)[i] * scale_factor + offset
-        b = getproperty(geo_ds, blue_layer)[i] * scale_factor + offset
+        r = getproperty(geo_ds, red_layer)[i] |> transformation
+        g = getproperty(geo_ds, green_layer)[i] |> transformation
+        b = getproperty(geo_ds, blue_layer)[i] |> transformation
 
         if ismissing(r) || ismissing(g) || ismissing(b)
             Makie.RGBf(1, 1, 1)
