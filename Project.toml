@@ -41,6 +41,7 @@ StaticArrays = "1.9.13"
 YAXArrays = "0.7.3"
 Zarr = "0.10.1"
 julia = "1.6.7"
+DimensionalData = "0.30"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
