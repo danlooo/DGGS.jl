@@ -74,13 +74,13 @@ function DGGS.save_dggs_array(file_path::String, dggs_array::DGGSArray; chunks=n
 end
 
 """
-    save_dggs_dataset(file_path, dggs_ds; chunks=(dggs_i=4096, dggs_j=4096, dggs_n=1), kwargs...)
+    save_dggs_dataset(file_path, dggs_ds; chunks=(dggs_i=1024, dggs_j=1024, dggs_n=1), kwargs...)
 
 Save a DGGSDataset to Zarr format, optimized for TileArrays.
 Missing tiles are not written to disk, leveraging Zarr's sparse chunk storage.
 Uses `fill_value=nothing` so chunks can be filled with any value.
 """
-function DGGS.save_dggs_dataset(file_path::String, dggs_ds::DGGSDataset; chunks=(dggs_i=4096, dggs_j=4096, dggs_n=1), kwargs...)
+function DGGS.save_dggs_dataset(file_path::String, dggs_ds::DGGSDataset; chunks=(dggs_i=1024, dggs_j=1024, dggs_n=1), kwargs...)
     yax_ds = Dataset(dggs_ds)
     if !isnothing(chunks)
         yax_ds = setchunks(yax_ds, chunks)
@@ -108,13 +108,13 @@ function DGGS.save_dggs_dataset(file_path::String, dggs_ds::DGGSDataset; chunks=
 end
 
 """
-    save_dggs_pyramid(path, dggs_p; storetype=DirectoryStore, chunks=(dggs_i=4096, dggs_j=4096, dggs_n=1), kwargs...)
+    save_dggs_pyramid(path, dggs_p; storetype=DirectoryStore, chunks=(dggs_i=1024, dggs_j=1024, dggs_n=1), kwargs...)
 
 Save a DGGSPyramid to Zarr format, optimized for TileArrays.
 Missing tiles are not written to disk, leveraging Zarr's sparse chunk storage.
 Uses `fill_value=nothing` so chunks can be filled with any value.
 """
-function DGGS.save_dggs_pyramid(path::String, dggs_p::DGGSPyramid, args...; storetype=DirectoryStore, chunks=(dggs_i=4096, dggs_j=4096, dggs_n=1), kwargs...)
+function DGGS.save_dggs_pyramid(path::String, dggs_p::DGGSPyramid, args...; storetype=DirectoryStore, chunks=(dggs_i=1024, dggs_j=1024, dggs_n=1), kwargs...)
     pyramid_attrs = Dict(
         "dggs_bbox" => dggs_p.bbox,
         "dggs_dggsrs" => dggs_p.dggsrs,
@@ -165,7 +165,7 @@ Need to init globally:
 function DGGS.init_global_dggs_dataset(
     geo_ds::Dataset, resolution, path;
     bbox=(X=(-180, 180), Y=(-90, 90)),
-    x_dim_name=:X, y_dim_name=:Y, chunks=(dggs_i=4096, dggs_j=4096, dggs_n=1), kwargs...
+    x_dim_name=:X, y_dim_name=:Y, chunks=(dggs_i=1024, dggs_j=1024, dggs_n=1), kwargs...
 )
     # extract spatial dimensions
     all_dims = []

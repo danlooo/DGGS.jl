@@ -192,9 +192,13 @@ function coarsen(
         n_max - n_min + 1
     )
 
-    # Create output TileArray with same chunk size
+    # Create output TileArray. Chunk size must not exceed the coarsened extent,
+    # otherwise every touched 2^n x 2^n chunk is allocated in full (TileArray
+    # allocates fill(default, chunk_size...) per chunk), which wastes huge
+    # amounts of memory for the small arrays found at coarse pyramid levels.
     out_eltype = eltype(tile_array)
-    out_tile_array = TileArray{out_eltype}(missing, out_dims, tile_array.chunk_size)
+    out_chunk_size = ntuple(i -> min(tile_array.chunk_size[i], out_dims[i]), length(out_dims))
+    out_tile_array = TileArray{out_eltype}(missing, out_dims, out_chunk_size)
 
     cs = tile_array.chunk_size
 

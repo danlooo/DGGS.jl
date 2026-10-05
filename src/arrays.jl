@@ -154,7 +154,7 @@ function to_dggs_array(
     agg_func::Function=mean,
     name=get_name(geo_array),
     out_eltype=Union{Missing,eltype(geo_array)},
-    chunk_length=2^12,
+    chunk_length=1024,
     kwargs...
 )
     dggsrs = "ISEA4D.Penta"
@@ -404,7 +404,7 @@ function DGGSArray(array::AbstractDimArray)
     )
 end
 
-function DGGSArray(resolution; chunk_length=2^12)
+function DGGSArray(resolution; chunk_length=1024)
     spatial_dims = (Dim{:dggs_i}(0:(2*2^resolution-1)), Dim{:dggs_j}(0:(2^resolution-1)), Dim{:dggs_n}(0:4))
     data = TileArray{Union{Missing,Float64}}(missing, length.(spatial_dims), (chunk_length, chunk_length, 1))
     dggsrs = "ISEA4D.Penta"

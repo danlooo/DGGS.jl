@@ -65,7 +65,10 @@ dggs_ds = DGGSDataset(dggs_array, dggs_array2)
         @test a[1, 1] == 1
         @test ismissing(a[100, 100])
 
-        resolution = 25
+        # Keep the resolution modest: DGGSArray(resolution) allocates a chunk-index
+        # array of size ~(2R * R * 5) / chunk_length^2, so a global high-resolution
+        # grid (e.g. 25) is infeasible in memory with the default chunk_length.
+        resolution = 16
         a = DGGSArray(resolution)
         @test a.data isa TileArray
         @test size(a) == (2 * 2^resolution, 2^resolution, 5)
