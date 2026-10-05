@@ -14,7 +14,7 @@ p = open_dggs_pyramid(store)
 Plot the pyramid:
 
 ```@example remote_blue_marble
-plot(p, :Red, :Green, :Blue; scale_factor=1/255)
+plot(p, :Red, :Green, :Blue; transformation= x -> x / 255)
 ```
 
 A vertex of the icosahedron used for projection is near Gothenburg, Sweeden.
@@ -23,7 +23,7 @@ This results into different oritentations of the DGGS zones, depending on which 
 ```@example remote_blue_marble
 using Extents
 bbox = Extent(X = (10.5,12), Y=(57.5,59))
-plot(p, :Red, :Green, :Blue; scale_factor=1/255, extent=bbox)
+plot(p, :Red, :Green, :Blue; transformation= x -> x / 255, extent=bbox)
 ```
 
 
