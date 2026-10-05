@@ -73,7 +73,7 @@ function get_texture(
     red_layer::Symbol,
     green_layer::Symbol,
     blue_layer::Symbol;
-    transformation::Function
+    transformation::Function=identity
 )
     ds_rgb = DGGSDataset(getproperty(ds, red_layer), getproperty(ds, green_layer), getproperty(ds, blue_layer))
     geo_ds = to_geo_dataset(ds_rgb, lon_dim, lat_dim)
