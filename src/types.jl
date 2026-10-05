@@ -50,7 +50,7 @@ struct DGGSArray{T,N,D<:Tuple,R<:Tuple,A<:AbstractArray{T,N},Na,Me} <: AbstractD
 end
 
 "Set of DGGSArrays with aligned and shared dimensions at the same resolution."
-struct DGGSDataset{K,T,N,L,D<:Tuple,R<:Tuple,LD,M,LM} <: AbstractDimStack{K,T,N,L}
+struct DGGSDataset{K,T,N,L,D<:Tuple,R<:Tuple,LD,M,LM} <: AbstractDimStack{K,T,N,L,D}
     # DimStack fields
     data::L
     dims::D
